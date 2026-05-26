@@ -17,7 +17,6 @@ const {
   SHOPIFY_ACCESS_TOKEN
 } = process.env;
 
-// Mapa e gjuhëve — locale → targetLang
 const LOCALE_MAP = {
   'fr': 'French',
   'de': 'German',
@@ -63,20 +62,31 @@ app.get('/auth/callback', async (req, res) => {
   }
 });
 
-// Merr gjuhët aktive nga Shopify Markets
 app.get('/locales', async (req, res) => {
   const { shop, token } = req.query;
   if (!shop || !token) return res.status(400).json({ error: 'Missing shop or token' });
   try {
-    const response = await axios.get(
-      `https://${shop}/admin/api/2026-01/shop/locales.json`,
-      { headers: { 'X-Shopify-Access-Token': token } }
+    const query = `
+      query {
+        shopLocales {
+          locale
+          name
+          primary
+          published
+        }
+      }
+    `;
+    const response = await axios.post(
+      `https://${shop}/admin/api/2026-01/graphql.json`,
+      { query },
+      { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
     );
-    const locales = response.data.locales
+    const locales = response.data.data.shopLocales
       .filter(l => !l.primary)
       .map(l => ({
         locale: l.locale,
         name: l.name,
+        published: l.published,
         targetLang: LOCALE_MAP[l.locale] || l.name
       }));
     res.json({ locales });
@@ -241,14 +251,12 @@ app.post('/localize', async (req, res) => {
 
 app.post('/bulk-localize', async (req, res) => {
   const { shop, token, targetLang, locale, tone, glossary } = req.body;
-
   try {
     const productsRes = await axios.get(
       `https://${shop}/admin/api/2026-01/products.json?limit=250`,
       { headers: { 'X-Shopify-Access-Token': token } }
     );
     const products = productsRes.data.products;
-    console.log(`Found ${products.length} products`);
 
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.write('{"results":[');
@@ -275,32 +283,36 @@ app.post('/bulk-localize', async (req, res) => {
   }
 });
 
-// Bulk localize të gjitha gjuhët aktive automatikisht
 app.post('/bulk-localize-all', async (req, res) => {
   const { shop, token, tone, glossary } = req.body;
-
   try {
-    // Merr gjuhët aktive nga Shopify
-    const localesRes = await axios.get(
-      `https://${shop}/admin/api/2026-01/shop/locales.json`,
-      { headers: { 'X-Shopify-Access-Token': token } }
+    const query = `
+      query {
+        shopLocales {
+          locale
+          name
+          primary
+          published
+        }
+      }
+    `;
+    const localesRes = await axios.post(
+      `https://${shop}/admin/api/2026-01/graphql.json`,
+      { query },
+      { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
     );
-    const locales = localesRes.data.locales
+    const locales = localesRes.data.data.shopLocales
       .filter(l => !l.primary)
       .map(l => ({
         locale: l.locale,
         targetLang: LOCALE_MAP[l.locale] || l.name
       }));
 
-    console.log('Active locales:', locales);
-
-    // Merr të gjitha produktet
     const productsRes = await axios.get(
       `https://${shop}/admin/api/2026-01/products.json?limit=250`,
       { headers: { 'X-Shopify-Access-Token': token } }
     );
     const products = productsRes.data.products;
-    console.log(`Found ${products.length} products, ${locales.length} languages`);
 
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.write('{"results":[');
@@ -335,7 +347,6 @@ app.post('/bulk-localize-all', async (req, res) => {
 
 app.post('/webhook/product-create', async (req, res) => {
   res.status(200).send('OK');
-
   try {
     const body = Buffer.isBuffer(req.body) ? JSON.parse(req.body.toString()) : req.body;
     const product = body;
@@ -349,19 +360,28 @@ app.post('/webhook/product-create', async (req, res) => {
 
     console.log('Webhook — new product:', product.title, 'from:', shop);
 
-    // Merr gjuhët aktive automatikisht
-    const localesRes = await axios.get(
-      `https://${shop}/admin/api/2026-01/shop/locales.json`,
-      { headers: { 'X-Shopify-Access-Token': token } }
+    const query = `
+      query {
+        shopLocales {
+          locale
+          name
+          primary
+          published
+        }
+      }
+    `;
+    const localesRes = await axios.post(
+      `https://${shop}/admin/api/2026-01/graphql.json`,
+      { query },
+      { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
     );
-    const locales = localesRes.data.locales
+    const locales = localesRes.data.data.shopLocales
       .filter(l => !l.primary)
       .map(l => ({
         locale: l.locale,
         targetLang: LOCALE_MAP[l.locale] || l.name
       }));
 
-    // Lokalizo në të gjitha gjuhët aktive
     for (const lang of locales) {
       try {
         await localizeProduct(
@@ -376,7 +396,6 @@ app.post('/webhook/product-create', async (req, res) => {
       }
       await new Promise(resolve => setTimeout(resolve, 500));
     }
-
   } catch (err) {
     console.error('Webhook error:', err.message);
   }
