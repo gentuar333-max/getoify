@@ -1,17 +1,22 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const axios = require('axios');
+const crypto = require('crypto');
 
 dotenv.config();
 
 const app = express();
+
+// Webhook needs raw body
+app.use('/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 
 const { 
   SHOPIFY_API_KEY, 
   SHOPIFY_API_SECRET, 
   SHOPIFY_SCOPES, 
-  APP_URL 
+  APP_URL,
+  SHOPIFY_ACCESS_TOKEN
 } = process.env;
 
 app.get('/', (req, res) => {
@@ -310,7 +315,6 @@ Respond ONLY in this exact JSON format, no other text:
         first = false;
       }
 
-      // Prit 500ms mes produkteve per rate limiting
       await new Promise(resolve => setTimeout(resolve, 500));
     }
 
@@ -319,6 +323,33 @@ Respond ONLY in this exact JSON format, no other text:
 
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/webhook/product-create', async (req, res) => {
+  res.status(200).send('OK');
+
+  try {
+    const body = Buffer.isBuffer(req.body) ? JSON.parse(req.body.toString()) : req.body;
+    const product = body;
+    const shop = req.headers['x-shopify-shop-domain'];
+    const token = SHOPIFY_ACCESS_TOKEN;
+
+    console.log('Webhook — new product:', product.title, 'from:', shop);
+
+    await axios.post(`${APP_URL}/localize`, {
+      shop,
+      token,
+      productId: product.id,
+      targetLang: 'German',
+      locale: 'de',
+      tone: 'professional and elegant',
+      glossary: 'checkout, Shopify'
+    });
+
+    console.log('Webhook — localized:', product.title);
+  } catch (err) {
+    console.error('Webhook error:', err.message);
   }
 });
 
