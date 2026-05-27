@@ -1,6 +1,7 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const axios = require('axios');
+const { createClient } = require('@supabase/supabase-js');
 
 dotenv.config();
 
@@ -14,8 +15,11 @@ const {
   SHOPIFY_API_SECRET, 
   SHOPIFY_SCOPES, 
   APP_URL,
-  SHOPIFY_ACCESS_TOKEN
+  SUPABASE_URL,
+  SUPABASE_SERVICE_KEY
 } = process.env;
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 const LOCALE_MAP = {
   'fr': 'French',
@@ -35,7 +39,7 @@ const LOCALE_MAP = {
 };
 
 app.get('/', (req, res) => {
-  res.json({ status: 'Getoify running', version: '1.0.0' });
+  res.json({ status: 'Getoify running', version: '2.0.0' });
 });
 
 app.get('/auth', (req, res) => {
@@ -55,7 +59,15 @@ app.get('/auth/callback', async (req, res) => {
       code
     });
     const accessToken = response.data.access_token;
-    console.log('Store connected:', shop);
+
+    // Ruaj store në Supabase
+    const { error } = await supabase
+      .from('stores')
+      .upsert({ shop, access_token: accessToken }, { onConflict: 'shop' });
+
+    if (error) console.error('Supabase error:', error.message);
+
+    console.log('Store connected and saved:', shop);
     res.json({ success: true, shop, accessToken });
   } catch (error) {
     res.status(500).send('OAuth failed');
@@ -116,26 +128,40 @@ app.get('/products', async (req, res) => {
   }
 });
 
-app.get('/digest', async (req, res) => {
-  const { shop, token, productId } = req.query;
+// Merr store nga Supabase
+async function getStore(shop) {
+  const { data, error } = await supabase
+    .from('stores')
+    .select('*')
+    .eq('shop', shop)
+    .single();
+  if (error) throw new Error('Store not found: ' + shop);
+  return data;
+}
+
+async function getShopLocales(shop, token) {
   const query = `
-    query getTranslatableContent($resourceId: ID!) {
-      translatableResource(resourceId: $resourceId) {
-        translatableContent { key value digest locale }
+    query {
+      shopLocales {
+        locale
+        name
+        primary
+        published
       }
     }
   `;
-  try {
-    const response = await axios.post(
-      `https://${shop}/admin/api/2026-01/graphql.json`,
-      { query, variables: { resourceId: `gid://shopify/Product/${productId}` } },
-      { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
-    );
-    res.json(response.data);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+  const res = await axios.post(
+    `https://${shop}/admin/api/2026-01/graphql.json`,
+    { query },
+    { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
+  );
+  return res.data.data.shopLocales
+    .filter(l => !l.primary)
+    .map(l => ({
+      locale: l.locale,
+      targetLang: LOCALE_MAP[l.locale] || l.name
+    }));
+}
 
 async function localizeProduct(shop, token, productId, targetLang, locale, tone, glossary) {
   const productRes = await axios.get(
@@ -232,6 +258,18 @@ Respond ONLY in this exact JSON format, no other text:
     { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
   );
 
+  // Ruaj në Supabase
+  await supabase.from('translations').upsert({
+    shop,
+    product_id: String(productId),
+    locale,
+    status: 'done',
+    translated_title: translated.title,
+    translated_description: translated.description,
+    meta_title: translated.meta_title,
+    meta_description: translated.meta_description
+  }, { onConflict: 'shop,product_id,locale' });
+
   return {
     product: product.title,
     translated,
@@ -249,65 +287,10 @@ app.post('/localize', async (req, res) => {
   }
 });
 
-app.post('/bulk-localize', async (req, res) => {
-  const { shop, token, targetLang, locale, tone, glossary } = req.body;
-  try {
-    const productsRes = await axios.get(
-      `https://${shop}/admin/api/2026-01/products.json?limit=250`,
-      { headers: { 'X-Shopify-Access-Token': token } }
-    );
-    const products = productsRes.data.products;
-
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.write('{"results":[');
-    let first = true;
-
-    for (const product of products) {
-      try {
-        const result = await localizeProduct(shop, token, product.id, targetLang, locale, tone, glossary);
-        if (!first) res.write(',');
-        res.write(JSON.stringify({ success: true, ...result }));
-        first = false;
-      } catch (err) {
-        if (!first) res.write(',');
-        res.write(JSON.stringify({ product: product.title, success: false, error: err.message }));
-        first = false;
-      }
-      await new Promise(resolve => setTimeout(resolve, 500));
-    }
-
-    res.write(']}');
-    res.end();
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
 app.post('/bulk-localize-all', async (req, res) => {
   const { shop, token, tone, glossary } = req.body;
   try {
-    const query = `
-      query {
-        shopLocales {
-          locale
-          name
-          primary
-          published
-        }
-      }
-    `;
-    const localesRes = await axios.post(
-      `https://${shop}/admin/api/2026-01/graphql.json`,
-      { query },
-      { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
-    );
-    const locales = localesRes.data.data.shopLocales
-      .filter(l => !l.primary)
-      .map(l => ({
-        locale: l.locale,
-        targetLang: LOCALE_MAP[l.locale] || l.name
-      }));
-
+    const locales = await getShopLocales(shop, token);
     const productsRes = await axios.get(
       `https://${shop}/admin/api/2026-01/products.json?limit=250`,
       { headers: { 'X-Shopify-Access-Token': token } }
@@ -345,50 +328,35 @@ app.post('/bulk-localize-all', async (req, res) => {
   }
 });
 
+// Webhook — përdor token nga Supabase automatikisht
 app.post('/webhook/product-create', async (req, res) => {
   res.status(200).send('OK');
   try {
     const body = Buffer.isBuffer(req.body) ? JSON.parse(req.body.toString()) : req.body;
     const product = body;
     const shop = req.headers['x-shopify-shop-domain'];
-    const token = SHOPIFY_ACCESS_TOKEN;
 
     if (!product.title) {
       console.log('Webhook — empty product, skipping');
       return;
     }
 
+    // Merr token nga Supabase
+    const store = await getStore(shop);
+    const token = store.access_token;
+    const tone = store.tone || 'professional and elegant';
+    const glossary = store.glossary || 'checkout, Shopify';
+
     console.log('Webhook — new product:', product.title, 'from:', shop);
 
-    const query = `
-      query {
-        shopLocales {
-          locale
-          name
-          primary
-          published
-        }
-      }
-    `;
-    const localesRes = await axios.post(
-      `https://${shop}/admin/api/2026-01/graphql.json`,
-      { query },
-      { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
-    );
-    const locales = localesRes.data.data.shopLocales
-      .filter(l => !l.primary)
-      .map(l => ({
-        locale: l.locale,
-        targetLang: LOCALE_MAP[l.locale] || l.name
-      }));
+    const locales = await getShopLocales(shop, token);
 
     for (const lang of locales) {
       try {
         await localizeProduct(
           shop, token, product.id,
           lang.targetLang, lang.locale,
-          'professional and elegant',
-          'checkout, Shopify'
+          tone, glossary
         );
         console.log(`Webhook — localized ${product.title} in ${lang.targetLang}`);
       } catch (err) {
@@ -398,6 +366,37 @@ app.post('/webhook/product-create', async (req, res) => {
     }
   } catch (err) {
     console.error('Webhook error:', err.message);
+  }
+});
+
+// Update tone dhe glossary per store
+app.post('/settings', async (req, res) => {
+  const { shop, tone, glossary } = req.body;
+  try {
+    const { error } = await supabase
+      .from('stores')
+      .update({ tone, glossary })
+      .eq('shop', shop);
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Statusi i lokalizimit per store
+app.get('/status', async (req, res) => {
+  const { shop } = req.query;
+  try {
+    const { data, error } = await supabase
+      .from('translations')
+      .select('locale, status, translated_title, created_at')
+      .eq('shop', shop)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    res.json({ total: data.length, translations: data });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
