@@ -1,6 +1,7 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const axios = require('axios');
+const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 
 dotenv.config();
@@ -9,6 +10,7 @@ const app = express();
 
 app.use('/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 
 const { 
   SHOPIFY_API_KEY, 
@@ -39,7 +41,7 @@ const LOCALE_MAP = {
 };
 
 app.get('/', (req, res) => {
-  res.json({ status: 'Getoify running', version: '2.0.0' });
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 app.get('/auth', (req, res) => {
@@ -60,7 +62,6 @@ app.get('/auth/callback', async (req, res) => {
     });
     const accessToken = response.data.access_token;
 
-    // Ruaj store në Supabase
     const { error } = await supabase
       .from('stores')
       .upsert({ shop, access_token: accessToken }, { onConflict: 'shop' });
@@ -68,7 +69,7 @@ app.get('/auth/callback', async (req, res) => {
     if (error) console.error('Supabase error:', error.message);
 
     console.log('Store connected and saved:', shop);
-    res.json({ success: true, shop, accessToken });
+    res.redirect('/dashboard?shop=' + shop);
   } catch (error) {
     res.status(500).send('OAuth failed');
   }
@@ -128,7 +129,6 @@ app.get('/products', async (req, res) => {
   }
 });
 
-// Merr store nga Supabase
 async function getStore(shop) {
   const { data, error } = await supabase
     .from('stores')
@@ -258,7 +258,6 @@ Respond ONLY in this exact JSON format, no other text:
     { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
   );
 
-  // Ruaj në Supabase
   await supabase.from('translations').upsert({
     shop,
     product_id: String(productId),
@@ -328,7 +327,6 @@ app.post('/bulk-localize-all', async (req, res) => {
   }
 });
 
-// Webhook — përdor token nga Supabase automatikisht
 app.post('/webhook/product-create', async (req, res) => {
   res.status(200).send('OK');
   try {
@@ -341,7 +339,6 @@ app.post('/webhook/product-create', async (req, res) => {
       return;
     }
 
-    // Merr token nga Supabase
     const store = await getStore(shop);
     const token = store.access_token;
     const tone = store.tone || 'professional and elegant';
@@ -369,7 +366,6 @@ app.post('/webhook/product-create', async (req, res) => {
   }
 });
 
-// Update tone dhe glossary per store
 app.post('/settings', async (req, res) => {
   const { shop, tone, glossary } = req.body;
   try {
@@ -384,7 +380,6 @@ app.post('/settings', async (req, res) => {
   }
 });
 
-// Statusi i lokalizimit per store
 app.get('/status', async (req, res) => {
   const { shop } = req.query;
   try {
@@ -398,6 +393,10 @@ app.get('/status', async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+});
+
+app.get('/dashboard', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
 
 const PORT = process.env.PORT || 3000;
