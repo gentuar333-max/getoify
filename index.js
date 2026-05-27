@@ -13,12 +13,8 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 const { 
-  SHOPIFY_API_KEY, 
-  SHOPIFY_API_SECRET, 
-  SHOPIFY_SCOPES, 
-  APP_URL,
-  SUPABASE_URL,
-  SUPABASE_SERVICE_KEY
+  SHOPIFY_API_KEY, SHOPIFY_API_SECRET, SHOPIFY_SCOPES, 
+  APP_URL, SUPABASE_URL, SUPABASE_SERVICE_KEY
 } = process.env;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
@@ -30,22 +26,14 @@ const LOCALE_MAP = {
   'zh': 'Chinese', 'ar': 'Arabic', 'hi': 'Hindi', 'id': 'Indonesian'
 };
 
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
+// Static pages
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'public', 'dashboard.html')));
+app.get('/tone', (req, res) => res.sendFile(path.join(__dirname, 'public', 'tone.html')));
+app.get('/glossary', (req, res) => res.sendFile(path.join(__dirname, 'public', 'glossary.html')));
+app.get('/products-page', (req, res) => res.sendFile(path.join(__dirname, 'public', 'products.html')));
 
-app.get('/dashboard', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
-});
-
-app.get('/tone', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'tone.html'));
-});
-
-app.get('/glossary', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'glossary.html'));
-});
-
+// OAuth
 app.get('/auth', (req, res) => {
   const shop = req.query.shop;
   if (!shop) return res.status(400).send('Missing shop parameter');
@@ -63,10 +51,7 @@ app.get('/auth/callback', async (req, res) => {
       code
     });
     const accessToken = response.data.access_token;
-    const { error } = await supabase
-      .from('stores')
-      .upsert({ shop, access_token: accessToken }, { onConflict: 'shop' });
-    if (error) console.error('Supabase error:', error.message);
+    await supabase.from('stores').upsert({ shop, access_token: accessToken }, { onConflict: 'shop' });
     console.log('Store connected:', shop);
     res.redirect('/dashboard?shop=' + shop + '&token=' + accessToken);
   } catch (error) {
@@ -74,6 +59,7 @@ app.get('/auth/callback', async (req, res) => {
   }
 });
 
+// API routes
 app.get('/locales', async (req, res) => {
   const { shop, token } = req.query;
   if (!shop || !token) return res.status(400).json({ error: 'Missing shop or token' });
@@ -109,6 +95,33 @@ app.get('/products', async (req, res) => {
   }
 });
 
+app.get('/status', async (req, res) => {
+  const { shop } = req.query;
+  try {
+    const { data, error } = await supabase
+      .from('translations')
+      .select('locale, status, translated_title, created_at')
+      .eq('shop', shop)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    res.json({ total: data.length, translations: data });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/settings', async (req, res) => {
+  const { shop, tone, glossary } = req.body;
+  try {
+    const { error } = await supabase.from('stores').update({ tone, glossary }).eq('shop', shop);
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Core functions
 async function getStore(shop) {
   const { data, error } = await supabase.from('stores').select('*').eq('shop', shop).single();
   if (error) throw new Error('Store not found: ' + shop);
@@ -302,7 +315,6 @@ app.post('/webhook/product-create', async (req, res) => {
     for (const lang of locales) {
       try {
         await localizeProduct(shop, token, product.id, lang.targetLang, lang.locale, tone, glossary);
-        console.log(`Webhook — localized ${product.title} in ${lang.targetLang}`);
       } catch (err) {
         console.error(`Webhook error ${lang.locale}:`, err.message);
       }
@@ -310,32 +322,6 @@ app.post('/webhook/product-create', async (req, res) => {
     }
   } catch (err) {
     console.error('Webhook error:', err.message);
-  }
-});
-
-app.post('/settings', async (req, res) => {
-  const { shop, tone, glossary } = req.body;
-  try {
-    const { error } = await supabase.from('stores').update({ tone, glossary }).eq('shop', shop);
-    if (error) throw error;
-    res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.get('/status', async (req, res) => {
-  const { shop } = req.query;
-  try {
-    const { data, error } = await supabase
-      .from('translations')
-      .select('locale, status, translated_title, created_at')
-      .eq('shop', shop)
-      .order('created_at', { ascending: false });
-    if (error) throw error;
-    res.json({ total: data.length, translations: data });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
   }
 });
 
