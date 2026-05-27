@@ -5,29 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Getoify — Dashboard</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --cream: #FDFCF9;
-      --cream-bg: #F7F5F0;
-      --cream-mid: #F0EDE6;
-      --border: #EAE7DF;
-      --ink: #1C1B18;
-      --ink-mid: #5C5850;
-      --ink-muted: #8B8070;
-      --ink-faint: #BCB8AF;
-      --accent: #8B7355;
-      --green: #6BAF8A;
-      --amber: #C9A96E;
-      --red: #C97070;
+      --cream: #FDFCF9; --cream-bg: #F7F5F0; --cream-mid: #F0EDE6;
+      --border: #EAE7DF; --ink: #1C1B18; --ink-mid: #5C5850;
+      --ink-muted: #8B8070; --ink-faint: #BCB8AF; --accent: #8B7355;
+      --green: #6BAF8A; --amber: #C9A96E; --red: #C97070;
     }
     html, body { height: 100%; font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--ink); background: var(--cream-bg); -webkit-font-smoothing: antialiased; }
-
     .app { display: grid; grid-template-columns: 220px 1fr; height: 100vh; }
-
-    /* SIDEBAR */
     .sb { background: var(--cream); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
     .sb-logo { padding: 18px 20px 14px; border-bottom: 1px solid var(--border); font-size: 15px; font-weight: 500; color: var(--ink); letter-spacing: -0.01em; }
     .sb-logo span { color: var(--accent); }
@@ -36,7 +24,7 @@
     .sb-store-name { font-size: 12px; color: var(--ink-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .sb-nav { padding: 10px; flex: 1; overflow-y: auto; }
     .sb-lbl { font-size: 10px; font-weight: 500; letter-spacing: 0.07em; color: var(--ink-faint); text-transform: uppercase; padding: 10px 8px 4px; }
-    .sb-item { display: flex; align-items: center; gap: 9px; padding: 7px 10px; border-radius: 5px; font-size: 13px; color: var(--ink-muted); cursor: pointer; margin-bottom: 1px; transition: background 0.1s; text-decoration: none; }
+    .sb-item { display: flex; align-items: center; gap: 9px; padding: 7px 10px; border-radius: 5px; font-size: 13px; color: var(--ink-muted); cursor: pointer; margin-bottom: 1px; text-decoration: none; transition: background 0.1s; }
     .sb-item:hover { background: var(--cream-mid); color: var(--ink); }
     .sb-item.act { background: var(--cream-mid); color: var(--ink); font-weight: 500; }
     .sb-item i { font-size: 15px; opacity: 0.7; }
@@ -44,8 +32,6 @@
     .sb-foot { padding: 12px 20px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 9px; }
     .sb-av { width: 28px; height: 28px; border-radius: 50%; background: var(--cream-mid); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 500; color: var(--accent); flex-shrink: 0; }
     .sb-un { font-size: 12px; color: var(--ink-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-    /* MAIN */
     .main { display: flex; flex-direction: column; overflow: hidden; }
     .topbar { background: var(--cream); border-bottom: 1px solid var(--border); padding: 0 22px; height: 50px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
     .tb-title { font-size: 14px; font-weight: 500; color: var(--ink); }
@@ -55,41 +41,27 @@
     .btn-dark { background: var(--ink); color: var(--cream); border-color: var(--ink); }
     .btn-dark:hover { background: #333; }
     .btn i { font-size: 13px; }
-
-    /* BODY */
     .body { padding: 18px 22px; overflow-y: auto; flex: 1; }
-
-    /* METRICS */
     .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
     .mc { background: var(--cream); border: 1px solid var(--border); border-radius: 8px; padding: 13px 15px; }
     .mc-lbl { font-size: 11px; color: var(--ink-faint); margin-bottom: 7px; }
     .mc-val { font-size: 22px; font-weight: 500; color: var(--ink); letter-spacing: -0.02em; line-height: 1; }
     .mc-sub { font-size: 11px; margin-top: 4px; }
-    .c-green { color: #5A9E7A; }
-    .c-amber { color: #A07840; }
-    .c-gray { color: var(--ink-faint); }
-
-    /* ROW 2 */
+    .c-green { color: #5A9E7A; } .c-amber { color: #A07840; } .c-gray { color: var(--ink-faint); }
     .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
     .card { background: var(--cream); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
     .card-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
     .card-title { font-size: 13px; font-weight: 500; color: var(--ink); }
     .card-link { font-size: 11px; color: var(--ink-faint); cursor: pointer; }
     .card-link:hover { color: var(--accent); }
-
-    /* LANG PROGRESS */
     .lang-rows { display: flex; flex-direction: column; gap: 9px; }
     .lr { display: flex; align-items: center; gap: 10px; }
     .lr-flag { font-size: 14px; width: 20px; text-align: center; flex-shrink: 0; }
     .lr-name { font-size: 12px; color: var(--ink); width: 56px; flex-shrink: 0; }
     .lr-track { flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
     .lr-fill { height: 100%; border-radius: 2px; }
-    .f-done { background: var(--green); }
-    .f-mid { background: var(--amber); }
-    .f-low { background: var(--ink-faint); }
+    .f-done { background: var(--green); } .f-mid { background: var(--amber); } .f-low { background: var(--ink-faint); }
     .lr-pct { font-size: 11px; color: var(--ink-faint); min-width: 30px; text-align: right; }
-
-    /* ACTIVITY */
     .act-list { display: flex; flex-direction: column; }
     .al { display: flex; align-items: flex-start; gap: 9px; padding: 7px 0; border-bottom: 1px solid var(--cream-mid); }
     .al:last-child { border-bottom: none; }
@@ -97,8 +69,6 @@
     .al-txt { font-size: 12px; color: var(--ink-mid); line-height: 1.4; }
     .al-txt strong { color: var(--ink); font-weight: 500; }
     .al-time { font-size: 10px; color: var(--ink-faint); margin-top: 2px; }
-
-    /* TABLE */
     .tbl-card { background: var(--cream); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
     .tbl-hd { display: flex; align-items: center; justify-content: space-between; padding: 13px 16px; border-bottom: 1px solid var(--border); }
     table { width: 100%; border-collapse: collapse; }
@@ -108,240 +78,145 @@
     .prod-nm { color: var(--ink); font-weight: 500; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .pill { display: inline-flex; align-items: center; justify-content: center; height: 18px; padding: 0 7px; border-radius: 3px; font-size: 10px; font-weight: 500; }
     .pill-lang { background: var(--cream-mid); color: var(--accent); }
-    .score { width: 32px; height: 18px; display: inline-flex; align-items: center; justify-content: center; border-radius: 3px; font-size: 11px; font-weight: 500; }
-    .sc-hi { background: #E8F3EC; color: #3D7A56; }
-    .sc-mi { background: #F5EDDE; color: #8B6030; }
-    .sc-lo { background: #F5E8E8; color: #9B3535; }
     .st { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; }
     .st-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
     .d-gr { background: var(--green); }
-    .d-am { background: var(--amber); }
-    .d-rd { background: var(--red); }
-
-    /* LOADING STATE */
     .loading { text-align: center; padding: 2rem; color: var(--ink-faint); font-size: 13px; }
-
-    @media (max-width: 768px) {
-      .app { grid-template-columns: 1fr; }
-      .sb { display: none; }
-      .metrics { grid-template-columns: repeat(2, 1fr); }
-      .row2 { grid-template-columns: 1fr; }
-    }
+    @media (max-width: 768px) { .app { grid-template-columns: 1fr; } .sb { display: none; } .metrics { grid-template-columns: repeat(2, 1fr); } .row2 { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
-
 <div class="app">
-
-  <!-- SIDEBAR -->
   <aside class="sb">
     <div class="sb-logo">Getoify<span>.</span></div>
-    <div class="sb-store">
-      <div class="sb-dot"></div>
-      <div class="sb-store-name" id="sb-shop">Loading...</div>
-    </div>
+    <div class="sb-store"><div class="sb-dot"></div><div class="sb-store-name" id="sb-shop">Loading...</div></div>
     <nav class="sb-nav">
-      <a class="sb-item act" href="/dashboard"><i class="ti ti-layout-dashboard"></i>Overview</a>
-      <a class="sb-item" onclick="goto('/tone')" style="cursor:pointer"><i class="ti ti-stack"></i>Products</a>
+      <a class="sb-item act" href="#" onclick="nav(event,'/dashboard')"><i class="ti ti-layout-dashboard"></i>Overview</a>
+      <a class="sb-item" href="#" onclick="nav(event,'/products')"><i class="ti ti-stack"></i>Products</a>
       <div class="sb-lbl">Setup</div>
-      <a class="sb-item" onclick="goto('/tone')" style="cursor:pointer"><i class="ti ti-adjustments"></i>Tone Setup</a>
-      <a class="sb-item" onclick="goto('/tone')" style="cursor:pointer"><i class="ti ti-book"></i>Glossary</a>
+      <a class="sb-item" href="#" onclick="nav(event,'/tone')"><i class="ti ti-adjustments"></i>Tone Setup</a>
+      <a class="sb-item" href="#" onclick="nav(event,'/glossary')"><i class="ti ti-book"></i>Glossary</a>
       <div class="sb-lbl">Automation</div>
-      <a class="sb-item" onclick="goto('/tone')" style="cursor:pointer"><i class="ti ti-refresh"></i>Auto-Sync</a>
-      <a class="sb-item" onclick="goto('/tone')" style="cursor:pointer"><i class="ti ti-shield-check"></i>QA Rules</a>
-      <a class="sb-item" onclick="goto('/tone')" style="cursor:pointer"><i class="ti ti-search"></i>SEO Pack</a>
+      <a class="sb-item" href="#"><i class="ti ti-refresh"></i>Auto-Sync</a>
+      <a class="sb-item" href="#"><i class="ti ti-shield-check"></i>QA Rules</a>
+      <a class="sb-item" href="#"><i class="ti ti-search"></i>SEO Pack</a>
       <div class="sb-lbl">Account</div>
-      <a class="sb-item" onclick="goto('/tone')" style="cursor:pointer"><i class="ti ti-settings"></i>Settings</a>
+      <a class="sb-item" href="#"><i class="ti ti-settings"></i>Settings</a>
     </nav>
-    <div class="sb-foot">
-      <div class="sb-av" id="sb-av">?</div>
-      <div class="sb-un" id="sb-shop2">—</div>
-    </div>
+    <div class="sb-foot"><div class="sb-av" id="sb-av">?</div><div class="sb-un" id="sb-shop2">—</div></div>
   </aside>
 
-  <!-- MAIN -->
   <div class="main">
     <div class="topbar">
       <div class="tb-title">Overview</div>
       <div class="tb-right">
-        <button class="btn" id="btn-store"><i class="ti ti-plug"></i><span id="tb-shop">—</span></button>
-        <button class="btn btn-dark" id="btn-run" onclick="runBulk()">
-          <i class="ti ti-player-play"></i>Run bulk translate
-        </button>
+        <button class="btn"><i class="ti ti-plug"></i><span id="tb-shop">—</span></button>
+        <button class="btn btn-dark" id="btn-run" onclick="runBulk()"><i class="ti ti-player-play"></i>Run bulk translate</button>
       </div>
     </div>
-
     <div class="body">
-
-      <!-- METRICS -->
       <div class="metrics">
-        <div class="mc">
-          <div class="mc-lbl">Total products</div>
-          <div class="mc-val" id="m-total">—</div>
-          <div class="mc-sub c-gray" id="m-total-sub">Loading...</div>
-        </div>
-        <div class="mc">
-          <div class="mc-lbl">Localized</div>
-          <div class="mc-val" id="m-localized">—</div>
-          <div class="mc-sub c-green" id="m-localized-sub">—</div>
-        </div>
-        <div class="mc">
-          <div class="mc-lbl">Flagged (QA)</div>
-          <div class="mc-val" id="m-flagged">—</div>
-          <div class="mc-sub c-amber">Need review</div>
-        </div>
-        <div class="mc">
-          <div class="mc-lbl">Translations done</div>
-          <div class="mc-val" id="m-done">—</div>
-          <div class="mc-sub c-gray">Total records</div>
-        </div>
+        <div class="mc"><div class="mc-lbl">Total products</div><div class="mc-val" id="m-total">—</div><div class="mc-sub c-gray" id="m-total-sub">Loading...</div></div>
+        <div class="mc"><div class="mc-lbl">Localized</div><div class="mc-val" id="m-localized">—</div><div class="mc-sub c-green" id="m-localized-sub">—</div></div>
+        <div class="mc"><div class="mc-lbl">Flagged (QA)</div><div class="mc-val" id="m-flagged">—</div><div class="mc-sub c-amber">Need review</div></div>
+        <div class="mc"><div class="mc-lbl">Translations done</div><div class="mc-val" id="m-done">—</div><div class="mc-sub c-gray">Total records</div></div>
       </div>
-
-      <!-- ROW 2 -->
       <div class="row2">
         <div class="card">
-          <div class="card-hd">
-            <div class="card-title">Progress by language</div>
-            <div class="card-link">Details</div>
-          </div>
-          <div class="lang-rows" id="lang-rows">
-            <div class="loading">Loading languages...</div>
-          </div>
+          <div class="card-hd"><div class="card-title">Progress by language</div><div class="card-link">Details</div></div>
+          <div class="lang-rows" id="lang-rows"><div class="loading">Loading...</div></div>
         </div>
         <div class="card">
-          <div class="card-hd">
-            <div class="card-title">Recent activity</div>
-          </div>
-          <div class="act-list" id="act-list">
-            <div class="loading">Loading activity...</div>
-          </div>
+          <div class="card-hd"><div class="card-title">Recent activity</div></div>
+          <div class="act-list" id="act-list"><div class="loading">Loading...</div></div>
         </div>
       </div>
-
-      <!-- TABLE -->
       <div class="tbl-card">
-        <div class="tbl-hd">
-          <div class="card-title">Recent translations</div>
-          <div class="card-link">View all</div>
-        </div>
+        <div class="tbl-hd"><div class="card-title">Recent translations</div><div class="card-link">View all</div></div>
         <table>
-          <thead>
-            <tr>
-              <th>PRODUCT</th>
-              <th>LANGUAGE</th>
-              <th>STATUS</th>
-              <th>DATE</th>
-            </tr>
-          </thead>
-          <tbody id="tbl-body">
-            <tr><td colspan="4" class="loading">Loading...</td></tr>
-          </tbody>
+          <thead><tr><th>PRODUCT</th><th>LANGUAGE</th><th>STATUS</th><th>DATE</th></tr></thead>
+          <tbody id="tbl-body"><tr><td colspan="4" class="loading">Loading...</td></tr></tbody>
         </table>
       </div>
-
     </div>
   </div>
 </div>
 
 <script>
   const shop = new URLSearchParams(window.location.search).get('shop') || localStorage.getItem('getoify_shop');
+  const token = new URLSearchParams(window.location.search).get('token') || localStorage.getItem('getoify_token');
   if (shop) localStorage.setItem('getoify_shop', shop);
+  if (token) localStorage.setItem('getoify_token', token);
 
-  // Set shop name
   if (shop) {
     document.getElementById('sb-shop').textContent = shop;
     document.getElementById('sb-shop2').textContent = shop;
     document.getElementById('tb-shop').textContent = shop.replace('.myshopify.com', '');
-    const av = shop.substring(0, 2).toUpperCase();
-    document.getElementById('sb-av').textContent = av;
+    document.getElementById('sb-av').textContent = shop.substring(0, 2).toUpperCase();
   } else {
     window.location.href = '/';
   }
 
+  function nav(e, page) {
+    e.preventDefault();
+    const s = localStorage.getItem('getoify_shop');
+    window.location.href = page + (s ? '?shop=' + s : '');
+  }
+
   async function loadData() {
     try {
-      // Load status from Supabase via backend
       const res = await fetch('/status?shop=' + shop);
       const data = await res.json();
-
       document.getElementById('m-done').textContent = data.total;
+      document.getElementById('m-localized').textContent = data.total;
+      document.getElementById('m-localized-sub').textContent = 'Records saved';
+      document.getElementById('m-flagged').textContent = '0';
+      document.getElementById('m-total').textContent = '—';
+      document.getElementById('m-total-sub').textContent = 'Run translate to update';
 
-      // Count by locale
       const byLocale = {};
-      data.translations.forEach(t => {
-        byLocale[t.locale] = (byLocale[t.locale] || 0) + 1;
-      });
-
-      // Lang progress
+      data.translations.forEach(t => { byLocale[t.locale] = (byLocale[t.locale] || 0) + 1; });
       const langNames = { de: '🇩🇪 German', fr: '🇫🇷 French', it: '🇮🇹 Italian', es: '🇪🇸 Spanish', nl: '🇳🇱 Dutch', pt: '🇵🇹 Portuguese' };
       const total = data.total || 1;
       const langHtml = Object.entries(byLocale).map(([locale, count]) => {
         const pct = Math.round((count / total) * 100);
         const parts = (langNames[locale] || locale).split(' ');
-        const flag = parts[0];
-        const name = parts[1] || locale;
+        const flag = parts[0]; const name = parts[1] || locale;
         const cls = pct > 70 ? 'f-done' : pct > 30 ? 'f-mid' : 'f-low';
-        return `<div class="lr">
-          <div class="lr-flag">${flag}</div>
-          <div class="lr-name">${name}</div>
-          <div class="lr-track"><div class="lr-fill ${cls}" style="width:${Math.min(pct,100)}%"></div></div>
-          <div class="lr-pct">${count}</div>
-        </div>`;
+        return `<div class="lr"><div class="lr-flag">${flag}</div><div class="lr-name">${name}</div><div class="lr-track"><div class="lr-fill ${cls}" style="width:${Math.min(pct,100)}%"></div></div><div class="lr-pct">${count}</div></div>`;
       }).join('');
       document.getElementById('lang-rows').innerHTML = langHtml || '<div class="loading">No languages yet</div>';
 
-      // Metrics
-      document.getElementById('m-localized').textContent = data.total;
-      document.getElementById('m-localized-sub').textContent = 'Records saved';
-      document.getElementById('m-flagged').textContent = '0';
-      document.getElementById('m-total').textContent = '—';
-      document.getElementById('m-total-sub').textContent = 'Connect to see';
-
-      // Activity
-      const recent = data.translations.slice(0, 4);
-      const actHtml = recent.map(t => `
-        <div class="al">
-          <div class="al-ico"><i class="ti ti-check"></i></div>
-          <div>
-            <div class="al-txt"><strong>${t.translated_title || 'Product'}</strong> — ${t.locale.toUpperCase()}</div>
-            <div class="al-time">${new Date(t.created_at).toLocaleString()}</div>
-          </div>
-        </div>
-      `).join('');
+      const actHtml = data.translations.slice(0, 4).map(t => `
+        <div class="al"><div class="al-ico"><i class="ti ti-check"></i></div><div>
+        <div class="al-txt"><strong>${t.translated_title || 'Product'}</strong> — ${t.locale.toUpperCase()}</div>
+        <div class="al-time">${new Date(t.created_at).toLocaleString()}</div></div></div>`).join('');
       document.getElementById('act-list').innerHTML = actHtml || '<div class="loading">No activity yet</div>';
 
-      // Table
       const tblHtml = data.translations.slice(0, 8).map(t => `
-        <tr>
-          <td><div class="prod-nm">${t.translated_title || '—'}</div></td>
-          <td><span class="pill pill-lang">${t.locale.toUpperCase()}</span></td>
-          <td><div class="st"><div class="st-dot d-gr"></div>${t.status}</div></td>
-          <td>${new Date(t.created_at).toLocaleDateString()}</td>
-        </tr>
-      `).join('');
+        <tr><td><div class="prod-nm">${t.translated_title || '—'}</div></td>
+        <td><span class="pill pill-lang">${t.locale.toUpperCase()}</span></td>
+        <td><div class="st"><div class="st-dot d-gr"></div>${t.status}</div></td>
+        <td>${new Date(t.created_at).toLocaleDateString()}</td></tr>`).join('');
       document.getElementById('tbl-body').innerHTML = tblHtml || '<tr><td colspan="4" class="loading">No translations yet</td></tr>';
-
-    } catch(e) {
-      console.error('Load error:', e);
-    }
+    } catch(e) { console.error('Load error:', e); }
   }
 
   async function runBulk() {
     const btn = document.getElementById('btn-run');
-    const token = localStorage.getItem('getoify_token');
-    if (!token) { alert('Please reconnect your store first.'); return; }
-
+    const tok = localStorage.getItem('getoify_token');
+    if (!tok) { alert('Please reconnect your store first.'); return; }
     btn.textContent = 'Running...';
     btn.disabled = true;
-
     try {
       await fetch('/bulk-localize-all', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shop, token, tone: 'professional and elegant', glossary: 'checkout, Shopify' })
+        body: JSON.stringify({ shop, token: tok, tone: 'professional and elegant', glossary: 'checkout, Shopify' })
       });
-      btn.textContent = 'Done!';
-      setTimeout(() => { btn.innerHTML = '<i class="ti ti-player-play"></i>Run bulk translate'; btn.disabled = false; loadData(); }, 2000);
+      btn.innerHTML = '<i class="ti ti-player-play"></i>Run bulk translate';
+      btn.disabled = false;
+      loadData();
     } catch(e) {
       btn.innerHTML = '<i class="ti ti-player-play"></i>Run bulk translate';
       btn.disabled = false;
@@ -350,6 +225,5 @@
 
   loadData();
 </script>
-
 </body>
 </html>
