@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Getoify — Connect your Shopify store</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --cream: #FAF8F4;
+      --cream-mid: #EEECEA;
+      --cream-border: #e0ddd6;
+      --cream-border-strong: #d0cec6;
+      --ink: #1a1a18;
+      --ink-mid: #4a4a42;
+      --ink-muted: #7a7a6e;
+      --ink-subtle: #9a9a8e;
+      --ink-faint: #b0ada5;
+      --white: #ffffff;
+      --radius-sm: 6px;
+      --radius-md: 8px;
+    }
+    html, body { background: var(--cream); color: var(--ink); font-family: 'DM Sans', sans-serif; font-size: 16px; -webkit-font-smoothing: antialiased; }
+    body { min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+    .nav { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 1.25rem 1.5rem; border-bottom: 0.5px solid var(--cream-border); background: var(--cream); position: sticky; top: 0; z-index: 10; }
+    .logo { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 500; color: var(--ink); letter-spacing: -0.3px; text-decoration: none; }
+    .nav-right { display: flex; align-items: center; gap: 8px; }
+    .badge { font-size: 10px; font-weight: 500; letter-spacing: 0.08em; color: var(--ink-muted); background: var(--cream-mid); border-radius: 4px; padding: 3px 7px; text-transform: uppercase; }
+    .nav-tag { font-size: 12px; font-weight: 400; color: var(--ink-muted); }
+    main { width: 100%; max-width: 480px; padding: 2.5rem 1.5rem 2rem; display: flex; flex-direction: column; flex: 1; }
+    .eyebrow { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-muted); margin-bottom: 1rem; }
+    .eyebrow-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--ink); flex-shrink: 0; }
+    h1 { font-family: 'Playfair Display', serif; font-size: clamp(24px, 7vw, 30px); font-weight: 400; line-height: 1.22; letter-spacing: -0.5px; color: var(--ink); margin-bottom: 0.75rem; }
+    h1 em { font-style: italic; color: var(--ink-mid); }
+    .sub { font-size: 14px; font-weight: 300; color: var(--ink-muted); line-height: 1.65; margin-bottom: 2rem; }
+    .sub strong { color: var(--ink); font-weight: 500; }
+    .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 2rem; }
+    .stat { background: var(--cream-mid); border-radius: var(--radius-md); padding: 0.75rem 1rem; }
+    .stat-num { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 400; color: var(--ink); line-height: 1; margin-bottom: 3px; }
+    .stat-label { font-size: 11px; font-weight: 400; color: var(--ink-subtle); letter-spacing: 0.02em; }
+    .form-label { font-size: 11px; font-weight: 500; color: var(--ink-mid); letter-spacing: 0.06em; text-transform: uppercase; display: block; margin-bottom: 6px; }
+    .input-wrap { position: relative; margin-bottom: 10px; }
+    .input-prefix { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 13px; color: var(--ink-subtle); font-weight: 400; pointer-events: none; user-select: none; }
+    .store-input { width: 100%; background: var(--white); border: 0.5px solid var(--cream-border-strong); border-radius: var(--radius-md); font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 400; color: var(--ink); padding: 13px 12px 13px 78px; outline: none; transition: border-color 0.15s ease; -webkit-appearance: none; }
+    .store-input:focus { border-color: var(--ink); }
+    .store-input::placeholder { color: #c0bdb5; }
+    .connect-btn { width: 100%; background: var(--ink); color: var(--cream); border: none; border-radius: var(--radius-md); font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; padding: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; letter-spacing: 0.01em; margin-bottom: 0.625rem; transition: background 0.15s ease, transform 0.1s ease; -webkit-appearance: none; }
+    .connect-btn:hover { background: #2a2a26; }
+    .connect-btn:active { transform: scale(0.99); }
+    .connect-btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+    .free-note { text-align: center; font-size: 12px; font-weight: 400; color: var(--ink-subtle); margin-bottom: 2rem; }
+    .flags { display: flex; align-items: center; justify-content: center; gap: 5px; flex-wrap: wrap; margin-bottom: 2rem; }
+    .flag { font-size: 21px; line-height: 1; opacity: 0.82; }
+    .divider { height: 0.5px; background: var(--cream-border); width: 100%; margin-bottom: 1.5rem; }
+    .features { display: flex; flex-direction: column; gap: 11px; margin-bottom: 2rem; }
+    .feature { display: flex; align-items: flex-start; gap: 10px; }
+    .feature-icon { width: 17px; height: 17px; min-width: 17px; color: var(--ink-mid); margin-top: 2px; }
+    .feature-text { font-size: 13px; font-weight: 400; color: var(--ink-mid); line-height: 1.55; }
+    footer { width: 100%; border-top: 0.5px solid var(--cream-border); padding: 1rem 1.5rem; text-align: center; font-size: 11px; font-weight: 400; color: var(--ink-faint); background: var(--cream); }
+    @media (min-width: 600px) { main { padding: 3rem 2rem 2.5rem; } h1 { font-size: 32px; } }
+  </style>
+</head>
+<body>
+
+  <nav class="nav" role="banner">
+    <a class="logo" href="#">Getoify</a>
+    <div class="nav-right">
+      <span class="badge">v2.0</span>
+      <span class="nav-tag">AI · Shopify native</span>
+    </div>
+  </nav>
+
+  <main>
+    <div class="eyebrow" aria-hidden="true">
+      <span class="eyebrow-dot"></span>
+      Connect your store
+    </div>
+
+    <h1>Localize <em>everything</em>,<br>automatically.</h1>
+
+    <p class="sub">
+      <strong>12,000 products × 14 languages</strong> — translated with your brand tone and SEO baked in.
+    </p>
+
+    <div class="stats" role="list" aria-label="Key figures">
+      <div class="stat" role="listitem">
+        <div class="stat-num">12K+</div>
+        <div class="stat-label">Products</div>
+      </div>
+      <div class="stat" role="listitem">
+        <div class="stat-num">14</div>
+        <div class="stat-label">Languages</div>
+      </div>
+      <div class="stat" role="listitem">
+        <div class="stat-num">~2 min</div>
+        <div class="stat-label">Setup time</div>
+      </div>
+    </div>
+
+    <label class="form-label" for="store-url">Shopify store URL</label>
+    <div class="input-wrap">
+      <span class="input-prefix" aria-hidden="true">https://</span>
+      <input
+        class="store-input"
+        id="store-url"
+        type="url"
+        placeholder="maison-celio.myshopify.com"
+        autocomplete="off"
+        spellcheck="false"
+        autocapitalize="none"
+      />
+    </div>
+
+    <button class="connect-btn" type="button" onclick="handleConnect()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M8 12h8M14 9l3 3-3 3"/>
+      </svg>
+      Connect Shopify store
+    </button>
+
+    <p class="free-note">Free · No credit card required</p>
+
+    <div class="flags" aria-label="Supported languages">
+      <span class="flag" title="French">🇫🇷</span>
+      <span class="flag" title="German">🇩🇪</span>
+      <span class="flag" title="Italian">🇮🇹</span>
+      <span class="flag" title="Spanish">🇪🇸</span>
+      <span class="flag" title="Dutch">🇳🇱</span>
+      <span class="flag" title="Portuguese">🇵🇹</span>
+      <span class="flag" title="Japanese">🇯🇵</span>
+      <span class="flag" title="Arabic">🇸🇦</span>
+      <span class="flag" title="Chinese">🇨🇳</span>
+      <span class="flag" title="Brazilian Portuguese">🇧🇷</span>
+    </div>
+
+    <div class="divider" role="separator"></div>
+
+    <ul class="features" aria-label="Key features">
+      <li class="feature">
+        <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span class="feature-text">Your tone, your words — in every language</span>
+      </li>
+      <li class="feature">
+        <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span class="feature-text">Google-ready titles and descriptions for each country</span>
+      </li>
+      <li class="feature">
+        <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span class="feature-text">Update once, translated everywhere</span>
+      </li>
+    </ul>
+  </main>
+
+  <footer>
+    &copy; 2026 Getoify — All rights reserved
+  </footer>
+
+  <script>
+    function handleConnect() {
+      const input = document.getElementById('store-url');
+      let val = input.value.trim();
+
+      if (!val) {
+        input.style.borderColor = '#c0392b';
+        input.focus();
+        setTimeout(() => { input.style.borderColor = ''; }, 1800);
+        return;
+      }
+
+      val = val.replace('https://', '').replace('http://', '').replace('.myshopify.com', '');
+
+      const btn = document.querySelector('.connect-btn');
+      btn.textContent = 'Connecting...';
+      btn.disabled = true;
+
+      window.location.href = 'https://getoify.vercel.app/auth?shop=' + val + '.myshopify.com';
+    }
+  </script>
+
+</body>
+</html>

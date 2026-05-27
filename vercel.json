@@ -1,0 +1,6 @@
+{} {
+  "rewrites": [
+    { "source": "/", "destination": "/public/index.html" },
+    { "source": "/((?!auth|products|localize|bulk-localize|bulk-localize-all|locales|digest|status|settings|webhook).*)", "destination": "/public/index.html" }
+  ]
+}
