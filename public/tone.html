@@ -10,8 +10,8 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
       --cream: #FDFCF9; --cream-bg: #F7F5F0; --cream-mid: #F0EDE6;
-      --border: #EAE7DF; --ink: #1C1B18; --ink-mid: #5C5850;
-      --ink-muted: #8B8070; --ink-faint: #BCB8AF; --accent: #8B7355; --green: #6BAF8A;
+      --border: #E0DDD6; --ink: #1C1B18; --ink-mid: #3D3C38;
+      --ink-muted: #5C5850; --ink-faint: #8B8070; --accent: #8B7355; --green: #6BAF8A;
     }
     html, body { height: 100%; font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--ink); background: var(--cream-bg); -webkit-font-smoothing: antialiased; }
     .app { display: grid; grid-template-columns: 220px 1fr; height: 100vh; }
@@ -22,11 +22,11 @@
     .sb-dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; flex-shrink: 0; }
     .sb-store-name { font-size: 12px; color: var(--ink-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .sb-nav { padding: 10px; flex: 1; }
-    .sb-lbl { font-size: 10px; font-weight: 500; letter-spacing: 0.07em; color: var(--ink-faint); text-transform: uppercase; padding: 10px 8px 4px; }
-    .sb-item { display: flex; align-items: center; gap: 9px; padding: 7px 10px; border-radius: 5px; font-size: 13px; color: var(--ink-muted); cursor: pointer; margin-bottom: 1px; text-decoration: none; transition: background 0.1s; }
+    .sb-lbl { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; color: var(--ink-faint); text-transform: uppercase; padding: 12px 8px 4px; }
+    .sb-item { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 5px; font-size: 13px; color: var(--ink-muted); cursor: pointer; margin-bottom: 1px; text-decoration: none; transition: background 0.1s; }
     .sb-item:hover { background: var(--cream-mid); color: var(--ink); }
     .sb-item.act { background: var(--cream-mid); color: var(--ink); font-weight: 500; }
-    .sb-item i { font-size: 15px; opacity: 0.7; }
+    .sb-item i { font-size: 15px; opacity: 0.8; }
     .sb-item.act i { opacity: 1; }
     .sb-foot { padding: 12px 20px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 9px; }
     .sb-av { width: 28px; height: 28px; border-radius: 50%; background: var(--cream-mid); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 500; color: var(--accent); flex-shrink: 0; }
@@ -38,21 +38,22 @@
     .btn-save { background: var(--accent); color: var(--cream); border: none; border-radius: 5px; padding: 7px 16px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background 0.1s; }
     .btn-save:hover { background: #6B5840; }
     .btn-outline { background: var(--cream); color: var(--ink); border: 1px solid var(--border); border-radius: 5px; padding: 6px 12px; font-size: 12px; cursor: pointer; font-family: 'DM Sans', sans-serif; display: flex; align-items: center; gap: 5px; }
+    .btn-outline:hover { background: var(--cream-mid); }
     .body { padding: 24px; overflow-y: auto; flex: 1; }
     .body-inner { max-width: 620px; }
     .section { background: var(--cream); border: 1px solid var(--border); border-radius: 8px; padding: 18px 20px; margin-bottom: 12px; }
-    .section-title { font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 3px; }
-    .section-desc { font-size: 12px; color: var(--ink-faint); margin-bottom: 14px; line-height: 1.5; }
+    .section-title { font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 4px; }
+    .section-desc { font-size: 12px; color: var(--ink-muted); margin-bottom: 14px; line-height: 1.55; }
     .toggle-row { display: flex; gap: 7px; flex-wrap: wrap; }
-    .toggle { padding: 6px 14px; border-radius: 5px; border: 1px solid var(--border); background: var(--cream-bg); font-size: 12px; color: var(--ink-muted); cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.1s; }
+    .toggle { padding: 6px 14px; border-radius: 5px; border: 1px solid var(--border); background: var(--cream-bg); font-size: 12px; color: var(--ink-muted); cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.1s; font-weight: 500; }
     .toggle:hover { border-color: #C8BFB0; color: var(--ink); }
     .toggle.on { background: var(--accent); color: var(--cream); border-color: var(--accent); }
-    .field-label { font-size: 10px; font-weight: 500; color: var(--ink-muted); letter-spacing: 0.06em; text-transform: uppercase; display: block; margin-bottom: 6px; }
+    .field-label { font-size: 10px; font-weight: 600; color: var(--ink-muted); letter-spacing: 0.06em; text-transform: uppercase; display: block; margin-bottom: 6px; }
     .field-input { width: 100%; border: 1px solid var(--border); background: var(--cream-bg); border-radius: 5px; padding: 10px 12px; font-size: 13px; color: var(--ink); outline: none; font-family: 'DM Sans', sans-serif; resize: vertical; transition: border-color 0.1s; }
     .field-input:focus { border-color: #C8BFB0; }
     .field-input::placeholder { color: var(--ink-faint); }
     .preview-box { background: var(--cream-mid); border-radius: 6px; padding: 12px 14px; margin-top: 10px; }
-    .preview-label { font-size: 10px; font-weight: 500; color: var(--accent); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 5px; }
+    .preview-label { font-size: 10px; font-weight: 600; color: var(--accent); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 5px; }
     .preview-text { font-size: 12px; color: var(--ink-mid); line-height: 1.6; }
     .toast { position: fixed; bottom: 24px; right: 24px; background: var(--ink); color: var(--cream); padding: 10px 18px; border-radius: 6px; font-size: 13px; opacity: 0; transform: translateY(10px); transition: all 0.2s; pointer-events: none; }
     .toast.show { opacity: 1; transform: translateY(0); }
@@ -60,20 +61,16 @@
   </style>
 </head>
 <body>
-
 <div class="app">
   <aside class="sb">
     <div class="sb-logo">Getoify<span>.</span></div>
-    <div class="sb-store">
-      <div class="sb-dot"></div>
-      <div class="sb-store-name" id="sb-shop">Loading...</div>
-    </div>
+    <div class="sb-store"><div class="sb-dot"></div><div class="sb-store-name" id="sb-shop">Loading...</div></div>
     <nav class="sb-nav">
-      <a class="sb-item" href="/dashboard"><i class="ti ti-layout-dashboard"></i>Overview</a>
-      <a class="sb-item" href="#"><i class="ti ti-stack"></i>Products</a>
+      <a class="sb-item" href="#" onclick="nav(event,'/dashboard')"><i class="ti ti-layout-dashboard"></i>Overview</a>
+      <a class="sb-item" href="#" onclick="nav(event,'/products-page')"><i class="ti ti-stack"></i>Products</a>
       <div class="sb-lbl">Setup</div>
-      <a class="sb-item act" href="/tone"><i class="ti ti-adjustments"></i>Tone Setup</a>
-      <a class="sb-item" href="/glossary"><i class="ti ti-book"></i>Glossary</a>
+      <a class="sb-item act" href="#" onclick="nav(event,'/tone')"><i class="ti ti-adjustments"></i>Tone Setup</a>
+      <a class="sb-item" href="#" onclick="nav(event,'/glossary')"><i class="ti ti-book"></i>Glossary</a>
       <div class="sb-lbl">Automation</div>
       <a class="sb-item" href="#"><i class="ti ti-refresh"></i>Auto-Sync</a>
       <a class="sb-item" href="#"><i class="ti ti-shield-check"></i>QA Rules</a>
@@ -81,24 +78,18 @@
       <div class="sb-lbl">Account</div>
       <a class="sb-item" href="#"><i class="ti ti-settings"></i>Settings</a>
     </nav>
-    <div class="sb-foot">
-      <div class="sb-av" id="sb-av">?</div>
-      <div class="sb-un" id="sb-shop2">—</div>
-    </div>
+    <div class="sb-foot"><div class="sb-av" id="sb-av">?</div><div class="sb-un" id="sb-shop2">—</div></div>
   </aside>
-
   <div class="main">
     <div class="topbar">
       <div class="tb-title">Tone Setup</div>
       <div class="tb-right">
-        <button class="btn-outline" onclick="window.location.href='/dashboard'"><i class="ti ti-arrow-left"></i>Back</button>
+        <button class="btn-outline" onclick="nav(event,'/dashboard')"><i class="ti ti-arrow-left"></i>Back</button>
         <button class="btn-save" onclick="saveSettings()">Save changes</button>
       </div>
     </div>
-
     <div class="body">
       <div class="body-inner">
-
         <div class="section">
           <div class="section-title">Brand style</div>
           <div class="section-desc">How should your brand speak to customers across all languages?</div>
@@ -111,7 +102,6 @@
             <button class="toggle" data-val="Luxury">Luxury</button>
           </div>
         </div>
-
         <div class="section">
           <div class="section-title">Formality</div>
           <div class="section-desc">Affects French (vous/tu), German (Sie/du), Spanish (usted/tú) and other languages.</div>
@@ -120,7 +110,6 @@
             <button class="toggle" data-val="informal">Informal — tu, du, tú</button>
           </div>
         </div>
-
         <div class="section">
           <div class="section-title">Brand description</div>
           <div class="section-desc">Describe your brand. Claude uses this to match your voice in every language.</div>
@@ -128,99 +117,54 @@
           <textarea class="field-input" id="brand-desc" rows="3" placeholder="e.g. We are a premium French skincare brand. Elegant, natural, and modern. We speak to conscious women who value quality over price."></textarea>
           <div class="preview-box">
             <div class="preview-label">Claude prompt preview</div>
-            <div class="preview-text" id="preview-text">Tone: elegant and formal. Translate with the brand voice described above. Never use words that feel cheap or promotional.</div>
+            <div class="preview-text" id="preview-text">Tone: elegant and formal. Translate with the brand voice described above.</div>
           </div>
         </div>
-
         <div class="section">
           <div class="section-title">Forbidden words</div>
           <div class="section-desc">These words will never appear in any translation.</div>
           <label class="field-label">Never use</label>
           <textarea class="field-input" id="forbidden" rows="2" placeholder="e.g. cheap, discount, sale, promo, deal, offer"></textarea>
         </div>
-
         <div class="section">
           <div class="section-title">Custom instructions</div>
           <div class="section-desc">Specific rules Claude will follow exactly in every translation.</div>
           <label class="field-label">Additional instructions</label>
           <textarea class="field-input" id="custom" rows="3" placeholder="e.g. Always mention made in France. Never use exclamation marks. Keep product names in French."></textarea>
         </div>
-
       </div>
     </div>
   </div>
 </div>
-
 <div class="toast" id="toast">Settings saved</div>
-
 <script>
   const shop = new URLSearchParams(window.location.search).get('shop') || localStorage.getItem('getoify_shop');
-  if (shop) {
-    document.getElementById('sb-shop').textContent = shop;
-    document.getElementById('sb-shop2').textContent = shop;
-    document.getElementById('sb-av').textContent = shop.substring(0, 2).toUpperCase();
-  }
-
-  // Single select toggles
+  if (shop) { localStorage.setItem('getoify_shop', shop); document.getElementById('sb-shop').textContent = shop; document.getElementById('sb-shop2').textContent = shop; document.getElementById('sb-av').textContent = shop.substring(0, 2).toUpperCase(); }
+  function nav(e, page) { e.preventDefault(); window.location.href = page + '?shop=' + shop; }
   function initToggles(groupId) {
-    const btns = document.querySelectorAll(`#${groupId} .toggle`);
-    btns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        btns.forEach(b => b.classList.remove('on'));
-        btn.classList.add('on');
-        updatePreview();
-      });
-    });
+    const btns = document.querySelectorAll('#' + groupId + ' .toggle');
+    btns.forEach(btn => { btn.addEventListener('click', () => { btns.forEach(b => b.classList.remove('on')); btn.classList.add('on'); updatePreview(); }); });
   }
-  initToggles('style-toggles');
-  initToggles('formality-toggles');
-
-  function getSelected(groupId) {
-    const on = document.querySelector(`#${groupId} .toggle.on`);
-    return on ? on.dataset.val : '';
-  }
-
+  initToggles('style-toggles'); initToggles('formality-toggles');
+  function getSelected(groupId) { const on = document.querySelector('#' + groupId + ' .toggle.on'); return on ? on.dataset.val : ''; }
   function updatePreview() {
-    const style = getSelected('style-toggles');
-    const formality = getSelected('formality-toggles');
-    const desc = document.getElementById('brand-desc').value;
-    const forbidden = document.getElementById('forbidden').value;
-    let preview = `Tone: ${style.toLowerCase()} and ${formality}.`;
-    if (desc) preview += ` Brand: ${desc.substring(0, 80)}...`;
-    if (forbidden) preview += ` Never use: ${forbidden}.`;
+    const style = getSelected('style-toggles'); const formality = getSelected('formality-toggles');
+    const desc = document.getElementById('brand-desc').value; const forbidden = document.getElementById('forbidden').value;
+    let preview = 'Tone: ' + style.toLowerCase() + ' and ' + formality + '.';
+    if (desc) preview += ' Brand: ' + desc.substring(0, 80) + '...';
+    if (forbidden) preview += ' Never use: ' + forbidden + '.';
     document.getElementById('preview-text').textContent = preview;
   }
-
   document.getElementById('brand-desc').addEventListener('input', updatePreview);
   document.getElementById('forbidden').addEventListener('input', updatePreview);
-
   async function saveSettings() {
-    const tone = `${getSelected('style-toggles').toLowerCase()} and ${getSelected('formality-toggles')}. ${document.getElementById('brand-desc').value} ${document.getElementById('custom').value}`.trim();
+    const tone = (getSelected('style-toggles').toLowerCase() + ' and ' + getSelected('formality-toggles') + '. ' + document.getElementById('brand-desc').value + ' ' + document.getElementById('custom').value).trim();
     const glossary = document.getElementById('forbidden').value;
-
     try {
-      await fetch('/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shop, tone, glossary })
-      });
-      const toast = document.getElementById('toast');
-      toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 2500);
-    } catch(e) {
-      alert('Error saving. Please try again.');
-    }
+      await fetch('/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ shop, tone, glossary }) });
+      const toast = document.getElementById('toast'); toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 2500);
+    } catch(e) { alert('Error saving. Please try again.'); }
   }
-
-  // Load existing settings
-  async function loadSettings() {
-    try {
-      const res = await fetch('/status?shop=' + shop);
-      const data = await res.json();
-    } catch(e) {}
-  }
-  if (shop) loadSettings();
 </script>
-
 </body>
 </html>

@@ -10,8 +10,8 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
       --cream: #FDFCF9; --cream-bg: #F7F5F0; --cream-mid: #F0EDE6;
-      --border: #EAE7DF; --ink: #1C1B18; --ink-mid: #5C5850;
-      --ink-muted: #8B8070; --ink-faint: #BCB8AF; --accent: #8B7355; --green: #6BAF8A;
+      --border: #E0DDD6; --ink: #1C1B18; --ink-mid: #3D3C38;
+      --ink-muted: #5C5850; --ink-faint: #8B8070; --accent: #8B7355; --green: #6BAF8A;
     }
     html, body { height: 100%; font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--ink); background: var(--cream-bg); -webkit-font-smoothing: antialiased; }
     .app { display: grid; grid-template-columns: 220px 1fr; height: 100vh; }
@@ -22,11 +22,11 @@
     .sb-dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; flex-shrink: 0; }
     .sb-store-name { font-size: 12px; color: var(--ink-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .sb-nav { padding: 10px; flex: 1; }
-    .sb-lbl { font-size: 10px; font-weight: 500; letter-spacing: 0.07em; color: var(--ink-faint); text-transform: uppercase; padding: 10px 8px 4px; }
-    .sb-item { display: flex; align-items: center; gap: 9px; padding: 7px 10px; border-radius: 5px; font-size: 13px; color: var(--ink-muted); cursor: pointer; margin-bottom: 1px; text-decoration: none; transition: background 0.1s; }
+    .sb-lbl { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; color: var(--ink-faint); text-transform: uppercase; padding: 12px 8px 4px; }
+    .sb-item { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 5px; font-size: 13px; color: var(--ink-muted); cursor: pointer; margin-bottom: 1px; text-decoration: none; transition: background 0.1s; }
     .sb-item:hover { background: var(--cream-mid); color: var(--ink); }
     .sb-item.act { background: var(--cream-mid); color: var(--ink); font-weight: 500; }
-    .sb-item i { font-size: 15px; opacity: 0.7; }
+    .sb-item i { font-size: 15px; opacity: 0.8; }
     .sb-item.act i { opacity: 1; }
     .sb-foot { padding: 12px 20px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 9px; }
     .sb-av { width: 28px; height: 28px; border-radius: 50%; background: var(--cream-mid); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 500; color: var(--accent); flex-shrink: 0; }
@@ -38,11 +38,12 @@
     .btn-save { background: var(--accent); color: var(--cream); border: none; border-radius: 5px; padding: 7px 16px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background 0.1s; }
     .btn-save:hover { background: #6B5840; }
     .btn-outline { background: var(--cream); color: var(--ink); border: 1px solid var(--border); border-radius: 5px; padding: 6px 12px; font-size: 12px; cursor: pointer; font-family: 'DM Sans', sans-serif; display: flex; align-items: center; gap: 5px; }
+    .btn-outline:hover { background: var(--cream-mid); }
     .body { padding: 24px; overflow-y: auto; flex: 1; }
     .body-inner { max-width: 620px; }
     .section { background: var(--cream); border: 1px solid var(--border); border-radius: 8px; padding: 18px 20px; margin-bottom: 12px; }
-    .section-title { font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 3px; }
-    .section-desc { font-size: 12px; color: #5C5850; margin-bottom: 14px; line-height: 1.5; }
+    .section-title { font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 4px; }
+    .section-desc { font-size: 12px; color: var(--ink-muted); margin-bottom: 14px; line-height: 1.55; }
     .add-row { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
     .add-inp { flex: 1; min-width: 120px; border: 1px solid var(--border); background: var(--cream-bg); border-radius: 5px; padding: 9px 12px; font-size: 13px; color: var(--ink); outline: none; font-family: 'DM Sans', sans-serif; transition: border-color 0.1s; }
     .add-inp:focus { border-color: #C8BFB0; }
@@ -55,31 +56,27 @@
     .term-source { font-size: 13px; font-weight: 500; color: var(--ink); flex: 1; }
     .term-arrow { font-size: 12px; color: var(--ink-faint); flex-shrink: 0; }
     .term-translated { font-size: 13px; color: var(--ink-muted); flex: 1; }
-    .term-lang { font-size: 10px; padding: 2px 7px; background: var(--cream-mid); color: var(--accent); border-radius: 3px; font-weight: 500; flex-shrink: 0; }
+    .term-lang { font-size: 10px; padding: 2px 7px; background: var(--cream-mid); color: var(--accent); border-radius: 3px; font-weight: 600; flex-shrink: 0; }
     .term-del { width: 22px; height: 22px; border: none; background: transparent; color: var(--ink-faint); cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; border-radius: 3px; flex-shrink: 0; line-height: 1; }
     .term-del:hover { background: #F5E8E8; color: #C97070; }
     .empty { text-align: center; padding: 1.5rem; color: var(--ink-faint); font-size: 13px; }
     .info-box { background: var(--cream-mid); border-radius: 6px; padding: 12px 14px; display: flex; gap: 10px; align-items: flex-start; margin-bottom: 12px; }
     .info-box i { color: var(--accent); font-size: 14px; flex-shrink: 0; margin-top: 1px; }
     .info-box p { font-size: 12px; color: var(--ink-mid); line-height: 1.5; }
+    .count-badge { font-size: 11px; background: var(--cream-mid); color: var(--ink-muted); padding: 2px 7px; border-radius: 10px; margin-left: 6px; font-weight: 500; }
     .toast { position: fixed; bottom: 24px; right: 24px; background: var(--ink); color: var(--cream); padding: 10px 18px; border-radius: 6px; font-size: 13px; opacity: 0; transform: translateY(10px); transition: all 0.2s; pointer-events: none; }
     .toast.show { opacity: 1; transform: translateY(0); }
-    .count-badge { font-size: 11px; background: var(--cream-mid); color: var(--ink-muted); padding: 2px 7px; border-radius: 10px; margin-left: 6px; }
     @media (max-width: 768px) { .app { grid-template-columns: 1fr; } .sb { display: none; } }
   </style>
 </head>
 <body>
-
 <div class="app">
   <aside class="sb">
     <div class="sb-logo">Getoify<span>.</span></div>
-    <div class="sb-store">
-      <div class="sb-dot"></div>
-      <div class="sb-store-name" id="sb-shop">Loading...</div>
-    </div>
+    <div class="sb-store"><div class="sb-dot"></div><div class="sb-store-name" id="sb-shop">Loading...</div></div>
     <nav class="sb-nav">
       <a class="sb-item" href="#" onclick="nav(event,'/dashboard')"><i class="ti ti-layout-dashboard"></i>Overview</a>
-      <a class="sb-item" href="#" onclick="nav(event,'/products')"><i class="ti ti-stack"></i>Products</a>
+      <a class="sb-item" href="#" onclick="nav(event,'/products-page')"><i class="ti ti-stack"></i>Products</a>
       <div class="sb-lbl">Setup</div>
       <a class="sb-item" href="#" onclick="nav(event,'/tone')"><i class="ti ti-adjustments"></i>Tone Setup</a>
       <a class="sb-item act" href="#" onclick="nav(event,'/glossary')"><i class="ti ti-book"></i>Glossary</a>
@@ -90,12 +87,8 @@
       <div class="sb-lbl">Account</div>
       <a class="sb-item" href="#"><i class="ti ti-settings"></i>Settings</a>
     </nav>
-    <div class="sb-foot">
-      <div class="sb-av" id="sb-av">?</div>
-      <div class="sb-un" id="sb-shop2">—</div>
-    </div>
+    <div class="sb-foot"><div class="sb-av" id="sb-av">?</div><div class="sb-un" id="sb-shop2">—</div></div>
   </aside>
-
   <div class="main">
     <div class="topbar">
       <div class="tb-title">Glossary</div>
@@ -104,15 +97,12 @@
         <button class="btn-save" onclick="saveGlossary()">Save glossary</button>
       </div>
     </div>
-
     <div class="body">
       <div class="body-inner">
-
         <div class="info-box">
           <i class="ti ti-info-circle"></i>
           <p>Glossary terms are injected into every Claude prompt. Fixed terms are never translated. Custom translations override AI suggestions for specific languages.</p>
         </div>
-
         <div class="section">
           <div class="section-title">Fixed terms <span class="count-badge" id="fixed-count">0</span></div>
           <div class="section-desc">These words are never translated — they stay exactly as written in every language.</div>
@@ -120,11 +110,8 @@
             <input class="add-inp" id="fixed-input" placeholder="e.g. checkout, Merino, Paris, Shopify" onkeydown="if(event.key==='Enter') addFixed()">
             <button class="btn-add" onclick="addFixed()">+ Add term</button>
           </div>
-          <div class="terms-list" id="fixed-list">
-            <div class="empty">No fixed terms yet — add your first one above</div>
-          </div>
+          <div class="terms-list" id="fixed-list"><div class="empty">No fixed terms yet</div></div>
         </div>
-
         <div class="section">
           <div class="section-title">Custom translations <span class="count-badge" id="custom-count">0</span></div>
           <div class="section-desc">Words that should always translate a specific way — overrides AI suggestions.</div>
@@ -142,121 +129,57 @@
             </select>
             <button class="btn-add" onclick="addCustom()">+ Add</button>
           </div>
-          <div class="terms-list" id="custom-list">
-            <div class="empty">No custom translations yet</div>
-          </div>
+          <div class="terms-list" id="custom-list"><div class="empty">No custom translations yet</div></div>
         </div>
-
       </div>
     </div>
   </div>
 </div>
-
 <div class="toast" id="toast">Glossary saved</div>
-
 <script>
   const shop = new URLSearchParams(window.location.search).get('shop') || localStorage.getItem('getoify_shop');
-  if (shop) {
-    localStorage.setItem('getoify_shop', shop);
-    document.getElementById('sb-shop').textContent = shop;
-    document.getElementById('sb-shop2').textContent = shop;
-    document.getElementById('sb-av').textContent = shop.substring(0, 2).toUpperCase();
-  }
-
-  function nav(e, page) {
-    e.preventDefault();
-    const s = localStorage.getItem('getoify_shop');
-    window.location.href = page + (s ? '?shop=' + s : '');
-  }
-
+  if (shop) { localStorage.setItem('getoify_shop', shop); document.getElementById('sb-shop').textContent = shop; document.getElementById('sb-shop2').textContent = shop; document.getElementById('sb-av').textContent = shop.substring(0, 2).toUpperCase(); }
+  function nav(e, page) { e.preventDefault(); window.location.href = page + '?shop=' + shop; }
   let fixedTerms = ['checkout', 'Shopify'];
   let customTerms = [];
-
   function renderFixed() {
     const list = document.getElementById('fixed-list');
     document.getElementById('fixed-count').textContent = fixedTerms.length;
     if (!fixedTerms.length) { list.innerHTML = '<div class="empty">No fixed terms yet</div>'; return; }
-    list.innerHTML = fixedTerms.map((t, i) => `
-      <div class="term-row">
-        <span class="term-source">${t}</span>
-        <span class="term-arrow">→</span>
-        <span class="term-translated">${t}</span>
-        <span class="term-lang">ALL</span>
-        <button class="term-del" onclick="removeFixed(${i})">×</button>
-      </div>`).join('');
+    list.innerHTML = fixedTerms.map((t, i) => `<div class="term-row"><span class="term-source">${t}</span><span class="term-arrow">→</span><span class="term-translated">${t}</span><span class="term-lang">ALL</span><button class="term-del" onclick="removeFixed(${i})">×</button></div>`).join('');
   }
-
   function renderCustom() {
     const list = document.getElementById('custom-list');
     document.getElementById('custom-count').textContent = customTerms.length;
     if (!customTerms.length) { list.innerHTML = '<div class="empty">No custom translations yet</div>'; return; }
-    list.innerHTML = customTerms.map((t, i) => `
-      <div class="term-row">
-        <span class="term-source">${t.source}</span>
-        <span class="term-arrow">→</span>
-        <span class="term-translated">${t.translation}</span>
-        <span class="term-lang">${t.lang}</span>
-        <button class="term-del" onclick="removeCustom(${i})">×</button>
-      </div>`).join('');
+    list.innerHTML = customTerms.map((t, i) => `<div class="term-row"><span class="term-source">${t.source}</span><span class="term-arrow">→</span><span class="term-translated">${t.translation}</span><span class="term-lang">${t.lang}</span><button class="term-del" onclick="removeCustom(${i})">×</button></div>`).join('');
   }
-
   function addFixed() {
-    const inp = document.getElementById('fixed-input');
-    const val = inp.value.trim();
-    if (!val) return;
+    const inp = document.getElementById('fixed-input'); const val = inp.value.trim(); if (!val) return;
     val.split(',').forEach(v => { const t = v.trim(); if (t && !fixedTerms.includes(t)) fixedTerms.push(t); });
-    inp.value = '';
-    renderFixed();
+    inp.value = ''; renderFixed();
   }
-
   function removeFixed(i) { fixedTerms.splice(i, 1); renderFixed(); }
-
   function addCustom() {
     const src = document.getElementById('custom-source').value.trim();
     const tr = document.getElementById('custom-translation').value.trim();
     const lang = document.getElementById('custom-lang').value;
     if (!src || !tr) return;
     customTerms.push({ source: src, translation: tr, lang });
-    document.getElementById('custom-source').value = '';
-    document.getElementById('custom-translation').value = '';
-    renderCustom();
+    document.getElementById('custom-source').value = ''; document.getElementById('custom-translation').value = ''; renderCustom();
   }
-
   function removeCustom(i) { customTerms.splice(i, 1); renderCustom(); }
-
   async function saveGlossary() {
-    const glossaryText = [
-      ...fixedTerms.map(t => t),
-      ...customTerms.map(t => `${t.source}=${t.translation}(${t.lang})`)
-    ].join(', ');
-
+    const glossaryText = [...fixedTerms, ...customTerms.map(t => t.source + '=' + t.translation + '(' + t.lang + ')')].join(', ');
     try {
-      await fetch('/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shop, glossary: glossaryText })
-      });
+      await fetch('/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ shop, glossary: glossaryText }) });
       localStorage.setItem('getoify_glossary', JSON.stringify({ fixed: fixedTerms, custom: customTerms }));
-      const toast = document.getElementById('toast');
-      toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 2500);
-    } catch(e) {
-      alert('Error saving. Please try again.');
-    }
+      const toast = document.getElementById('toast'); toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 2500);
+    } catch(e) { alert('Error saving. Please try again.'); }
   }
-
-  // Load saved
   const saved = localStorage.getItem('getoify_glossary');
-  if (saved) {
-    try {
-      const g = JSON.parse(saved);
-      fixedTerms = g.fixed || ['checkout', 'Shopify'];
-      customTerms = g.custom || [];
-    } catch(e) {}
-  }
-  renderFixed();
-  renderCustom();
+  if (saved) { try { const g = JSON.parse(saved); fixedTerms = g.fixed || ['checkout', 'Shopify']; customTerms = g.custom || []; } catch(e) {} }
+  renderFixed(); renderCustom();
 </script>
-
 </body>
 </html>
