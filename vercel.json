@@ -1,6 +1,19 @@
 {
-  "rewrites": [
-    { "source": "/", "destination": "/public/index.html" },
-    { "source": "/((?!auth|products|localize|bulk-localize|bulk-localize-all|locales|digest|status|settings|webhook).*)", "destination": "/public/index.html" }
+  "version": 2,
+  "builds": [
+    { "src": "index.js", "use": "@vercel/node" }
+  ],
+  "routes": [
+    { "src": "/auth", "dest": "/index.js" },
+    { "src": "/auth/callback", "dest": "/index.js" },
+    { "src": "/locales", "dest": "/index.js" },
+    { "src": "/products", "dest": "/index.js" },
+    { "src": "/localize", "dest": "/index.js" },
+    { "src": "/bulk-localize-all", "dest": "/index.js" },
+    { "src": "/status", "dest": "/index.js" },
+    { "src": "/settings", "dest": "/index.js" },
+    { "src": "/webhook/(.*)", "dest": "/index.js" },
+    { "src": "/dashboard", "dest": "/index.js" },
+    { "src": "/(.*)", "dest": "/index.js" }
   ]
 }
