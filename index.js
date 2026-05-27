@@ -24,24 +24,26 @@ const {
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 const LOCALE_MAP = {
-  'fr': 'French',
-  'de': 'German',
-  'it': 'Italian',
-  'es': 'Spanish',
-  'nl': 'Dutch',
-  'pt': 'Portuguese',
-  'pl': 'Polish',
-  'sv': 'Swedish',
-  'da': 'Danish',
-  'fi': 'Finnish',
-  'nb': 'Norwegian',
-  'ja': 'Japanese',
-  'zh': 'Chinese',
-  'ar': 'Arabic'
+  'fr': 'French', 'de': 'German', 'it': 'Italian', 'es': 'Spanish',
+  'nl': 'Dutch', 'pt': 'Portuguese', 'pl': 'Polish', 'sv': 'Swedish',
+  'da': 'Danish', 'fi': 'Finnish', 'nb': 'Norwegian', 'ja': 'Japanese',
+  'zh': 'Chinese', 'ar': 'Arabic', 'hi': 'Hindi', 'id': 'Indonesian'
 };
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.get('/dashboard', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
+});
+
+app.get('/tone', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'tone.html'));
+});
+
+app.get('/glossary', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'glossary.html'));
 });
 
 app.get('/auth', (req, res) => {
@@ -61,15 +63,12 @@ app.get('/auth/callback', async (req, res) => {
       code
     });
     const accessToken = response.data.access_token;
-
     const { error } = await supabase
       .from('stores')
       .upsert({ shop, access_token: accessToken }, { onConflict: 'shop' });
-
     if (error) console.error('Supabase error:', error.message);
-
-    console.log('Store connected and saved:', shop);
-    res.redirect('/dashboard?shop=' + shop);
+    console.log('Store connected:', shop);
+    res.redirect('/dashboard?shop=' + shop + '&token=' + accessToken);
   } catch (error) {
     res.status(500).send('OAuth failed');
   }
@@ -79,16 +78,7 @@ app.get('/locales', async (req, res) => {
   const { shop, token } = req.query;
   if (!shop || !token) return res.status(400).json({ error: 'Missing shop or token' });
   try {
-    const query = `
-      query {
-        shopLocales {
-          locale
-          name
-          primary
-          published
-        }
-      }
-    `;
+    const query = `query { shopLocales { locale name primary published } }`;
     const response = await axios.post(
       `https://${shop}/admin/api/2026-01/graphql.json`,
       { query },
@@ -96,12 +86,7 @@ app.get('/locales', async (req, res) => {
     );
     const locales = response.data.data.shopLocales
       .filter(l => !l.primary)
-      .map(l => ({
-        locale: l.locale,
-        name: l.name,
-        published: l.published,
-        targetLang: LOCALE_MAP[l.locale] || l.name
-      }));
+      .map(l => ({ locale: l.locale, name: l.name, published: l.published, targetLang: LOCALE_MAP[l.locale] || l.name }));
     res.json({ locales });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -109,8 +94,7 @@ app.get('/locales', async (req, res) => {
 });
 
 app.get('/products', async (req, res) => {
-  const shop = req.query.shop;
-  const token = req.query.token;
+  const { shop, token } = req.query;
   if (!shop || !token) return res.status(400).json({ error: 'Missing shop or token' });
   try {
     const response = await axios.get(`https://${shop}/admin/api/2026-01/products.json?limit=250`, {
@@ -118,11 +102,7 @@ app.get('/products', async (req, res) => {
     });
     res.json({
       total: response.data.products.length,
-      products: response.data.products.map(p => ({
-        id: p.id,
-        title: p.title,
-        body: p.body_html
-      }))
+      products: response.data.products.map(p => ({ id: p.id, title: p.title, body: p.body_html }))
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -130,26 +110,13 @@ app.get('/products', async (req, res) => {
 });
 
 async function getStore(shop) {
-  const { data, error } = await supabase
-    .from('stores')
-    .select('*')
-    .eq('shop', shop)
-    .single();
+  const { data, error } = await supabase.from('stores').select('*').eq('shop', shop).single();
   if (error) throw new Error('Store not found: ' + shop);
   return data;
 }
 
 async function getShopLocales(shop, token) {
-  const query = `
-    query {
-      shopLocales {
-        locale
-        name
-        primary
-        published
-      }
-    }
-  `;
+  const query = `query { shopLocales { locale name primary published } }`;
   const res = await axios.post(
     `https://${shop}/admin/api/2026-01/graphql.json`,
     { query },
@@ -157,10 +124,7 @@ async function getShopLocales(shop, token) {
   );
   return res.data.data.shopLocales
     .filter(l => !l.primary)
-    .map(l => ({
-      locale: l.locale,
-      targetLang: LOCALE_MAP[l.locale] || l.name
-    }));
+    .map(l => ({ locale: l.locale, targetLang: LOCALE_MAP[l.locale] || l.name }));
 }
 
 async function localizeProduct(shop, token, productId, targetLang, locale, tone, glossary) {
@@ -208,10 +172,9 @@ Rules for meta_title (max 60 chars):
 - Natural, not keyword-stuffed
 
 Rules for meta_description (max 160 chars):
-- Start with action verb (Entdecken, Découvrez, Scopri, Discover)
+- Start with action verb
 - Include main product benefit
 - Specific to THIS product
-- Max 160 chars
 
 Respond ONLY in this exact JSON format, no other text:
 {
@@ -303,11 +266,7 @@ app.post('/bulk-localize-all', async (req, res) => {
     for (const product of products) {
       for (const lang of locales) {
         try {
-          const result = await localizeProduct(
-            shop, token, product.id,
-            lang.targetLang, lang.locale,
-            tone, glossary
-          );
+          const result = await localizeProduct(shop, token, product.id, lang.targetLang, lang.locale, tone, glossary);
           if (!first) res.write(',');
           res.write(JSON.stringify({ success: true, locale: lang.locale, ...result }));
           first = false;
@@ -333,31 +292,19 @@ app.post('/webhook/product-create', async (req, res) => {
     const body = Buffer.isBuffer(req.body) ? JSON.parse(req.body.toString()) : req.body;
     const product = body;
     const shop = req.headers['x-shopify-shop-domain'];
-
-    if (!product.title) {
-      console.log('Webhook — empty product, skipping');
-      return;
-    }
-
+    if (!product.title) return;
     const store = await getStore(shop);
     const token = store.access_token;
     const tone = store.tone || 'professional and elegant';
     const glossary = store.glossary || 'checkout, Shopify';
-
-    console.log('Webhook — new product:', product.title, 'from:', shop);
-
+    console.log('Webhook — new product:', product.title);
     const locales = await getShopLocales(shop, token);
-
     for (const lang of locales) {
       try {
-        await localizeProduct(
-          shop, token, product.id,
-          lang.targetLang, lang.locale,
-          tone, glossary
-        );
+        await localizeProduct(shop, token, product.id, lang.targetLang, lang.locale, tone, glossary);
         console.log(`Webhook — localized ${product.title} in ${lang.targetLang}`);
       } catch (err) {
-        console.error(`Webhook — error ${lang.locale}:`, err.message);
+        console.error(`Webhook error ${lang.locale}:`, err.message);
       }
       await new Promise(resolve => setTimeout(resolve, 500));
     }
@@ -369,10 +316,7 @@ app.post('/webhook/product-create', async (req, res) => {
 app.post('/settings', async (req, res) => {
   const { shop, tone, glossary } = req.body;
   try {
-    const { error } = await supabase
-      .from('stores')
-      .update({ tone, glossary })
-      .eq('shop', shop);
+    const { error } = await supabase.from('stores').update({ tone, glossary }).eq('shop', shop);
     if (error) throw error;
     res.json({ success: true });
   } catch (error) {
@@ -393,10 +337,6 @@ app.get('/status', async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-});
-
-app.get('/dashboard', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
 
 const PORT = process.env.PORT || 3000;
