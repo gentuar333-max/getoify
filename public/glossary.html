@@ -11,7 +11,7 @@
     :root {
       --cream: #FDFCF9; --cream-bg: #F7F5F0; --cream-mid: #F0EDE6;
       --border: #EAE7DF; --ink: #1C1B18; --ink-mid: #5C5850;
-      --ink-muted: #8B8070; --ink-faint: #BCB8AF; --accent: #8B7355; --green: #6BAF8A;
+      --ink-muted: #8B8070; --ink-faint: #8B8070; --accent: #8B7355; --green: #6BAF8A;
     }
     html, body { height: 100%; font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--ink); background: var(--cream-bg); -webkit-font-smoothing: antialiased; }
     .app { display: grid; grid-template-columns: 220px 1fr; height: 100vh; }
@@ -42,7 +42,7 @@
     .body-inner { max-width: 620px; }
     .section { background: var(--cream); border: 1px solid var(--border); border-radius: 8px; padding: 18px 20px; margin-bottom: 12px; }
     .section-title { font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 3px; }
-    .section-desc { font-size: 12px; color: var(--ink-faint); margin-bottom: 14px; line-height: 1.5; }
+    .section-desc { font-size: 12px; color: var(--ink-muted); margin-bottom: 14px; line-height: 1.5; }
     .add-row { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
     .add-inp { flex: 1; min-width: 120px; border: 1px solid var(--border); background: var(--cream-bg); border-radius: 5px; padding: 9px 12px; font-size: 13px; color: var(--ink); outline: none; font-family: 'DM Sans', sans-serif; transition: border-color 0.1s; }
     .add-inp:focus { border-color: #C8BFB0; }
