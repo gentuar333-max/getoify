@@ -210,7 +210,9 @@ Respond ONLY in this exact JSON format, no other text:
     }
   });
 
-  const translated = JSON.parse(claudeRes.data.content[0].text);
+  let rawText = claudeRes.data.content[0].text;
+rawText = rawText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+const translated = JSON.parse(rawText);
 
   const mutation = `
     mutation translationsRegister($resourceId: ID!, $translations: [TranslationInput!]!) {
