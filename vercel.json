@@ -3,6 +3,14 @@
   "builds": [
     { "src": "index.js", "use": "@vercel/node" }
   ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "all" }
+      ]
+    }
+  ],
   "routes": [
     { "src": "/auth", "dest": "/index.js" },
     { "src": "/auth/callback", "dest": "/index.js" },
@@ -14,6 +22,7 @@
     { "src": "/status", "dest": "/index.js" },
     { "src": "/store-settings", "dest": "/index.js" },
     { "src": "/settings", "dest": "/index.js" },
+    { "src": "/save-locales", "dest": "/index.js" },
     { "src": "/webhook/(.*)", "dest": "/index.js" },
     { "src": "/dashboard", "dest": "/index.js" },
     { "src": "/tone", "dest": "/index.js" },
@@ -22,6 +31,9 @@
     { "src": "/autosync", "dest": "/index.js" },
     { "src": "/product", "dest": "/index.js" },
     { "src": "/product-translations", "dest": "/index.js" },
+    { "src": "/og-image.png", "dest": "/public/og-image.png" },
+    { "src": "/favicon.svg", "dest": "/public/favicon.svg" },
+    { "src": "/robots.txt", "dest": "/public/robots.txt" },
     { "src": "/(.*)", "dest": "/index.js" }
   ]
 }
