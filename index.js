@@ -34,6 +34,7 @@ app.get('/glossary', (req, res) => res.sendFile(path.join(__dirname, 'public', '
 app.get('/products-page', (req, res) => res.sendFile(path.join(__dirname, 'public', 'products.html')));
 app.get('/settings', (req, res) => res.sendFile(path.join(__dirname, 'public', 'settings.html')));
 app.get('/autosync', (req, res) => res.sendFile(path.join(__dirname, 'public', 'autosync.html')));
+
 // OAuth
 app.get('/auth', (req, res) => {
   const shop = req.query.shop;
@@ -111,6 +112,17 @@ app.get('/status', async (req, res) => {
   }
 });
 
+app.get('/store-settings', async (req, res) => {
+  const { shop } = req.query;
+  try {
+    const { data, error } = await supabase.from('stores').select('tone, glossary').eq('shop', shop).single();
+    if (error) throw error;
+    res.json(data);
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.post('/settings', async (req, res) => {
   const { shop, tone, glossary } = req.body;
   try {
@@ -164,9 +176,12 @@ async function localizeProduct(shop, token, productId, targetLang, locale, tone,
   const digests = {};
   contents.forEach(c => { digests[c.key] = c.digest; });
 
-  const cleanBody = (product.body_html || '').replace(/<[^>]*>/g, '');
+  const cleanBody = (product.body_html || '').replace(/<[^>]*>/g, '').trim();
+  const category = product.product_type || '';
+  const tags = (product.tags || '').split(',').slice(0, 5).join(', ');
+  const vendor = product.vendor || '';
 
-  const prompt = `You are a professional ecommerce translator and SEO specialist.
+  const prompt = `You are a professional ecommerce copywriter for a ${vendor || 'premium'} brand.
 
 Tone: ${tone || 'professional and elegant'}
 Glossary (never translate these): ${glossary || 'checkout, Shopify'}
@@ -177,32 +192,51 @@ ${cleanBody
 TITLE: ${product.title}
 DESCRIPTION: ${cleanBody}`
     : `This product has no description.
-Generate a professional 3-5 sentence product description from the title, then translate everything.
+${category ? `Category: ${category}` : ''}
+${tags ? `Tags: ${tags}` : ''}
+
+Search the web for information about "${product.title}" to understand what this product is.
+Then write 2-3 SHORT natural sentences in ${targetLang} that:
+- Sound like a real human copywriter wrote them
+- Are specific to the product found
+- Do NOT invent features you cannot confirm
+- Do NOT use bullet points
+- Use active voice, present tense
+- Max 40 words total
+- Sound like a store owner describing their product to a friend
+
+Then translate the title and generate SEO metadata.
 TITLE: ${product.title}`
   }
 
 Rules for meta_title (max 60 chars):
-- Include main product keyword
-- Natural, not keyword-stuffed
+- Main keyword first
+- Natural language, not keyword-stuffed
 
 Rules for meta_description (max 160 chars):
-- Start with action verb
-- Include main product benefit
-- Specific to THIS product
+- Start with action verb in ${targetLang}
+- One clear benefit
+- One specific detail
+- No generic phrases like "high quality" or "best product"
+- Sound human
 
-Respond ONLY in this exact JSON format, no other text:
-{
-  "title": "translated title",
-  "description": "translated description",
-  "meta_title": "SEO title max 60 chars",
-  "meta_description": "SEO description max 160 chars"
-}`;
+Respond ONLY in this exact JSON format, no extra text, no markdown backticks:
+{"title":"...","description":"...","meta_title":"...","meta_description":"..."}`;
 
-  const claudeRes = await axios.post('https://api.anthropic.com/v1/messages', {
+  const requestBody = {
     model: 'claude-haiku-4-5-20251001',
-    max_tokens: 1000,
+    max_tokens: 1500,
     messages: [{ role: 'user', content: prompt }]
-  }, {
+  };
+
+  if (!cleanBody) {
+    requestBody.tools = [{
+      type: 'web_search_20250305',
+      name: 'web_search'
+    }];
+  }
+
+  const claudeRes = await axios.post('https://api.anthropic.com/v1/messages', requestBody, {
     headers: {
       'x-api-key': process.env.ANTHROPIC_API_KEY,
       'anthropic-version': '2023-06-01',
@@ -210,9 +244,14 @@ Respond ONLY in this exact JSON format, no other text:
     }
   });
 
-  let rawText = claudeRes.data.content[0].text;
-rawText = rawText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-const translated = JSON.parse(rawText);
+  let rawText = '';
+  for (const block of claudeRes.data.content) {
+    if (block.type === 'text') {
+      rawText += block.text;
+    }
+  }
+  rawText = rawText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+  const translated = JSON.parse(rawText);
 
   const mutation = `
     mutation translationsRegister($resourceId: ID!, $translations: [TranslationInput!]!) {
