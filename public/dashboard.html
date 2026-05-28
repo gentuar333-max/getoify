@@ -189,10 +189,9 @@
       document.getElementById('tbl-body').innerHTML = tblHtml || '<tr><td colspan="4" class="loading">No translations yet</td></tr>';
     } catch(e) { console.error(e); }
   }
-
   async function runBulk() {
     const btn = document.getElementById('btn-run');
-    const tok = localStorage.getItem('getoify_token');
+    const tok = new URLSearchParams(window.location.search).get('token') || localStorage.getItem('getoify_token');
     if (!tok) { alert('Please reconnect your store first.'); return; }
     btn.textContent = 'Running...'; btn.disabled = true;
     try {
