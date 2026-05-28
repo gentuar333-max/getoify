@@ -341,21 +341,27 @@ app.post('/bulk-localize-all', async (req, res) => {
 // Webhook — respond menjëherë dhe thirr process-product
 app.post('/webhook/product-create', async (req, res) => {
   res.status(200).send('OK');
-  try {
-    const body = Buffer.isBuffer(req.body) ? JSON.parse(req.body.toString()) : req.body;
-    const shop = req.headers['x-shopify-shop-domain'];
-    console.log('Webhook received:', shop, body.title, body.id);
-    if (!body.title || !body.id) return;
 
-    console.log('Calling process-product...');
-    const result = await axios.post(`${APP_URL}/process-product`, {
-      shop,
-      productId: body.id,
-      productTitle: body.title
-    }, { timeout: 5000 });
-    console.log('Process-product response:', result.status);
+  const rawBody = req.body;
+  const shop = req.headers['x-shopify-shop-domain'];
+
+  console.log('=== WEBHOOK HIT ===');
+  console.log('Shop:', shop);
+  console.log('Body type:', typeof rawBody);
+  console.log('Body:', rawBody ? rawBody.toString().substring(0, 200) : 'empty');
+
+  try {
+    const body = Buffer.isBuffer(rawBody) ? JSON.parse(rawBody.toString()) : rawBody;
+    if (!body.title || !body.id) {
+      console.log('No title or id — skipping');
+      return;
+    }
+    console.log('Calling process-product for:', body.title);
+    axios.post(`${APP_URL}/process-product`, {
+      shop, productId: body.id, productTitle: body.title
+    }, { timeout: 5000 }).catch(err => console.error('Trigger error:', err.message));
   } catch (err) {
-    console.error('Webhook error:', err.message);
+    console.error('Parse error:', err.message);
   }
 });
 
