@@ -32,6 +32,7 @@ app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'public', 
 app.get('/tone', (req, res) => res.sendFile(path.join(__dirname, 'public', 'tone.html')));
 app.get('/glossary', (req, res) => res.sendFile(path.join(__dirname, 'public', 'glossary.html')));
 app.get('/products-page', (req, res) => res.sendFile(path.join(__dirname, 'public', 'products.html')));
+app.get('/settings', (req, res) => res.sendFile(path.join(__dirname, 'public', 'settings.html')));
 
 // OAuth
 app.get('/auth', (req, res) => {
