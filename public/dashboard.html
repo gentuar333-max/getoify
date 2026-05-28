@@ -193,12 +193,15 @@
     const btn = document.getElementById('btn-run');
     const tok = new URLSearchParams(window.location.search).get('token') || localStorage.getItem('getoify_token');
     if (!tok) { alert('Please reconnect your store first.'); return; }
-    btn.textContent = 'Running...'; btn.disabled = true;
+    btn.innerHTML = '<i class="ti ti-player-play"></i>Running...'; btn.disabled = true;
     try {
-      await fetch('/bulk-localize-all', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      const res = await fetch('/bulk-localize-all', { method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ shop, token: tok, tone: 'professional and elegant', glossary: 'checkout, Shopify' }) });
+      if (!res.ok) { const err = await res.text(); console.error('Bulk error:', err); alert('Error: ' + err); }
+      else { const text = await res.text(); console.log('Bulk result:', text); }
       btn.innerHTML = '<i class="ti ti-player-play"></i>Run bulk translate'; btn.disabled = false; loadData();
-    } catch(e) { btn.innerHTML = '<i class="ti ti-player-play"></i>Run bulk translate'; btn.disabled = false; }
+    } catch(e) { console.error('Fetch error:', e); alert('Connection error: ' + e.message);
+      btn.innerHTML = '<i class="ti ti-player-play"></i>Run bulk translate'; btn.disabled = false; }
   }
   loadData();
 
