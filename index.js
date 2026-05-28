@@ -344,14 +344,16 @@ app.post('/webhook/product-create', async (req, res) => {
   try {
     const body = Buffer.isBuffer(req.body) ? JSON.parse(req.body.toString()) : req.body;
     const shop = req.headers['x-shopify-shop-domain'];
+    console.log('Webhook received:', shop, body.title, body.id);
     if (!body.title || !body.id) return;
 
-    axios.post(`${APP_URL}/process-product`, {
+    console.log('Calling process-product...');
+    const result = await axios.post(`${APP_URL}/process-product`, {
       shop,
       productId: body.id,
       productTitle: body.title
-    }, { timeout: 2000 }).catch(err => console.error('Trigger error:', err.message));
-
+    }, { timeout: 5000 });
+    console.log('Process-product response:', result.status);
   } catch (err) {
     console.error('Webhook error:', err.message);
   }
