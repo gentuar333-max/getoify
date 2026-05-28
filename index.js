@@ -33,7 +33,7 @@ app.get('/tone', (req, res) => res.sendFile(path.join(__dirname, 'public', 'tone
 app.get('/glossary', (req, res) => res.sendFile(path.join(__dirname, 'public', 'glossary.html')));
 app.get('/products-page', (req, res) => res.sendFile(path.join(__dirname, 'public', 'products.html')));
 app.get('/settings', (req, res) => res.sendFile(path.join(__dirname, 'public', 'settings.html')));
-
+app.get('/autosync', (req, res) => res.sendFile(path.join(__dirname, 'public', 'autosync.html')));
 // OAuth
 app.get('/auth', (req, res) => {
   const shop = req.query.shop;
