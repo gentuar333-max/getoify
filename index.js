@@ -331,7 +331,11 @@ app.post('/localize', async (req, res) => {
 app.post('/bulk-localize-all', async (req, res) => {
   const { shop, token, tone, glossary } = req.body;
   try {
-    const locales = await getShopLocales(shop, token);
+    const store = await getStore(shop);
+    const savedLocales = store.selected_locales || [];
+    const locales = savedLocales.length > 0
+      ? savedLocales.map(l => ({ locale: l, targetLang: LOCALE_MAP[l] || l }))
+      : await getShopLocales(shop, token);
     const productsRes = await axios.get(
       `https://${shop}/admin/api/2026-01/products.json?limit=250`,
       { headers: { 'X-Shopify-Access-Token': token } }
@@ -391,7 +395,10 @@ app.post('/process-product', async (req, res) => {
     const tone = store.tone || 'professional and elegant';
     const glossary = store.glossary || 'checkout, Shopify';
     console.log('Processing:', productTitle);
-    const locales = await getShopLocales(shop, token);
+    const savedLocales = store.selected_locales || [];
+    const locales = savedLocales.length > 0
+      ? savedLocales.map(l => ({ locale: l, targetLang: LOCALE_MAP[l] || l }))
+      : await getShopLocales(shop, token);
     for (const lang of locales) {
       try {
         await localizeProduct(shop, token, productId, lang.targetLang, lang.locale, tone, glossary);
@@ -434,7 +441,10 @@ async function pollNewProducts() {
 
           if (!data || data.length === 0) {
             console.log('New product found via polling:', product.title);
-            const locales = await getShopLocales(shop, token);
+            const savedLocales = store.selected_locales || [];
+            const locales = savedLocales.length > 0
+              ? savedLocales.map(l => ({ locale: l, targetLang: LOCALE_MAP[l] || l }))
+              : await getShopLocales(shop, token);
             for (const lang of locales) {
               try {
                 await localizeProduct(shop, token, product.id, lang.targetLang, lang.locale, tone, glossary);
