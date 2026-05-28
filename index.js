@@ -242,7 +242,9 @@ Respond ONLY in this exact JSON format, no extra text, no markdown backticks:
     if (block.type === 'text') rawText += block.text;
   }
   rawText = rawText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-  const translated = JSON.parse(rawText);
+const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+if (!jsonMatch) throw new Error('No JSON found in response: ' + rawText.substring(0, 100));
+const translated = JSON.parse(jsonMatch[0]);
 
   const mutation = `
     mutation translationsRegister($resourceId: ID!, $translations: [TranslationInput!]!) {
