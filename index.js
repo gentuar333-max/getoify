@@ -134,7 +134,6 @@ app.post('/settings', async (req, res) => {
   }
 });
 
-// Core functions
 async function getStore(shop) {
   const { data, error } = await supabase.from('stores').select('*').eq('shop', shop).single();
   if (error) throw new Error('Store not found: ' + shop);
@@ -339,36 +338,48 @@ app.post('/bulk-localize-all', async (req, res) => {
   }
 });
 
+// Webhook — respond menjëherë dhe thirr process-product
 app.post('/webhook/product-create', async (req, res) => {
   res.status(200).send('OK');
+  try {
+    const body = Buffer.isBuffer(req.body) ? JSON.parse(req.body.toString()) : req.body;
+    const shop = req.headers['x-shopify-shop-domain'];
+    if (!body.title || !body.id) return;
 
-  setImmediate(async () => {
-    try {
-      const body = Buffer.isBuffer(req.body) ? JSON.parse(req.body.toString()) : req.body;
-      const shop = req.headers['x-shopify-shop-domain'];
-      if (!body.title) return;
+    axios.post(`${APP_URL}/process-product`, {
+      shop,
+      productId: body.id,
+      productTitle: body.title
+    }, { timeout: 2000 }).catch(err => console.error('Trigger error:', err.message));
 
-      const store = await getStore(shop);
-      const token = store.access_token;
-      const tone = store.tone || 'professional and elegant';
-      const glossary = store.glossary || 'checkout, Shopify';
+  } catch (err) {
+    console.error('Webhook error:', err.message);
+  }
+});
 
-      console.log('Webhook — processing:', body.title);
-
-      const locales = await getShopLocales(shop, token);
-      for (const lang of locales) {
-        try {
-          await localizeProduct(shop, token, body.id, lang.targetLang, lang.locale, tone, glossary);
-          console.log(`Webhook — done: ${body.title} in ${lang.targetLang}`);
-        } catch (err) {
-          console.error(`Webhook error ${lang.locale}:`, err.message);
-        }
-        await new Promise(resolve => setTimeout(resolve, 300));
+// Process product — endpoint i veçantë
+app.post('/process-product', async (req, res) => {
+  res.status(200).send('Processing');
+  const { shop, productId, productTitle } = req.body;
+  try {
+    const store = await getStore(shop);
+    const token = store.access_token;
+    const tone = store.tone || 'professional and elegant';
+    const glossary = store.glossary || 'checkout, Shopify';
+    console.log('Processing:', productTitle);
+    const locales = await getShopLocales(shop, token);
+    for (const lang of locales) {
+      try {
+        await localizeProduct(shop, token, productId, lang.targetLang, lang.locale, tone, glossary);
+        console.log(`Done: ${productTitle} in ${lang.targetLang}`);
+      } catch (err) {
+        console.error(`Error ${lang.locale}:`, err.message);
       }
-    } catch (err) {
-      console.error('Webhook background error:', err.message);
+      await new Promise(resolve => setTimeout(resolve, 300));
     }
-  });
+  } catch (err) {
+    console.error('Process error:', err.message);
+  }
 });
 
 const PORT = process.env.PORT || 3000;
