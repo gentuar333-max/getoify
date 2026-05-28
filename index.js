@@ -4,7 +4,7 @@ const axios = require('axios');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 
-dotenv.config();
+dotenv.config({ override: false });
 
 const app = express();
 
