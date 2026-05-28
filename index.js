@@ -54,7 +54,7 @@ app.get('/auth/callback', async (req, res) => {
     const accessToken = response.data.access_token;
     await supabase.from('stores').upsert({ shop, access_token: accessToken }, { onConflict: 'shop' });
     console.log('Store connected:', shop);
-    res.redirect('/dashboard?shop=' + shop + '&token=' + accessToken);
+    res.redirect('/dashboard?shop=' + shop + '&token=' + accessToken + '&autorun=1');
   } catch (error) {
     res.status(500).send('OAuth failed');
   }
@@ -199,7 +199,7 @@ Respond ONLY in this exact JSON format, no other text:
 }`;
 
   const claudeRes = await axios.post('https://api.anthropic.com/v1/messages', {
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 1000,
     messages: [{ role: 'user', content: prompt }]
   }, {

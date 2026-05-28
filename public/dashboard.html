@@ -101,7 +101,7 @@
       <a class="sb-item" href="#"><i class="ti ti-shield-check"></i>QA Rules</a>
       <a class="sb-item" href="#"><i class="ti ti-search"></i>SEO Pack</a>
       <div class="sb-lbl">Account</div>
-      <a class="sb-item" href="#" onclick="nav(event,'/settings')"><i class="ti ti-settings"></i>Settings</a>
+      <a class="sb-item" href="#"><i class="ti ti-settings"></i>Settings</a>
     </nav>
     <div class="sb-foot"><div class="sb-av" id="sb-av">?</div><div class="sb-un" id="sb-shop2">—</div></div>
   </aside>
@@ -202,6 +202,9 @@
     } catch(e) { btn.innerHTML = '<i class="ti ti-player-play"></i>Run bulk translate'; btn.disabled = false; }
   }
   loadData();
+
+  const autorun = new URLSearchParams(window.location.search).get('autorun');
+  if (autorun === '1' && token) { setTimeout(() => runBulk(), 2000); }
 </script>
 </body>
 </html>
