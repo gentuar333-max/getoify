@@ -203,11 +203,7 @@
   }
 
   function getLocalesForProduct(productId) {
-    const res = [];
-    Object.values(translatedMap).forEach(arr => {
-      arr.forEach(item => { if (String(item.productId) === String(productId)) res.push(item.locale); });
-    });
-    return [...new Set(res)];
+    return translatedMap[String(productId)] || [];
   }
 
   function getStatus(p) {
