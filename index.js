@@ -202,7 +202,6 @@ Then write 2-3 SHORT natural sentences in ${targetLang} that:
 - Do NOT use bullet points
 - Use active voice, present tense
 - Max 40 words total
-- Sound like a store owner describing their product to a friend
 
 Then translate the title and generate SEO metadata.
 TITLE: ${product.title}`
@@ -210,13 +209,11 @@ TITLE: ${product.title}`
 
 Rules for meta_title (max 60 chars):
 - Main keyword first
-- Natural language, not keyword-stuffed
+- Natural language
 
 Rules for meta_description (max 160 chars):
 - Start with action verb in ${targetLang}
 - One clear benefit
-- One specific detail
-- No generic phrases like "high quality" or "best product"
 - Sound human
 
 Respond ONLY in this exact JSON format, no extra text, no markdown backticks:
@@ -229,10 +226,7 @@ Respond ONLY in this exact JSON format, no extra text, no markdown backticks:
   };
 
   if (!cleanBody) {
-    requestBody.tools = [{
-      type: 'web_search_20250305',
-      name: 'web_search'
-    }];
+    requestBody.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
   }
 
   const claudeRes = await axios.post('https://api.anthropic.com/v1/messages', requestBody, {
@@ -284,11 +278,7 @@ Respond ONLY in this exact JSON format, no extra text, no markdown backticks:
     meta_description: translated.meta_description
   }, { onConflict: 'shop,product_id,locale' });
 
-  return {
-    product: product.title,
-    translated,
-    shopify: pushRes.data.data.translationsRegister
-  };
+  return { product: product.title, translated, shopify: pushRes.data.data.translationsRegister };
 }
 
 app.post('/localize', async (req, res) => {
@@ -338,34 +328,23 @@ app.post('/bulk-localize-all', async (req, res) => {
   }
 });
 
-// Webhook — respond menjëherë dhe thirr process-product
 app.post('/webhook/product-create', async (req, res) => {
   res.status(200).send('OK');
-
   const rawBody = req.body;
   const shop = req.headers['x-shopify-shop-domain'];
-
-  console.log('=== WEBHOOK HIT ===');
-  console.log('Shop:', shop);
-  console.log('Body type:', typeof rawBody);
-  console.log('Body:', rawBody ? rawBody.toString().substring(0, 200) : 'empty');
-
+  console.log('=== WEBHOOK HIT ===', shop);
   try {
     const body = Buffer.isBuffer(rawBody) ? JSON.parse(rawBody.toString()) : rawBody;
-    if (!body.title || !body.id) {
-      console.log('No title or id — skipping');
-      return;
-    }
+    if (!body.title || !body.id) return;
     console.log('Calling process-product for:', body.title);
     axios.post(`${APP_URL}/process-product`, {
       shop, productId: body.id, productTitle: body.title
     }, { timeout: 5000 }).catch(err => console.error('Trigger error:', err.message));
   } catch (err) {
-    console.error('Parse error:', err.message);
+    console.error('Webhook error:', err.message);
   }
 });
 
-// Process product — endpoint i veçantë
 app.post('/process-product', async (req, res) => {
   res.status(200).send('Processing');
   const { shop, productId, productTitle } = req.body;
@@ -389,6 +368,58 @@ app.post('/process-product', async (req, res) => {
     console.error('Process error:', err.message);
   }
 });
+
+// Polling — kontrollo produkte të reja çdo 5 minuta
+async function pollNewProducts() {
+  console.log('Polling for new products...');
+  try {
+    const { data: stores } = await supabase.from('stores').select('*');
+    if (!stores || !stores.length) return;
+
+    for (const store of stores) {
+      const token = store.access_token;
+      const shop = store.shop;
+      const tone = store.tone || 'professional and elegant';
+      const glossary = store.glossary || 'checkout, Shopify';
+
+      try {
+        const res = await axios.get(
+          `https://${shop}/admin/api/2026-01/products.json?limit=10&order=created_at+desc`,
+          { headers: { 'X-Shopify-Access-Token': token } }
+        );
+
+        for (const product of res.data.products) {
+          const { data } = await supabase
+            .from('translations')
+            .select('id')
+            .eq('shop', shop)
+            .eq('product_id', String(product.id))
+            .limit(1);
+
+          if (!data || data.length === 0) {
+            console.log('New product found via polling:', product.title);
+            const locales = await getShopLocales(shop, token);
+            for (const lang of locales) {
+              try {
+                await localizeProduct(shop, token, product.id, lang.targetLang, lang.locale, tone, glossary);
+                console.log(`Poll done: ${product.title} in ${lang.targetLang}`);
+              } catch(e) {
+                console.error('Poll localize error:', e.message);
+              }
+            }
+          }
+        }
+      } catch(e) {
+        console.error('Poll store error:', shop, e.message);
+      }
+    }
+  } catch(e) {
+    console.error('Poll error:', e.message);
+  }
+}
+
+setInterval(pollNewProducts, 5 * 60 * 1000);
+setTimeout(pollNewProducts, 15000);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
