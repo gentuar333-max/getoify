@@ -20,6 +20,8 @@
     { "src": "/glossary", "dest": "/index.js" },
     { "src": "/products-page", "dest": "/index.js" },
     { "src": "/autosync", "dest": "/index.js" },
+{ "src": "/product", "dest": "/index.js" },
+{ "src": "/product-translations", "dest": "/index.js" },
     { "src": "/(.*)", "dest": "/index.js" }
   ]
 }

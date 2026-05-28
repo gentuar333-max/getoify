@@ -35,6 +35,23 @@ app.get('/products-page', (req, res) => res.sendFile(path.join(__dirname, 'publi
 app.get('/settings', (req, res) => res.sendFile(path.join(__dirname, 'public', 'settings.html')));
 app.get('/autosync', (req, res) => res.sendFile(path.join(__dirname, 'public', 'autosync.html')));
 
+app.get('/product', (req, res) => res.sendFile(path.join(__dirname, 'public', 'product-detail.html')));
+
+app.get('/product-translations', async (req, res) => {
+  const { shop, productId } = req.query;
+  try {
+    const { data, error } = await supabase
+      .from('translations')
+      .select('*')
+      .eq('shop', shop)
+      .eq('product_id', productId);
+    if (error) throw error;
+    res.json({ translations: data });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // OAuth
 app.get('/auth', (req, res) => {
   const shop = req.query.shop;
