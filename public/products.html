@@ -191,7 +191,7 @@
         const seen = {};
         allProducts = statusData.translations
           .filter(t => { if (seen[t.product_id]) return false; seen[t.product_id] = true; return true; })
-          .map(t => ({ id: t.product_id, title: t.translated_title, created_at: t.created_at }));
+          .map(t => ({ id: String(t.product_id), title: t.translated_title, created_at: t.created_at }));
       }
 
       updateStats();
