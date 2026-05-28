@@ -215,41 +215,43 @@ async function localizeProduct(shop, token, productId, targetLang, locale, tone,
   const tags = (product.tags || '').split(',').slice(0, 5).join(', ');
   const vendor = product.vendor || '';
 
-  const prompt = `You are a professional ecommerce copywriter for a ${vendor || 'premium'} brand.
+  const prompt = `You are a native ${targetLang} speaker and ecommerce expert.
 
-Tone: ${tone || 'professional and elegant'}
-Glossary (never translate these): ${glossary || 'checkout, Shopify'}
+Glossary (never translate these terms, keep them exactly as written): ${glossary || 'checkout, Shopify'}
 Target language: ${targetLang}
 
 ${cleanBody
-    ? `Translate this product and generate SEO metadata:
+    ? `The merchant has written this product description. Translate it faithfully into ${targetLang}.
+Do NOT rewrite, do NOT add new information, do NOT change the style.
+Just translate accurately, preserving the original meaning and tone.
+
 TITLE: ${product.title}
 DESCRIPTION: ${cleanBody}`
-    : `This product has no description.
+    : `This product has no description yet.
 ${category ? `Category: ${category}` : ''}
 ${tags ? `Tags: ${tags}` : ''}
 
-Search the web for information about "${product.title}" to understand what this product is.
-Then write 2-3 SHORT natural sentences in ${targetLang} that:
-- Sound like a real human copywriter wrote them
-- Are specific to the product found
-- Do NOT invent features you cannot confirm
-- Do NOT use bullet points
-- Use active voice, present tense
-- Max 40 words total
+Search the web for "${product.title}" to find real information about this product.
+Based on what you find, write a description in ${targetLang} that:
+- Reads like a real person wrote it, not a marketing bot
+- Uses specific real details (ingredients, materials, origin, use case, texture, taste etc.)
+- Is 2-3 sentences maximum
+- No bullet points
+- No generic adjectives like "elegant", "perfect", "exquisite" — use concrete specific words
+- Active voice, present tense
+- Max 50 words
 
-Then translate the title and generate SEO metadata.
-TITLE: ${product.title}`
+Also translate the title naturally into ${targetLang}.`
   }
 
 Rules for meta_title (max 60 chars):
 - Main keyword first
-- Natural language
+- Natural language, no keyword stuffing
 
 Rules for meta_description (max 160 chars):
 - Start with action verb in ${targetLang}
-- One clear benefit
-- Sound human
+- One specific concrete benefit
+- Sound like a human wrote it
 
 Respond ONLY in this exact JSON format, no extra text, no markdown backticks:
 {"title":"...","description":"...","meta_title":"...","meta_description":"..."}`;
