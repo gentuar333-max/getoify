@@ -10,10 +10,16 @@
     { "src": "/products", "dest": "/index.js" },
     { "src": "/localize", "dest": "/index.js" },
     { "src": "/bulk-localize-all", "dest": "/index.js" },
+    { "src": "/process-product", "dest": "/index.js" },
     { "src": "/status", "dest": "/index.js" },
+    { "src": "/store-settings", "dest": "/index.js" },
     { "src": "/settings", "dest": "/index.js" },
     { "src": "/webhook/(.*)", "dest": "/index.js" },
     { "src": "/dashboard", "dest": "/index.js" },
+    { "src": "/tone", "dest": "/index.js" },
+    { "src": "/glossary", "dest": "/index.js" },
+    { "src": "/products-page", "dest": "/index.js" },
+    { "src": "/autosync", "dest": "/index.js" },
     { "src": "/(.*)", "dest": "/index.js" }
   ]
 }
