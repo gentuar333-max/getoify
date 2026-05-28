@@ -34,7 +34,6 @@ app.get('/glossary', (req, res) => res.sendFile(path.join(__dirname, 'public', '
 app.get('/products-page', (req, res) => res.sendFile(path.join(__dirname, 'public', 'products.html')));
 app.get('/settings', (req, res) => res.sendFile(path.join(__dirname, 'public', 'settings.html')));
 app.get('/autosync', (req, res) => res.sendFile(path.join(__dirname, 'public', 'autosync.html')));
-
 app.get('/product', (req, res) => res.sendFile(path.join(__dirname, 'public', 'product-detail.html')));
 
 app.get('/product-translations', async (req, res) => {
@@ -132,7 +131,11 @@ app.get('/status', async (req, res) => {
 app.get('/store-settings', async (req, res) => {
   const { shop } = req.query;
   try {
-    const { data, error } = await supabase.from('stores').select('tone, glossary').eq('shop', shop).single();
+    const { data, error } = await supabase
+      .from('stores')
+      .select('tone, glossary, selected_locales, plan')
+      .eq('shop', shop)
+      .single();
     if (error) throw error;
     res.json(data);
   } catch(e) {
@@ -148,6 +151,21 @@ app.post('/settings', async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/save-locales', async (req, res) => {
+  const { shop, selected_locales } = req.body;
+  if (!shop || !selected_locales) return res.status(400).json({ error: 'Missing data' });
+  try {
+    const { error } = await supabase
+      .from('stores')
+      .update({ selected_locales })
+      .eq('shop', shop);
+    if (error) throw error;
+    res.json({ ok: true });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
   }
 });
 
@@ -259,9 +277,9 @@ Respond ONLY in this exact JSON format, no extra text, no markdown backticks:
     if (block.type === 'text') rawText += block.text;
   }
   rawText = rawText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-if (!jsonMatch) throw new Error('No JSON found in response: ' + rawText.substring(0, 100));
-const translated = JSON.parse(jsonMatch[0]);
+  const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error('No JSON found in response: ' + rawText.substring(0, 100));
+  const translated = JSON.parse(jsonMatch[0]);
 
   const mutation = `
     mutation translationsRegister($resourceId: ID!, $translations: [TranslationInput!]!) {
@@ -388,7 +406,6 @@ app.post('/process-product', async (req, res) => {
   }
 });
 
-// Polling — kontrollo produkte të reja çdo 5 minuta
 async function pollNewProducts() {
   console.log('Polling for new products...');
   try {
