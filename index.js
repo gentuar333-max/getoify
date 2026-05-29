@@ -57,6 +57,10 @@ app.get('/auth', (req, res) => {
   if (!shop) return res.status(400).send('Missing shop parameter');
   const redirectUri = `${APP_URL}/auth/callback`;
   const installUrl = `https://${shop}/admin/oauth/authorize?client_id=${SHOPIFY_API_KEY}&scope=${SHOPIFY_SCOPES}&redirect_uri=${redirectUri}`;
+  console.log('AUTH DEBUG - API_KEY:', SHOPIFY_API_KEY);
+  console.log('AUTH DEBUG - APP_URL:', APP_URL);
+  console.log('AUTH DEBUG - redirectUri:', redirectUri);
+  console.log('AUTH DEBUG - installUrl:', installUrl);
   res.redirect(installUrl);
 });
 
