@@ -76,12 +76,23 @@
     .pg-btn { font-size: 12px; padding: 4px 10px; border-radius: 4px; border: 1px solid var(--border); background: var(--cream); color: var(--ink-muted); cursor: pointer; }
     .pg-btn.cur { background: var(--cream-mid); color: var(--ink); font-weight: 500; }
     .loading { text-align: center; padding: 2rem; color: var(--ink-faint); font-size: 13px; }
-    @media (max-width: 768px) { .app { grid-template-columns: 1fr; } .sb { display: none; } .stats-row { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 768px) { 
+      .app { grid-template-columns: 1fr; } 
+      .sb { display: none; position: fixed; inset: 0; z-index: 200; width: 240px; }
+      .sb.open { display: flex; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+      .tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      table { min-width: 480px; }
+      .mob-menu-btn { display: flex !important; }
+    }
+    .mob-menu-btn { display: none; align-items: center; justify-content: center; width: 32px; height: 32px; border: 1px solid var(--border); border-radius: 5px; background: var(--cream); cursor: pointer; }
+    .mob-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 199; }
+    .mob-overlay.open { display: block; }
   </style>
 </head>
 <body>
 <div class="app">
-  <aside class="sb">
+  <aside class="sb" id="sidebar">
     <div class="sb-logo">Getoify<span>.</span></div>
     <div class="sb-store"><div class="sb-dot"></div><div class="sb-store-name" id="sb-shop">Loading...</div></div>
     <nav class="sb-nav">
@@ -103,9 +114,15 @@
     </div>
   </aside>
 
+  <div class="mob-overlay" id="mob-overlay" onclick="closeSidebar()"></div>
   <div class="main">
     <div class="topbar">
-      <div class="tb-title">Products</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="mob-menu-btn" onclick="openSidebar()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+        <div class="tb-title">Products</div>
+      </div>
       <div class="tb-right">
         <button class="btn-outline"><i class="ti ti-refresh"></i>Sync from Shopify</button>
         <button class="btn-dark" onclick="runTranslate()"><i class="ti ti-player-play"></i>Run translate</button>
@@ -130,6 +147,7 @@
       </div>
 
       <div class="tbl-card">
+        <div class="tbl-wrap">
         <table>
           <thead>
             <tr>
@@ -144,6 +162,7 @@
             <tr><td colspan="5" class="loading">Loading products...</td></tr>
           </tbody>
         </table>
+        </div>
         <div class="pager">
           <div class="pager-info" id="pager-info">—</div>
           <div class="pager-btns" id="pager-btns"></div>
@@ -268,7 +287,7 @@
       const date = p.created_at ? new Date(p.created_at).toLocaleDateString() : '—';
       const btn = status === 'none'
         ? `<button class="action-btn">Translate</button>`
-        : `<button class="action-btn" onclick="window.location.href='/product?shop=${shop}&productId=${p.id}&productTitle=${encodeURIComponent(p.title || '')}'">View</button>`;
+        : `<button class="action-btn" onclick="viewProduct(${p.id}, this)">View</button>`;
 
       return `<tr>
         <td><div class="prod-nm">${p.title || '—'}</div></td>
@@ -289,6 +308,12 @@
     renderTable();
   }
 
+  function viewProduct(productId, btn) {
+    const row = btn.closest('tr');
+    const title = row ? row.querySelector('.prod-nm').textContent : '';
+    window.location.href = '/product?shop=' + shop + '&productId=' + productId + '&productTitle=' + encodeURIComponent(title);
+  }
+
   async function runTranslate() {
     if (!token) { alert('Please reconnect your store first.'); return; }
     if (!confirm('Run bulk translate for all products?')) return;
@@ -300,6 +325,15 @@
       });
       loadData();
     } catch(e) { alert('Error. Please try again.'); }
+  }
+
+  function openSidebar() {
+    document.getElementById('sidebar').classList.add('open');
+    document.getElementById('mob-overlay').classList.add('open');
+  }
+  function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('mob-overlay').classList.remove('open');
   }
 
   loadData();
