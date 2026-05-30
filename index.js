@@ -312,6 +312,7 @@ Respond ONLY in this exact JSON format, no extra text, no markdown backticks:
     product_id: String(productId),
     locale,
     status: 'done',
+    original_title: product.title,
     translated_title: translated.title,
     translated_description: translated.description,
     meta_title: translated.meta_title,
@@ -428,21 +429,36 @@ async function pollNewProducts() {
       const tone = store.tone || 'professional and elegant';
       const glossary = store.glossary || 'checkout, Shopify';
 
+      // Skip stores with old/invalid tokens
+      if (!token || token.startsWith('shpua_')) {
+        console.log('Skipping store with invalid token:', shop);
+        continue;
+      }
+
       try {
         const res = await axios.get(
-          `https://${shop}/admin/api/2026-01/products.json?limit=10&order=created_at+desc`,
+          `https://${shop}/admin/api/2026-01/products.json?limit=50&order=created_at+desc`,
           { headers: { 'X-Shopify-Access-Token': token } }
         );
 
         for (const product of res.data.products) {
           const { data } = await supabase
             .from('translations')
-            .select('id')
+            .select('id, original_title')
             .eq('shop', shop)
             .eq('product_id', String(product.id))
             .limit(1);
 
-          if (!data || data.length === 0) {
+          const needsLocalize = !data || data.length === 0 ||
+            (data[0].original_title && data[0].original_title.toLowerCase() !== product.title.toLowerCase());
+
+          if (needsLocalize) {
+            if (data && data.length > 0) {
+              console.log(`Product ID recycled: "${data[0].original_title}" → "${product.title}", relocalizing...`);
+              await supabase.from('translations').delete()
+                .eq('shop', shop)
+                .eq('product_id', String(product.id));
+            }
             console.log('New product found via polling:', product.title);
             const savedLocales = store.selected_locales || [];
             const locales = savedLocales.length > 0
