@@ -502,8 +502,18 @@ async function pollNewProducts() {
   }
 }
 
-setInterval(pollNewProducts, 5 * 60 * 1000);
-setTimeout(pollNewProducts, 15000);
+// Vercel Cron endpoint — called every 5 minutes by vercel.json crons config
+// setInterval does not work on Vercel serverless — use this instead
+app.get('/poll', async (req, res) => {
+  await pollNewProducts();
+  res.json({ ok: true, time: new Date().toISOString() });
+});
+
+// Keep setInterval only for local development
+if (process.env.NODE_ENV !== 'production') {
+  setInterval(pollNewProducts, 5 * 60 * 1000);
+  setTimeout(pollNewProducts, 15000);
+}
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
