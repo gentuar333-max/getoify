@@ -120,7 +120,7 @@ app.get('/products', async (req, res) => {
 
     res.json({
       total: allProducts.length,
-      products: allProducts.map(p => ({ id: String(p.id), title: p.title, body: p.body_html }))
+      products: allProducts.map(p => ({ id: p.id, title: p.title, body: p.body_html }))
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -134,8 +134,7 @@ app.get('/status', async (req, res) => {
       .from('translations')
       .select('locale, status, translated_title, product_id, created_at')
       .eq('shop', shop)
-      .order('created_at', { ascending: false })
-      .limit(10000);
+      .order('created_at', { ascending: false });
     if (error) throw error;
     res.json({ total: data.length, translations: data });
   } catch (error) {
