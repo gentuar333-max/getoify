@@ -287,7 +287,15 @@
         ? '<div class="st"><div class="st-dot d-gr"></div>Localized</div>'
         : '<div class="st"><div class="st-dot d-gy"></div>Not started</div>';
       const pillsHtml = locales.length
-        ? locales.map(l => `<span class="lpill lp-done">${langFlags[l] || ''} ${l.toUpperCase()}</span>`).join('')
+        ? (() => {
+            const first = locales[0];
+            const rest = locales.length - 1;
+            const flag = langFlags[first] || '';
+            const label = rest > 0
+              ? `${flag} ${first.toUpperCase()}<span style="color:var(--ink-faint);font-weight:500">+${rest}</span>`
+              : `${flag} ${first.toUpperCase()}`;
+            return `<span class="lpill lp-done">${label}</span>`;
+          })()
         : '<span class="lpill lp-none">No translations</span>';
       const date = p.created_at ? new Date(p.created_at).toLocaleDateString() : '—';
       const btn = status === 'none'
