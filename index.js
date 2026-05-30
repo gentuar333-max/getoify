@@ -147,7 +147,7 @@ app.get('/store-settings', async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('stores')
-      .select('tone, glossary, selected_locales, plan')
+      .select('tone, glossary, selected_locales, plan, access_token')
       .eq('shop', shop)
       .single();
     if (error) throw error;

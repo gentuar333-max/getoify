@@ -198,21 +198,32 @@
 
   async function loadData() {
     try {
-      const [statusRes, productsRes] = await Promise.all([
-        fetch('/status?shop=' + shop),
-        token ? fetch('/products?shop=' + shop + '&token=' + token) : Promise.resolve(null)
-      ]);
-
+      // Always fetch status first to get translations
+      const statusRes = await fetch('/status?shop=' + shop);
       const statusData = await statusRes.json();
+
       statusData.translations.forEach(t => {
         if (!translatedMap[t.product_id]) translatedMap[t.product_id] = [];
         if (!translatedMap[t.product_id].includes(t.locale)) translatedMap[t.product_id].push(t.locale);
       });
 
-      if (productsRes) {
+      // Try to get token from URL or localStorage or store settings
+      let activeToken = token;
+      if (!activeToken) {
+        try {
+          const settingsRes = await fetch('/store-settings?shop=' + shop);
+          const settings = await settingsRes.json();
+          activeToken = settings.access_token || null;
+        } catch(e) {}
+      }
+
+      if (activeToken) {
+        // Fetch real product list from Shopify via backend
+        const productsRes = await fetch('/products?shop=' + shop + '&token=' + activeToken);
         const prodData = await productsRes.json();
         allProducts = prodData.products || [];
       } else {
+        // Fallback: build product list from translations using original_title
         const seen = {};
         allProducts = statusData.translations
           .filter(t => { if (seen[t.product_id]) return false; seen[t.product_id] = true; return true; })
