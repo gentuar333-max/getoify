@@ -189,10 +189,6 @@
 
   function nav(e, page) { e.preventDefault(); window.location.href = page + '?shop=' + shop; }
 
-  if (!token) {
-    window.location.href = '/dashboard?shop=' + shop;
-  }
-
   const langFlags = { de: '🇩🇪', fr: '🇫🇷', it: '🇮🇹', es: '🇪🇸', nl: '🇳🇱', pt: '🇵🇹', ja: '🇯🇵', hi: '🇮🇳', id: '🇮🇩' };
   let allProducts = [];
   let translatedMap = {};
@@ -215,12 +211,12 @@
 
       if (productsRes) {
         const prodData = await productsRes.json();
-        allProducts = (prodData.products || []).map(p => ({ ...p, id: String(p.id) }));
+        allProducts = prodData.products || [];
       } else {
         const seen = {};
         allProducts = statusData.translations
           .filter(t => { if (seen[t.product_id]) return false; seen[t.product_id] = true; return true; })
-          .map(t => ({ id: String(t.product_id), title: t.translated_title, created_at: t.created_at }));
+          .map(t => ({ id: String(t.product_id), title: t.original_title || t.translated_title, created_at: t.created_at }));
       }
 
       updateStats();

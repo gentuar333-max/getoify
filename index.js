@@ -132,7 +132,7 @@ app.get('/status', async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('translations')
-      .select('locale, status, translated_title, product_id, created_at')
+      .select('locale, status, translated_title, original_title, product_id, created_at')
       .eq('shop', shop)
       .order('created_at', { ascending: false });
     if (error) throw error;
