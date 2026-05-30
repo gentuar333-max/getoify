@@ -124,11 +124,11 @@
       <a class="sb-item" href="#" onclick="nav(event,'/tone')"><i class="ti ti-adjustments"></i>Tone Setup</a>
       <a class="sb-item" href="#" onclick="nav(event,'/glossary')"><i class="ti ti-book"></i>Glossary</a>
       <div class="sb-lbl">Automation</div>
-      <a class="sb-item" href="#"><i class="ti ti-refresh"></i>Auto-Sync</a>
+      <a class="sb-item" href="#" onclick="nav(event,'/autosync')"><i class="ti ti-refresh"></i>Auto-Sync</a>
       <a class="sb-item" href="#"><i class="ti ti-shield-check"></i>QA Rules</a>
       <a class="sb-item" href="#"><i class="ti ti-search"></i>SEO Pack</a>
       <div class="sb-lbl">Account</div>
-      <a class="sb-item" href="#"><i class="ti ti-settings"></i>Settings</a>
+      <a class="sb-item" href="#" onclick="nav(event,'/settings')"><i class="ti ti-settings"></i>Settings</a>
     </nav>
     <div class="sb-foot"><div class="sb-av" id="sb-av">?</div><div class="sb-un" id="sb-shop2">—</div></div>
   </aside>
@@ -142,9 +142,9 @@
     </div>
     <div class="body">
       <div class="metrics">
-        <div class="mc"><div class="mc-lbl">Total products</div><div class="mc-val" id="m-total">—</div><div class="mc-sub c-gray" id="m-total-sub">Loading...</div></div>
-        <div class="mc"><div class="mc-lbl">Localized</div><div class="mc-val" id="m-localized">—</div><div class="mc-sub c-green" id="m-localized-sub">—</div></div>
-        <div class="mc"><div class="mc-lbl">Flagged (QA)</div><div class="mc-val" id="m-flagged">—</div><div class="mc-sub c-amber">Need review</div></div>
+        <div class="mc"><div class="mc-lbl">Total products</div><div class="mc-val" id="m-total">—</div><div class="mc-sub c-gray" id="m-total-sub">In your store</div></div>
+        <div class="mc"><div class="mc-lbl">Localized</div><div class="mc-val" id="m-localized">—</div><div class="mc-sub c-green" id="m-localized-sub">Unique products</div></div>
+        <div class="mc"><div class="mc-lbl">Flagged (QA)</div><div class="mc-val" id="m-flagged">0</div><div class="mc-sub c-amber">Need review</div></div>
         <div class="mc"><div class="mc-lbl">Translations done</div><div class="mc-val" id="m-done">—</div><div class="mc-sub c-gray">Total records</div></div>
       </div>
       <div class="row2">
@@ -167,6 +167,7 @@
     </div>
   </div>
 </div>
+
 <!-- Language Setup Modal -->
 <div class="modal-overlay hidden" id="lang-modal">
   <div class="modal">
@@ -231,18 +232,38 @@
 
   async function loadData() {
     try {
-      const res = await fetch('/status?shop=' + shop);
-      const data = await res.json();
-      document.getElementById('m-done').textContent = data.total;
-      document.getElementById('m-localized').textContent = data.total;
-      document.getElementById('m-localized-sub').textContent = 'Records saved';
-      document.getElementById('m-flagged').textContent = '0';
-      document.getElementById('m-total').textContent = '—';
-      document.getElementById('m-total-sub').textContent = 'Run translate to update';
+      // Load translations from Supabase
+      const statusRes = await fetch('/status?shop=' + shop);
+      const statusData = await statusRes.json();
+
+      // Count unique product IDs
+      const uniqueProducts = new Set(statusData.translations.map(t => t.product_id));
+      const uniqueCount = uniqueProducts.size;
+
+      document.getElementById('m-done').textContent = statusData.total;
+      document.getElementById('m-localized').textContent = uniqueCount;
+      document.getElementById('m-localized-sub').textContent = uniqueCount + ' unique products';
+
+      // Load total products from Shopify
+      const tok = token || localStorage.getItem('getoify_token');
+      if (tok) {
+        try {
+          const prodRes = await fetch('/products?shop=' + shop + '&token=' + tok);
+          const prodData = await prodRes.json();
+          if (prodData.total !== undefined) {
+            document.getElementById('m-total').textContent = prodData.total;
+            document.getElementById('m-total-sub').textContent = 'In your store';
+          }
+        } catch(e) {
+          document.getElementById('m-total').textContent = '—';
+          document.getElementById('m-total-sub').textContent = 'Reconnect to update';
+        }
+      }
+
       const byLocale = {};
-      data.translations.forEach(t => { byLocale[t.locale] = (byLocale[t.locale] || 0) + 1; });
+      statusData.translations.forEach(t => { byLocale[t.locale] = (byLocale[t.locale] || 0) + 1; });
       const langNames = { de: '🇩🇪 German', fr: '🇫🇷 French', it: '🇮🇹 Italian', es: '🇪🇸 Spanish', nl: '🇳🇱 Dutch', pt: '🇵🇹 Portuguese' };
-      const total = data.total || 1;
+      const total = uniqueCount || 1;
       const langHtml = Object.entries(byLocale).map(([locale, count]) => {
         const pct = Math.round((count / total) * 100);
         const parts = (langNames[locale] || locale).split(' ');
@@ -251,12 +272,14 @@
         return `<div class="lr"><div class="lr-flag">${flag}</div><div class="lr-name">${name}</div><div class="lr-track"><div class="lr-fill ${cls}" style="width:${Math.min(pct,100)}%"></div></div><div class="lr-pct">${count}</div></div>`;
       }).join('');
       document.getElementById('lang-rows').innerHTML = langHtml || '<div class="loading">No languages yet</div>';
-      const actHtml = data.translations.slice(0, 4).map(t => `
+
+      const actHtml = statusData.translations.slice(0, 4).map(t => `
         <div class="al"><div class="al-ico"><i class="ti ti-check"></i></div><div>
         <div class="al-txt"><strong>${t.translated_title || 'Product'}</strong> — ${t.locale.toUpperCase()}</div>
         <div class="al-time">${new Date(t.created_at).toLocaleString()}</div></div></div>`).join('');
       document.getElementById('act-list').innerHTML = actHtml || '<div class="loading">No activity yet</div>';
-      const tblHtml = data.translations.slice(0, 8).map(t => `
+
+      const tblHtml = statusData.translations.slice(0, 8).map(t => `
         <tr><td><div class="prod-nm">${t.translated_title || '—'}</div></td>
         <td><span class="pill pill-lang">${t.locale.toUpperCase()}</span></td>
         <td><div class="st"><div class="st-dot d-gr"></div>${t.status}</div></td>
@@ -264,6 +287,7 @@
       document.getElementById('tbl-body').innerHTML = tblHtml || '<tr><td colspan="4" class="loading">No translations yet</td></tr>';
     } catch(e) { console.error(e); }
   }
+
   async function runBulk() {
     const btn = document.getElementById('btn-run');
     const tok = new URLSearchParams(window.location.search).get('token') || localStorage.getItem('getoify_token');
@@ -278,11 +302,9 @@
     } catch(e) { console.error('Fetch error:', e); alert('Connection error: ' + e.message);
       btn.innerHTML = '<i class="ti ti-player-play"></i>Run bulk translate'; btn.disabled = false; }
   }
-  // Language modal logic
-  const MAX_FREE = 1;
-  const MAX_PAID = 6;
-  let userPlan = 'free';
-  let selectedLangs = [];
+
+  const MAX_FREE = 1; const MAX_PAID = 6;
+  let userPlan = 'free'; let selectedLangs = [];
 
   async function checkLanguageSetup() {
     try {
@@ -290,16 +312,11 @@
       const data = await res.json();
       userPlan = data.plan || 'free';
       const locales = data.selected_locales || [];
-      if (locales.length === 0) {
-        showModal();
-      }
-    } catch(e) {
-      showModal();
-    }
+      if (locales.length === 0) showModal();
+    } catch(e) { showModal(); }
   }
 
   function showModal() {
-    const maxLangs = userPlan === 'free' ? MAX_FREE : MAX_PAID;
     document.getElementById('plan-badge').textContent = userPlan === 'free' ? 'Free' : 'Paid';
     document.getElementById('plan-note-text').innerHTML = userPlan === 'free'
       ? 'Free plan — 1 language. <a href="#" style="color:var(--accent);text-decoration:none;font-weight:500;">Upgrade for all 6</a>'
@@ -319,37 +336,22 @@
       selectedLangs.push(locale);
     }
     const maxReached = selectedLangs.length >= maxLangs;
-    document.querySelectorAll('.lang-card:not(.selected)').forEach(c => {
-      c.classList.toggle('disabled', maxReached);
-    });
+    document.querySelectorAll('.lang-card:not(.selected)').forEach(c => { c.classList.toggle('disabled', maxReached); });
     document.getElementById('save-langs-btn').disabled = selectedLangs.length === 0;
   }
 
   async function saveLanguages() {
     const btn = document.getElementById('save-langs-btn');
-    btn.textContent = 'Saving...';
-    btn.disabled = true;
+    btn.textContent = 'Saving...'; btn.disabled = true;
     try {
-      const res = await fetch('/save-locales', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shop, selected_locales: selectedLangs })
-      });
-      if (res.ok) {
-        document.getElementById('lang-modal').classList.add('hidden');
-      } else {
-        btn.textContent = 'Save languages';
-        btn.disabled = false;
-      }
-    } catch(e) {
-      btn.textContent = 'Save languages';
-      btn.disabled = false;
-    }
+      const res = await fetch('/save-locales', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shop, selected_locales: selectedLangs }) });
+      if (res.ok) { document.getElementById('lang-modal').classList.add('hidden'); }
+      else { btn.textContent = 'Save languages'; btn.disabled = false; }
+    } catch(e) { btn.textContent = 'Save languages'; btn.disabled = false; }
   }
 
-  function skipModal() {
-    document.getElementById('lang-modal').classList.add('hidden');
-  }
+  function skipModal() { document.getElementById('lang-modal').classList.add('hidden'); }
 
   loadData();
   checkLanguageSetup();
