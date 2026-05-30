@@ -101,12 +101,26 @@ app.get('/products', async (req, res) => {
   const { shop, token } = req.query;
   if (!shop || !token) return res.status(400).json({ error: 'Missing shop or token' });
   try {
-    const response = await axios.get(`https://${shop}/admin/api/2026-01/products.json?limit=250`, {
-      headers: { 'X-Shopify-Access-Token': token }
-    });
+    // Fetch all products using Shopify cursor-based pagination (supports 500+)
+    let allProducts = [];
+    let url = `https://${shop}/admin/api/2026-01/products.json?limit=250`;
+
+    while (url) {
+      const response = await axios.get(url, {
+        headers: { 'X-Shopify-Access-Token': token }
+      });
+      const batch = response.data.products || [];
+      allProducts = allProducts.concat(batch);
+
+      // Parse Link header for next page cursor
+      const linkHeader = response.headers['link'] || '';
+      const nextMatch = linkHeader.match(/<([^>]+)>;\s*rel="next"/);
+      url = nextMatch ? nextMatch[1] : null;
+    }
+
     res.json({
-      total: response.data.products.length,
-      products: response.data.products.map(p => ({ id: p.id, title: p.title, body: p.body_html }))
+      total: allProducts.length,
+      products: allProducts.map(p => ({ id: p.id, title: p.title, body: p.body_html }))
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -340,11 +354,16 @@ app.post('/bulk-localize-all', async (req, res) => {
     const locales = savedLocales.length > 0
       ? savedLocales.map(l => ({ locale: l, targetLang: LOCALE_MAP[l] || l }))
       : await getShopLocales(shop, token);
-    const productsRes = await axios.get(
-      `https://${shop}/admin/api/2026-01/products.json?limit=250`,
-      { headers: { 'X-Shopify-Access-Token': token } }
-    );
-    const products = productsRes.data.products;
+    // Fetch all products with cursor pagination (supports 500+)
+    let products = [];
+    let bulkUrl = `https://${shop}/admin/api/2026-01/products.json?limit=250`;
+    while (bulkUrl) {
+      const batchRes = await axios.get(bulkUrl, { headers: { 'X-Shopify-Access-Token': token } });
+      products = products.concat(batchRes.data.products || []);
+      const linkHeader = batchRes.headers['link'] || '';
+      const nextMatch = linkHeader.match(/<([^>]+)>;\s*rel="next"/);
+      bulkUrl = nextMatch ? nextMatch[1] : null;
+    }
 
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.write('{"results":[');
