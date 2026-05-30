@@ -134,7 +134,8 @@ app.get('/status', async (req, res) => {
       .from('translations')
       .select('locale, status, translated_title, product_id, created_at')
       .eq('shop', shop)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(10000);
     if (error) throw error;
     res.json({ total: data.length, translations: data });
   } catch (error) {

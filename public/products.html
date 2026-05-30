@@ -189,6 +189,10 @@
 
   function nav(e, page) { e.preventDefault(); window.location.href = page + '?shop=' + shop; }
 
+  if (!token) {
+    window.location.href = '/dashboard?shop=' + shop;
+  }
+
   const langFlags = { de: '🇩🇪', fr: '🇫🇷', it: '🇮🇹', es: '🇪🇸', nl: '🇳🇱', pt: '🇵🇹', ja: '🇯🇵', hi: '🇮🇳', id: '🇮🇩' };
   let allProducts = [];
   let translatedMap = {};
