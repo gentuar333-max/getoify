@@ -461,53 +461,19 @@ async function pollNewProducts() {
         );
 
         for (const product of res.data.products) {
-          // Count UNIQUE products (distinct product_id), not raw rows.
-          // Previously counting rows caused a bug: 2 langs × 4 products = 8 rows
-          // made the system think it hit the limit at product #5 and start
-          // overwriting/mixing up descriptions with old product IDs.
-          const { data: uniqueProductIds } = await supabase
-            .from('translations')
-            .select('product_id')
-            .eq('shop', shop);
-
-          const uniqueCount = new Set((uniqueProductIds || []).map(r => r.product_id)).size;
-
-          const FREE_LIMIT = 500; // 500 unique products (not rows)
-
+          // Only localize if this product_id has never been translated.
+          // Never delete existing translations automatically — this caused
+          // data corruption where old product descriptions overwrote new ones.
           const { data } = await supabase
             .from('translations')
-            .select('id, original_title')
+            .select('id')
             .eq('shop', shop)
             .eq('product_id', String(product.id))
             .limit(1);
 
-          const needsLocalize = !data || data.length === 0 ||
-            (data[0].original_title && data[0].original_title.toLowerCase() !== product.title.toLowerCase());
+          const needsLocalize = !data || data.length === 0;
 
           if (needsLocalize) {
-            // If recycled ID — delete old translation
-            if (data && data.length > 0) {
-              console.log(`Product ID recycled: "${data[0].original_title}" → "${product.title}", relocalizing...`);
-              await supabase.from('translations').delete()
-                .eq('shop', shop)
-                .eq('product_id', String(product.id));
-            }
-
-            // If at limit — delete oldest product's translations to make room
-            if (uniqueCount >= FREE_LIMIT && (!data || data.length === 0)) {
-              const { data: oldest } = await supabase
-                .from('translations')
-                .select('id, product_id')
-                .eq('shop', shop)
-                .order('created_at', { ascending: true })
-                .limit(1);
-              if (oldest && oldest.length > 0) {
-                await supabase.from('translations').delete()
-                  .eq('shop', shop)
-                  .eq('product_id', oldest[0].product_id);
-                console.log('Limit reached — removed oldest product translations to make room');
-              }
-            }
 
             console.log('New product found via polling:', product.title);
             const savedLocales = store.selected_locales || [];
