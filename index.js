@@ -442,13 +442,18 @@ async function pollNewProducts() {
         );
 
         for (const product of res.data.products) {
-          // Check current translation count for this store
-          const { count } = await supabase
+          // Count UNIQUE products (distinct product_id), not raw rows.
+          // Previously counting rows caused a bug: 2 langs × 4 products = 8 rows
+          // made the system think it hit the limit at product #5 and start
+          // overwriting/mixing up descriptions with old product IDs.
+          const { data: uniqueProductIds } = await supabase
             .from('translations')
-            .select('id', { count: 'exact', head: true })
+            .select('product_id')
             .eq('shop', shop);
 
-          const FREE_LIMIT = 50;
+          const uniqueCount = new Set((uniqueProductIds || []).map(r => r.product_id)).size;
+
+          const FREE_LIMIT = 500; // 500 unique products (not rows)
 
           const { data } = await supabase
             .from('translations')
@@ -469,8 +474,8 @@ async function pollNewProducts() {
                 .eq('product_id', String(product.id));
             }
 
-            // If at limit — delete oldest translation to make room
-            if (count >= FREE_LIMIT && (!data || data.length === 0)) {
+            // If at limit — delete oldest product's translations to make room
+            if (uniqueCount >= FREE_LIMIT && (!data || data.length === 0)) {
               const { data: oldest } = await supabase
                 .from('translations')
                 .select('id, product_id')
@@ -481,7 +486,7 @@ async function pollNewProducts() {
                 await supabase.from('translations').delete()
                   .eq('shop', shop)
                   .eq('product_id', oldest[0].product_id);
-                console.log('Limit reached — removed oldest translation to make room');
+                console.log('Limit reached — removed oldest product translations to make room');
               }
             }
 
