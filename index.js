@@ -287,6 +287,7 @@ Respond ONLY in this exact JSON format, no extra text, no markdown backticks:
     headers: {
       'x-api-key': process.env.ANTHROPIC_API_KEY,
       'anthropic-version': '2023-06-01',
+      'anthropic-beta': 'web-search-2025-03-05',
       'content-type': 'application/json'
     }
   });
@@ -413,7 +414,6 @@ app.post('/webhook/product-create', async (req, res) => {
 });
 
 app.post('/process-product', async (req, res) => {
-  res.status(200).send('Processing');
   const { shop, productId, productTitle } = req.body;
   try {
     const store = await getStore(shop);
@@ -425,17 +425,22 @@ app.post('/process-product', async (req, res) => {
     const locales = savedLocales.length > 0
       ? savedLocales.map(l => ({ locale: l, targetLang: LOCALE_MAP[l] || l }))
       : await getShopLocales(shop, token);
+    const results = [];
     for (const lang of locales) {
       try {
         await localizeProduct(shop, token, productId, lang.targetLang, lang.locale, tone, glossary);
         console.log(`Done: ${productTitle} in ${lang.targetLang}`);
+        results.push({ locale: lang.locale, success: true });
       } catch (err) {
         console.error(`Error ${lang.locale}:`, err.message);
+        results.push({ locale: lang.locale, success: false, error: err.message });
       }
       await new Promise(resolve => setTimeout(resolve, 300));
     }
+    res.json({ success: true, results });
   } catch (err) {
     console.error('Process error:', err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 
