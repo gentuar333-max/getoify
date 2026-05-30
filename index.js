@@ -246,18 +246,16 @@ DESCRIPTION: ${cleanBody}`
 ${category ? `Category: ${category}` : ''}
 ${tags ? `Tags: ${tags}` : ''}
 
-Search the web for "${product.title}" ONLY if it is a well-known product (food, clothing, electronics, beauty, etc).
-If you find relevant results — use them to write 2 natural sentences in ${targetLang}.
-If you find NO relevant results or the product name is unclear — write 2 sentences based ONLY on the title as written.
-
-CRITICAL RULES:
-- NEVER change or invent a different product name
-- Keep the original title exactly as: "${product.title}"
-- Max 40 words for description
-- No bullet points
-- Sound human, not AI
-- If unsure what the product is, describe it generically based on its name only
+Search the web for "${product.title}" to understand what this product is and how people experience it.
+Based on what you find, write a description in ${targetLang} that:
+- Reads like a real person wrote it, not a label or ingredient list
+- Focuses on the experience, taste, use, or feeling — not the technical composition
+- Is 2 sentences maximum
+- No bullet points, no ingredient lists, no technical specs
+- No generic adjectives like "elegant", "perfect", "exquisite" — use concrete sensory words
 - Active voice, present tense
+- Max 40 words total
+- Sound like a friend recommending the product, not a manufacturer describing it
 
 Also translate the title naturally into ${targetLang}.`
   }
