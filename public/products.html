@@ -311,7 +311,7 @@
         : '<span class="lpill lp-none">No translations</span>';
       const date = p.created_at ? new Date(p.created_at).toLocaleDateString() : '—';
       const btn = status === 'none'
-        ? `<button class="action-btn">Translate</button>`
+        ? `<button class="action-btn" onclick="translateProduct('${p.id}', '${p.title.replace(/'/g, '\\'')}')">Translate</button>`
         : `<button class="action-btn" onclick="viewProduct(${p.id}, this)">View</button>`;
 
       return `<tr>
@@ -359,6 +359,23 @@
   function closeSidebar() {
     document.getElementById('sidebar').classList.remove('open');
     document.getElementById('mob-overlay').classList.remove('open');
+  }
+
+  async function translateProduct(productId, productTitle) {
+    if (!token) { alert('Please reconnect your store first.'); return; }
+    try {
+      const btn = event.target;
+      btn.textContent = 'Translating...';
+      btn.disabled = true;
+      await fetch('/process-product', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shop, token, productId, productTitle })
+      });
+      setTimeout(() => loadData(), 3000);
+    } catch(e) {
+      alert('Error. Please try again.');
+    }
   }
 
   loadData();
