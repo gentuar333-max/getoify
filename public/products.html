@@ -311,7 +311,7 @@
         : '<span class="lpill lp-none">No translations</span>';
       const date = p.created_at ? new Date(p.created_at).toLocaleDateString() : '—';
       const btn = status === 'none'
-        ? `<button class="action-btn" onclick="translateProduct('${p.id}', '${p.title.replace(/'/g, '\\'')}')">Translate</button>`
+        ? `<button class="action-btn translate-btn" data-id="${p.id}" data-title="${encodeURIComponent(p.title)}">Translate</button>`
         : `<button class="action-btn" onclick="viewProduct(${p.id}, this)">View</button>`;
 
       return `<tr>
@@ -361,22 +361,39 @@
     document.getElementById('mob-overlay').classList.remove('open');
   }
 
-  async function translateProduct(productId, productTitle) {
+  // Delegate click per translate buttons
+  document.addEventListener('click', async function(e) {
+    const btn = e.target.closest('.translate-btn');
+    if (!btn) return;
     if (!token) { alert('Please reconnect your store first.'); return; }
+    const productId = btn.dataset.id;
+    const productTitle = decodeURIComponent(btn.dataset.title || '');
+    btn.textContent = 'Translating...';
+    btn.disabled = true;
     try {
-      const btn = event.target;
-      btn.textContent = 'Translating...';
-      btn.disabled = true;
-      await fetch('/process-product', {
+      const res = await fetch('/process-product', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ shop, token, productId, productTitle })
       });
-      setTimeout(() => loadData(), 3000);
+      if (!res.ok) throw new Error('Server error');
+      // Poll every 3s up to 30s for translation to complete
+      let attempts = 0;
+      const poll = setInterval(async () => {
+        attempts++;
+        await loadData();
+        // Check if this product now has translations
+        const locales = getLocalesForProduct(productId);
+        if (locales.length > 0 || attempts >= 10) {
+          clearInterval(poll);
+        }
+      }, 3000);
     } catch(e) {
+      btn.textContent = 'Translate';
+      btn.disabled = false;
       alert('Error. Please try again.');
     }
-  }
+  });
 
   loadData();
 </script>
