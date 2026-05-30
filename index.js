@@ -84,7 +84,7 @@ app.get('/locales', async (req, res) => {
   try {
     const query = `query { shopLocales { locale name primary published } }`;
     const response = await axios.post(
-      `https://${shop}/admin/api/2026-01/graphql.json`,
+      `https://${shop}/admin/api/2024-01/graphql.json`,
       { query },
       { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
     );
@@ -103,11 +103,12 @@ app.get('/products', async (req, res) => {
   try {
     // Fetch all products using Shopify cursor-based pagination (supports 500+)
     let allProducts = [];
-    let url = `https://${shop}/admin/api/2026-01/products.json?limit=250`;
+    let url = `https://${shop}/admin/api/2024-01/products.json?limit=250`;
 
     while (url) {
       const response = await axios.get(url, {
-        headers: { 'X-Shopify-Access-Token': token }
+        headers: { 'X-Shopify-Access-Token': token },
+        timeout: 15000
       });
       const batch = response.data.products || [];
       allProducts = allProducts.concat(batch);
@@ -120,9 +121,10 @@ app.get('/products', async (req, res) => {
 
     res.json({
       total: allProducts.length,
-      products: allProducts.map(p => ({ id: p.id, title: p.title, body: p.body_html }))
+      products: allProducts.map(p => ({ id: p.id, title: p.title, body: p.body_html, created_at: p.created_at }))
     });
   } catch (error) {
+    console.error('/products error:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
@@ -192,7 +194,7 @@ async function getStore(shop) {
 async function getShopLocales(shop, token) {
   const query = `query { shopLocales { locale name primary published } }`;
   const res = await axios.post(
-    `https://${shop}/admin/api/2026-01/graphql.json`,
+    `https://${shop}/admin/api/2024-01/graphql.json`,
     { query },
     { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
   );
@@ -203,7 +205,7 @@ async function getShopLocales(shop, token) {
 
 async function localizeProduct(shop, token, productId, targetLang, locale, tone, glossary) {
   const productRes = await axios.get(
-    `https://${shop}/admin/api/2026-01/products/${productId}.json`,
+    `https://${shop}/admin/api/2024-01/products/${productId}.json`,
     { headers: { 'X-Shopify-Access-Token': token } }
   );
   const product = productRes.data.product;
@@ -216,7 +218,7 @@ async function localizeProduct(shop, token, productId, targetLang, locale, tone,
     }
   `;
   const digestRes = await axios.post(
-    `https://${shop}/admin/api/2026-01/graphql.json`,
+    `https://${shop}/admin/api/2024-01/graphql.json`,
     { query: digestQuery, variables: { resourceId: `gid://shopify/Product/${productId}` } },
     { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
   );
@@ -307,7 +309,7 @@ Respond ONLY in this exact JSON format, no extra text, no markdown backticks:
     }
   `;
   const pushRes = await axios.post(
-    `https://${shop}/admin/api/2026-01/graphql.json`,
+    `https://${shop}/admin/api/2024-01/graphql.json`,
     {
       query: mutation,
       variables: {
@@ -356,7 +358,7 @@ app.post('/bulk-localize-all', async (req, res) => {
       : await getShopLocales(shop, token);
     // Fetch all products with cursor pagination (supports 500+)
     let products = [];
-    let bulkUrl = `https://${shop}/admin/api/2026-01/products.json?limit=250`;
+    let bulkUrl = `https://${shop}/admin/api/2024-01/products.json?limit=250`;
     while (bulkUrl) {
       const batchRes = await axios.get(bulkUrl, { headers: { 'X-Shopify-Access-Token': token } });
       products = products.concat(batchRes.data.products || []);
@@ -456,7 +458,7 @@ async function pollNewProducts() {
 
       try {
         const res = await axios.get(
-          `https://${shop}/admin/api/2026-01/products.json?limit=50&order=created_at+desc`,
+          `https://${shop}/admin/api/2024-01/products.json?limit=50&order=created_at+desc`,
           { headers: { 'X-Shopify-Access-Token': token } }
         );
 
