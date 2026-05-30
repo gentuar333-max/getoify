@@ -211,7 +211,7 @@
 
       if (productsRes) {
         const prodData = await productsRes.json();
-        allProducts = prodData.products || [];
+        allProducts = (prodData.products || []).map(p => ({ ...p, id: String(p.id) }));
       } else {
         const seen = {};
         allProducts = statusData.translations

@@ -120,7 +120,7 @@ app.get('/products', async (req, res) => {
 
     res.json({
       total: allProducts.length,
-      products: allProducts.map(p => ({ id: p.id, title: p.title, body: p.body_html }))
+      products: allProducts.map(p => ({ id: String(p.id), title: p.title, body: p.body_html }))
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
