@@ -415,16 +415,21 @@ app.post('/webhook/product-create', async (req, res) => {
 
 app.post('/process-product', async (req, res) => {
   const { shop, productId, productTitle } = req.body;
+  console.log('process-product called:', { shop, productId, productTitle });
   try {
     const store = await getStore(shop);
+    console.log('store found:', store.shop, 'locales:', store.selected_locales, 'token:', store.access_token ? 'ok' : 'MISSING');
     const token = store.access_token;
+    if (!token) throw new Error('No access_token in store');
     const tone = store.tone || 'professional and elegant';
     const glossary = store.glossary || 'checkout, Shopify';
-    console.log('Processing:', productTitle);
     const savedLocales = store.selected_locales || [];
+    console.log('savedLocales:', savedLocales);
     const locales = savedLocales.length > 0
       ? savedLocales.map(l => ({ locale: l, targetLang: LOCALE_MAP[l] || l }))
       : await getShopLocales(shop, token);
+    console.log('locales to process:', locales);
+    if (!locales || locales.length === 0) throw new Error('No locales found for this store');
     const results = [];
     for (const lang of locales) {
       try {
