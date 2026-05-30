@@ -283,23 +283,43 @@ Respond ONLY in this exact JSON format, no extra text, no markdown backticks:
     requestBody.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
   }
 
-  const claudeRes = await axios.post('https://api.anthropic.com/v1/messages', requestBody, {
-    headers: {
-      'x-api-key': process.env.ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01',
-      'anthropic-beta': 'web-search-2025-03-05',
-      'content-type': 'application/json'
-    }
-  });
+  let translated;
+  try {
+    const claudeRes = await axios.post('https://api.anthropic.com/v1/messages', requestBody, {
+      headers: {
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json'
+      },
+      timeout: 30000
+    });
 
-  let rawText = '';
-  for (const block of claudeRes.data.content) {
-    if (block.type === 'text') rawText += block.text;
+    console.log('Claude status:', claudeRes.status);
+
+    let rawText = '';
+    for (const block of claudeRes.data.content) {
+      if (block.type === 'text') rawText += block.text;
+    }
+
+    console.log('Claude raw response:', rawText.substring(0, 300));
+
+    rawText = rawText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('No JSON in Claude response: ' + rawText.substring(0, 100));
+    translated = JSON.parse(jsonMatch[0]);
+    if (!translated.title || !translated.description) throw new Error('Missing title or description in Claude response');
+
+  } catch (claudeErr) {
+    console.error('Claude API failed:', claudeErr.response?.data || claudeErr.message);
+    // Fallback: use original title and generate minimal description
+    console.log('Using fallback translation for:', product.title);
+    translated = {
+      title: product.title,
+      description: product.title,
+      meta_title: product.title.substring(0, 60),
+      meta_description: product.title.substring(0, 160)
+    };
   }
-  rawText = rawText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-  const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error('No JSON found in response: ' + rawText.substring(0, 100));
-  const translated = JSON.parse(jsonMatch[0]);
 
   const mutation = `
     mutation translationsRegister($resourceId: ID!, $translations: [TranslationInput!]!) {
