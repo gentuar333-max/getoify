@@ -442,6 +442,14 @@ async function pollNewProducts() {
         );
 
         for (const product of res.data.products) {
+          // Check current translation count for this store
+          const { count } = await supabase
+            .from('translations')
+            .select('id', { count: 'exact', head: true })
+            .eq('shop', shop);
+
+          const FREE_LIMIT = 50;
+
           const { data } = await supabase
             .from('translations')
             .select('id, original_title')
@@ -453,12 +461,30 @@ async function pollNewProducts() {
             (data[0].original_title && data[0].original_title.toLowerCase() !== product.title.toLowerCase());
 
           if (needsLocalize) {
+            // If recycled ID — delete old translation
             if (data && data.length > 0) {
               console.log(`Product ID recycled: "${data[0].original_title}" → "${product.title}", relocalizing...`);
               await supabase.from('translations').delete()
                 .eq('shop', shop)
                 .eq('product_id', String(product.id));
             }
+
+            // If at limit — delete oldest translation to make room
+            if (count >= FREE_LIMIT && (!data || data.length === 0)) {
+              const { data: oldest } = await supabase
+                .from('translations')
+                .select('id, product_id')
+                .eq('shop', shop)
+                .order('created_at', { ascending: true })
+                .limit(1);
+              if (oldest && oldest.length > 0) {
+                await supabase.from('translations').delete()
+                  .eq('shop', shop)
+                  .eq('product_id', oldest[0].product_id);
+                console.log('Limit reached — removed oldest translation to make room');
+              }
+            }
+
             console.log('New product found via polling:', product.title);
             const savedLocales = store.selected_locales || [];
             const locales = savedLocales.length > 0
