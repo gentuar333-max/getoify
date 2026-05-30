@@ -231,15 +231,16 @@ DESCRIPTION: ${cleanBody}`
 ${category ? `Category: ${category}` : ''}
 ${tags ? `Tags: ${tags}` : ''}
 
-Search the web for "${product.title}" to find real information about this product.
+Search the web for "${product.title}" to understand what this product is and how people experience it.
 Based on what you find, write a description in ${targetLang} that:
-- Reads like a real person wrote it, not a marketing bot
-- Uses specific real details (ingredients, materials, origin, use case, texture, taste etc.)
-- Is 2-3 sentences maximum
-- No bullet points
-- No generic adjectives like "elegant", "perfect", "exquisite" — use concrete specific words
+- Reads like a real person wrote it, not a label or ingredient list
+- Focuses on the experience, taste, use, or feeling — not the technical composition
+- Is 2 sentences maximum
+- No bullet points, no ingredient lists, no technical specs
+- No generic adjectives like "elegant", "perfect", "exquisite" — use concrete sensory words
 - Active voice, present tense
-- Max 50 words
+- Max 40 words total
+- Sound like a friend recommending the product, not a manufacturer describing it
 
 Also translate the title naturally into ${targetLang}.`
   }
