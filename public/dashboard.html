@@ -279,7 +279,7 @@
         <div class="al-time">${new Date(t.created_at).toLocaleString()}</div></div></div>`).join('');
       document.getElementById('act-list').innerHTML = actHtml || '<div class="loading">No activity yet</div>';
 
-      const tblHtml = statusData.translations.slice(0, 8).map(t => `
+      const tblHtml = statusData.translations.slice(0, 200000).map(t => `
         <tr><td><div class="prod-nm">${t.translated_title || '—'}</div></td>
         <td><span class="pill pill-lang">${t.locale.toUpperCase()}</span></td>
         <td><div class="st"><div class="st-dot d-gr"></div>${t.status}</div></td>
