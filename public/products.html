@@ -203,8 +203,9 @@
       const statusData = await statusRes.json();
 
       statusData.translations.forEach(t => {
-        if (!translatedMap[t.product_id]) translatedMap[t.product_id] = [];
-        if (!translatedMap[t.product_id].includes(t.locale)) translatedMap[t.product_id].push(t.locale);
+        const pid = String(t.product_id);
+        if (!translatedMap[pid]) translatedMap[pid] = [];
+        if (!translatedMap[pid].includes(t.locale)) translatedMap[pid].push(t.locale);
       });
 
       // Try to get token from URL or localStorage or store settings
