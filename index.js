@@ -279,9 +279,8 @@ Respond ONLY in this exact JSON format, no extra text, no markdown backticks:
     messages: [{ role: 'user', content: prompt }]
   };
 
-  if (!cleanBody) {
-    requestBody.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
-  }
+  // web_search tool removed — Claude generates descriptions from its own knowledge
+  // which is more reliable and doesn't require beta headers
 
   let translated;
   try {
