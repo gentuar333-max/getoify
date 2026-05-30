@@ -149,7 +149,7 @@
           <div class="section">
             <div class="section-title">${flag} SEO Preview</div>
             <div class="seo-box" style="margin-bottom:12px">
-              <div class="seo-url">${shop} › products › ${productTitle.toLowerCase().replace(/\s+/g,'-')}</div>
+              <div class="seo-url">${shop} › products › ${t.product_handle || productTitle.toLowerCase().replace(/\s+/g,'-')}</div>
               <div class="seo-title">${t.meta_title || t.translated_title || '—'}</div>
               <div class="seo-desc">${t.meta_description || '—'}</div>
             </div>

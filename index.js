@@ -41,7 +41,7 @@ app.get('/product-translations', async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('translations')
-      .select('*')
+      .select('locale, status, translated_title, translated_description, meta_title, meta_description, original_title, product_handle, created_at')
       .eq('shop', shop)
       .eq('product_id', productId);
     if (error) throw error;
@@ -329,6 +329,7 @@ Respond ONLY in this exact JSON format, no extra text, no markdown backticks:
     locale,
     status: 'done',
     original_title: product.title,
+    product_handle: product.handle || '',
     translated_title: translated.title,
     translated_description: translated.description,
     meta_title: translated.meta_title,
