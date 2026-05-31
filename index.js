@@ -358,10 +358,10 @@ Respond ONLY in this exact JSON format, no extra text, no markdown backticks:
         translations: [
           { key: 'title', value: translated.title, locale, translatableContentDigest: digests['title'] },
           { key: 'body_html', value: translated.description, locale, translatableContentDigest: digests['body_html'] },
-          // meta_title: only send if Shopify has a digest for it
-          ...(translated.meta_title && digests['meta_title'] ? [{ key: 'meta_title', value: translated.meta_title, locale, translatableContentDigest: digests['meta_title'] }] : []),
-          // meta_description correct Shopify key is metafields.global.description_tag
-          ...(translated.meta_description && digests['metafields.global.description_tag'] ? [{ key: 'metafields.global.description_tag', value: translated.meta_description, locale, translatableContentDigest: digests['metafields.global.description_tag'] }] : [])
+          // meta_title: use its own digest if exists, otherwise use title digest as fallback
+          ...(translated.meta_title ? [{ key: 'meta_title', value: translated.meta_title, locale, translatableContentDigest: digests['meta_title'] || digests['title'] }] : []),
+          // meta_description: use its own digest if exists, otherwise use body_html digest as fallback
+          ...(translated.meta_description ? [{ key: 'meta_description', value: translated.meta_description, locale, translatableContentDigest: digests['meta_description'] || digests['body_html'] || digests['title'] }] : [])
         ]
       }
     },
