@@ -19,6 +19,12 @@ const {
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
+const { normalizeProductId } = require('./lib/product-id');
+const { fetchAllRows } = require('./lib/supabase-pagination');
+
+const SHOPIFY_PRODUCTS_PAGE = 250;
+const SHOPIFY_PRODUCTS_TIMEOUT_MS = 60000;
+
 const LOCALE_MAP = {
   'fr': 'French', 'de': 'German', 'it': 'Italian', 'es': 'Spanish',
   'nl': 'Dutch', 'pt': 'Portuguese', 'pl': 'Polish', 'sv': 'Swedish',
@@ -38,14 +44,16 @@ app.get('/product', (req, res) => res.sendFile(path.join(__dirname, 'public', 'p
 
 app.get('/product-translations', async (req, res) => {
   const { shop, productId } = req.query;
+  if (!shop || !productId) return res.status(400).json({ error: 'Missing shop or productId' });
   try {
-    const { data, error } = await supabase
-      .from('translations')
-      .select('locale, status, translated_title, translated_description, meta_title, meta_description, original_title, product_handle, created_at')
-      .eq('shop', shop)
-      .eq('product_id', productId);
-    if (error) throw error;
-    res.json({ translations: data });
+    const pid = normalizeProductId(productId);
+    const data = await fetchAllRows(supabase, {
+      table: 'translations',
+      select: 'locale, status, translated_title, translated_description, meta_title, meta_description, original_title, product_handle, product_id, created_at',
+      eq: { shop, product_id: pid },
+      order: { column: 'created_at', ascending: false }
+    });
+    res.json({ product_id: pid, translations: data });
   } catch(e) {
     res.status(500).json({ error: e.message });
   }
@@ -101,19 +109,17 @@ app.get('/products', async (req, res) => {
   const { shop, token } = req.query;
   if (!shop || !token) return res.status(400).json({ error: 'Missing shop or token' });
   try {
-    // Fetch all products using Shopify cursor-based pagination (supports 500+)
     let allProducts = [];
-    let url = `https://${shop}/admin/api/2024-01/products.json?limit=250`;
+    let url = `https://${shop}/admin/api/2024-01/products.json?limit=${SHOPIFY_PRODUCTS_PAGE}`;
 
     while (url) {
       const response = await axios.get(url, {
         headers: { 'X-Shopify-Access-Token': token },
-        timeout: 15000
+        timeout: SHOPIFY_PRODUCTS_TIMEOUT_MS
       });
       const batch = response.data.products || [];
       allProducts = allProducts.concat(batch);
 
-      // Parse Link header for next page cursor
       const linkHeader = response.headers['link'] || '';
       const nextMatch = linkHeader.match(/<([^>]+)>;\s*rel="next"/);
       url = nextMatch ? nextMatch[1] : null;
@@ -121,7 +127,12 @@ app.get('/products', async (req, res) => {
 
     res.json({
       total: allProducts.length,
-      products: allProducts.map(p => ({ id: p.id, title: p.title, body: p.body_html, created_at: p.created_at }))
+      products: allProducts.map(p => ({
+        id: normalizeProductId(p.id),
+        title: p.title,
+        body: p.body_html,
+        created_at: p.created_at
+      }))
     });
   } catch (error) {
     console.error('/products error:', error.message);
@@ -131,14 +142,19 @@ app.get('/products', async (req, res) => {
 
 app.get('/status', async (req, res) => {
   const { shop } = req.query;
+  if (!shop) return res.status(400).json({ error: 'Missing shop' });
   try {
-    const { data, error } = await supabase
-      .from('translations')
-      .select('locale, status, translated_title, original_title, product_id, created_at')
-      .eq('shop', shop)
-      .order('created_at', { ascending: false });
-    if (error) throw error;
-    res.json({ total: data.length, translations: data });
+    const data = await fetchAllRows(supabase, {
+      table: 'translations',
+      select: 'locale, status, translated_title, original_title, product_id, created_at',
+      eq: { shop },
+      order: { column: 'created_at', ascending: false }
+    });
+    const translations = data.map(row => ({
+      ...row,
+      product_id: normalizeProductId(row.product_id)
+    }));
+    res.json({ total: translations.length, translations });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -204,8 +220,9 @@ async function getShopLocales(shop, token) {
 }
 
 async function localizeProduct(shop, token, productId, targetLang, locale, tone, glossary) {
+  const pid = normalizeProductId(productId);
   const productRes = await axios.get(
-    `https://${shop}/admin/api/2024-01/products/${productId}.json`,
+    `https://${shop}/admin/api/2024-01/products/${pid}.json`,
     { headers: { 'X-Shopify-Access-Token': token } }
   );
   const product = productRes.data.product;
@@ -219,7 +236,7 @@ async function localizeProduct(shop, token, productId, targetLang, locale, tone,
   `;
   const digestRes = await axios.post(
     `https://${shop}/admin/api/2024-01/graphql.json`,
-    { query: digestQuery, variables: { resourceId: `gid://shopify/Product/${productId}` } },
+    { query: digestQuery, variables: { resourceId: `gid://shopify/Product/${pid}` } },
     { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
   );
   const contents = digestRes.data.data.translatableResource.translatableContent;
@@ -243,26 +260,19 @@ Just translate accurately, preserving the original meaning and tone.
 
 TITLE: ${product.title}
 DESCRIPTION: ${cleanBody}`
-    : `This product has no description yet.
+    : `Product name: "${product.title}"
 ${category ? `Category: ${category}` : ''}
 ${tags ? `Tags: ${tags}` : ''}
 
-IMPORTANT: You MUST generate a description regardless of whether this product exists or not.
-Never refuse, never ask for clarification, never say the product doesn't exist.
-This is an ecommerce store — treat all product names as valid, even if fictional or futuristic.
+This product has no description. Based ONLY on the product name above, write a 2-sentence description in ${targetLang}.
 
-Write a short product description in ${targetLang} that:
-- Reads like a real person wrote it
-- Focuses on the experience, use, or feeling
-- Is 2 sentences maximum
-- No bullet points, no technical specs
-- No generic adjectives like "elegant", "perfect" — use concrete sensory words
-- Active voice, present tense
-- Max 40 words total
-- Sound like a friend recommending the product
-
-Also translate the title naturally into ${targetLang}.
-If the product name contains a number or model (like iPhone 22), treat it as a real product and describe it based on the product category.`
+RULES:
+- Use the actual product name — do NOT use placeholder phrases like "ce produit" or "this product"
+- Write as if describing this specific product to a friend
+- Focus on what it does, how it feels, or why someone would want it
+- Max 40 words, no bullet points, no generic adjectives
+- Also translate the title naturally into ${targetLang}
+- NEVER say the product doesn't exist — all product names are valid`
   }
 
 Rules for meta_title (max 60 chars):
@@ -324,6 +334,13 @@ Respond ONLY in this exact JSON format, no extra text, no markdown backticks:
     };
   }
 
+  if (!translated.meta_title) {
+    translated.meta_title = (translated.title || product.title).substring(0, 60);
+  }
+  if (!translated.meta_description) {
+    translated.meta_description = (translated.description || translated.title || product.title).substring(0, 160);
+  }
+
   const mutation = `
     mutation translationsRegister($resourceId: ID!, $translations: [TranslationInput!]!) {
       translationsRegister(resourceId: $resourceId, translations: $translations) {
@@ -337,7 +354,7 @@ Respond ONLY in this exact JSON format, no extra text, no markdown backticks:
     {
       query: mutation,
       variables: {
-        resourceId: `gid://shopify/Product/${productId}`,
+        resourceId: `gid://shopify/Product/${pid}`,
         translations: [
           { key: 'title', value: translated.title, locale, translatableContentDigest: digests['title'] },
           { key: 'body_html', value: translated.description, locale, translatableContentDigest: digests['body_html'] },
@@ -351,7 +368,7 @@ Respond ONLY in this exact JSON format, no extra text, no markdown backticks:
 
   await supabase.from('translations').upsert({
     shop,
-    product_id: String(productId),
+    product_id: pid,
     locale,
     status: 'done',
     original_title: product.title,
@@ -362,14 +379,17 @@ Respond ONLY in this exact JSON format, no extra text, no markdown backticks:
     meta_description: translated.meta_description
   }, { onConflict: 'shop,product_id,locale' });
 
-  return { product: product.title, translated, shopify: pushRes.data.data.translationsRegister };
+  console.log('Saved translation:', { shop, product_id: pid, locale, title: product.title });
+
+  return { product_id: pid, product: product.title, translated, shopify: pushRes.data.data.translationsRegister };
 }
 
 app.post('/localize', async (req, res) => {
   const { shop, token, productId, targetLang, locale, tone, glossary } = req.body;
   try {
-    const result = await localizeProduct(shop, token, productId, targetLang, locale, tone, glossary);
-    res.json({ success: true, ...result });
+    const pid = normalizeProductId(productId);
+    const result = await localizeProduct(shop, token, pid, targetLang, locale, tone, glossary);
+    res.json({ success: true, product_id: pid, ...result });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -385,9 +405,12 @@ app.post('/bulk-localize-all', async (req, res) => {
       : await getShopLocales(shop, token);
     // Fetch all products with cursor pagination (supports 500+)
     let products = [];
-    let bulkUrl = `https://${shop}/admin/api/2024-01/products.json?limit=250`;
+    let bulkUrl = `https://${shop}/admin/api/2024-01/products.json?limit=${SHOPIFY_PRODUCTS_PAGE}`;
     while (bulkUrl) {
-      const batchRes = await axios.get(bulkUrl, { headers: { 'X-Shopify-Access-Token': token } });
+      const batchRes = await axios.get(bulkUrl, {
+        headers: { 'X-Shopify-Access-Token': token },
+        timeout: SHOPIFY_PRODUCTS_TIMEOUT_MS
+      });
       products = products.concat(batchRes.data.products || []);
       const linkHeader = batchRes.headers['link'] || '';
       const nextMatch = linkHeader.match(/<([^>]+)>;\s*rel="next"/);
@@ -399,15 +422,16 @@ app.post('/bulk-localize-all', async (req, res) => {
     let first = true;
 
     for (const product of products) {
+      const bulkPid = normalizeProductId(product.id);
       for (const lang of locales) {
         try {
-          const result = await localizeProduct(shop, token, product.id, lang.targetLang, lang.locale, tone, glossary);
+          const result = await localizeProduct(shop, token, bulkPid, lang.targetLang, lang.locale, tone, glossary);
           if (!first) res.write(',');
-          res.write(JSON.stringify({ success: true, locale: lang.locale, ...result }));
+          res.write(JSON.stringify({ success: true, product_id: bulkPid, locale: lang.locale, ...result }));
           first = false;
         } catch (err) {
           if (!first) res.write(',');
-          res.write(JSON.stringify({ product: product.title, locale: lang.locale, success: false, error: err.message }));
+          res.write(JSON.stringify({ product_id: bulkPid, product: product.title, locale: lang.locale, success: false, error: err.message }));
           first = false;
         }
         await new Promise(resolve => setTimeout(resolve, 300));
@@ -452,7 +476,7 @@ app.post('/webhook/product-create', async (req, res) => {
 
     console.log('Calling process-product for:', body.title);
     axios.post(`${APP_URL}/process-product`, {
-      shop, productId: body.id, productTitle: body.title
+      shop, productId: normalizeProductId(body.id), productTitle: body.title
     }, { timeout: 5000 }).catch(err => console.error('Trigger error:', err.message));
   } catch (err) {
     console.error('Webhook error:', err.message);
@@ -479,7 +503,13 @@ app.post('/webhook/product-delete', async (req, res) => {
 
 app.post('/process-product', async (req, res) => {
   const { shop, productId, productTitle } = req.body;
-  console.log('process-product called:', { shop, productId, productTitle });
+  let pid;
+  try {
+    pid = normalizeProductId(productId);
+  } catch (e) {
+    return res.status(400).json({ error: e.message });
+  }
+  console.log('process-product called:', { shop, product_id: pid, productTitle });
   try {
     const store = await getStore(shop);
     console.log('store found:', store.shop, 'locales:', store.selected_locales, 'token:', store.access_token ? 'ok' : 'MISSING');
@@ -497,16 +527,16 @@ app.post('/process-product', async (req, res) => {
     const results = [];
     for (const lang of locales) {
       try {
-        await localizeProduct(shop, token, productId, lang.targetLang, lang.locale, tone, glossary);
-        console.log(`Done: ${productTitle} in ${lang.targetLang}`);
-        results.push({ locale: lang.locale, success: true });
+        await localizeProduct(shop, token, pid, lang.targetLang, lang.locale, tone, glossary);
+        console.log(`Done: ${productTitle} (${pid}) in ${lang.targetLang}`);
+        results.push({ product_id: pid, locale: lang.locale, success: true });
       } catch (err) {
         console.error(`Error ${lang.locale}:`, err.message);
-        results.push({ locale: lang.locale, success: false, error: err.message });
+        results.push({ product_id: pid, locale: lang.locale, success: false, error: err.message });
       }
       await new Promise(resolve => setTimeout(resolve, 300));
     }
-    res.json({ success: true, results });
+    res.json({ success: true, product_id: pid, results });
   } catch (err) {
     console.error('Process error:', err.message);
     res.status(500).json({ error: err.message });
@@ -559,7 +589,7 @@ async function pollNewProducts() {
               : await getShopLocales(shop, token);
             for (const lang of locales) {
               try {
-                await localizeProduct(shop, token, product.id, lang.targetLang, lang.locale, tone, glossary);
+                await localizeProduct(shop, token, normalizeProductId(product.id), lang.targetLang, lang.locale, tone, glossary);
                 console.log(`Poll done: ${product.title} in ${lang.targetLang}`);
               } catch(e) {
                 console.error('Poll localize error:', e.message);

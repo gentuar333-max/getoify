@@ -194,10 +194,11 @@
   let translatedMap = {};
   let activeFilter = 'all';
   let currentPage = 1;
-  const perPage = 10000;
+  const perPage = 100;
 
   async function loadData() {
     try {
+      translatedMap = {};
       // Always fetch status first to get translations
       const statusRes = await fetch('/status?shop=' + shop);
       const statusData = await statusRes.json();
@@ -224,7 +225,11 @@
           const productsRes = await fetch('/products?shop=' + shop + '&token=' + activeToken);
           const prodData = await productsRes.json();
           if (prodData.products && prodData.products.length > 0) {
-            allProducts = prodData.products;
+            allProducts = prodData.products.map(p => ({
+              id: String(p.id),
+              title: p.title,
+              created_at: p.created_at
+            }));
           } else {
             throw new Error('Empty products from Shopify');
           }
@@ -233,14 +238,14 @@
           // Fallback: use translations
           const seen = {};
           allProducts = statusData.translations
-            .filter(t => { if (seen[t.product_id]) return false; seen[t.product_id] = true; return true; })
+            .filter(t => { const k = String(t.product_id); if (seen[k]) return false; seen[k] = true; return true; })
             .map(t => ({ id: String(t.product_id), title: t.original_title || t.translated_title, created_at: t.created_at }));
         }
       } else {
         // No token — fallback to translations
         const seen = {};
         allProducts = statusData.translations
-          .filter(t => { if (seen[t.product_id]) return false; seen[t.product_id] = true; return true; })
+          .filter(t => { const k = String(t.product_id); if (seen[k]) return false; seen[k] = true; return true; })
           .map(t => ({ id: String(t.product_id), title: t.original_title || t.translated_title, created_at: t.created_at }));
       }
 
@@ -379,6 +384,7 @@
     const btn = e.target.closest('.translate-btn');
     if (!btn) return;
     const productId = btn.dataset.id;
+    if (!productId) return;
 
     // Try to get token from store-settings if not in localStorage
     let activeToken = token;
@@ -398,7 +404,7 @@
       const res = await fetch('/process-product', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shop, token: activeToken, productId, productTitle })
+        body: JSON.stringify({ shop, token: activeToken, productId: String(productId), productTitle })
       });
       if (!res.ok) throw new Error('Server error');
       // Poll every 3s up to 30s for translation to complete
@@ -407,7 +413,7 @@
         attempts++;
         await loadData();
         // Check if this product now has translations
-        const locales = getLocalesForProduct(productId);
+        const locales = getLocalesForProduct(String(productId));
         if (locales.length > 0 || attempts >= 10) {
           clearInterval(poll);
         }
