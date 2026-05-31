@@ -220,11 +220,24 @@
 
       if (activeToken) {
         // Fetch real product list from Shopify via backend
-        const productsRes = await fetch('/products?shop=' + shop + '&token=' + activeToken);
-        const prodData = await productsRes.json();
-        allProducts = prodData.products || [];
+        try {
+          const productsRes = await fetch('/products?shop=' + shop + '&token=' + activeToken);
+          const prodData = await productsRes.json();
+          if (prodData.products && prodData.products.length > 0) {
+            allProducts = prodData.products;
+          } else {
+            throw new Error('Empty products from Shopify');
+          }
+        } catch(shopifyErr) {
+          console.error('Shopify products failed:', shopifyErr);
+          // Fallback: use translations
+          const seen = {};
+          allProducts = statusData.translations
+            .filter(t => { if (seen[t.product_id]) return false; seen[t.product_id] = true; return true; })
+            .map(t => ({ id: String(t.product_id), title: t.original_title || t.translated_title, created_at: t.created_at }));
+        }
       } else {
-        // Fallback: build product list from translations using original_title
+        // No token — fallback to translations
         const seen = {};
         allProducts = statusData.translations
           .filter(t => { if (seen[t.product_id]) return false; seen[t.product_id] = true; return true; })
