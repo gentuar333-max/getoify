@@ -381,9 +381,17 @@ Respond ONLY in this exact JSON format, no extra text, no markdown backticks:
     meta_description: translated.meta_description
   }, { onConflict: 'shop,product_id,locale' });
 
+  // Log Shopify response për debugging
+  const shopifyResult = pushRes.data.data?.translationsRegister;
+  if (shopifyResult?.userErrors?.length > 0) {
+    console.error('Shopify userErrors:', JSON.stringify(shopifyResult.userErrors));
+  } else {
+    console.log('Shopify translations pushed OK:', shopifyResult?.translations?.length, 'fields');
+  }
+
   console.log('Saved translation:', { shop, product_id: pid, locale, title: product.title });
 
-  return { product_id: pid, product: product.title, translated, shopify: pushRes.data.data.translationsRegister };
+  return { product_id: pid, product: product.title, translated, shopify: shopifyResult };
 }
 
 app.post('/localize', async (req, res) => {
