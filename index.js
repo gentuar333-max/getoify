@@ -358,8 +358,10 @@ Respond ONLY in this exact JSON format, no extra text, no markdown backticks:
         translations: [
           { key: 'title', value: translated.title, locale, translatableContentDigest: digests['title'] },
           { key: 'body_html', value: translated.description, locale, translatableContentDigest: digests['body_html'] },
-          ...(translated.meta_title && digests['meta_title'] ? [{ key: 'meta_title', value: translated.meta_title, locale, translatableContentDigest: digests['meta_title'] }] : []),
-          ...(translated.meta_description && digests['meta_description'] ? [{ key: 'meta_description', value: translated.meta_description, locale, translatableContentDigest: digests['meta_description'] }] : [])
+          // meta_title: use its own digest if exists, otherwise use title digest as fallback
+          ...(translated.meta_title ? [{ key: 'meta_title', value: translated.meta_title, locale, translatableContentDigest: digests['meta_title'] || digests['title'] }] : []),
+          // meta_description: use its own digest if exists, otherwise use body_html digest as fallback
+          ...(translated.meta_description ? [{ key: 'meta_description', value: translated.meta_description, locale, translatableContentDigest: digests['meta_description'] || digests['body_html'] || digests['title'] }] : [])
         ]
       }
     },
