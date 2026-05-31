@@ -63,9 +63,40 @@
     .status-connected { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #3D7A56; font-weight: 500; }
     .danger-zone { border-color: #EDD4D4; }
     .danger-zone .section-title { color: #C97070; }
-    .toast { position: fixed; bottom: 24px; right: 24px; background: var(--ink); color: var(--cream); padding: 10px 18px; border-radius: 6px; font-size: 13px; opacity: 0; transform: translateY(10px); transition: all 0.2s; pointer-events: none; }
+    .toast { position: fixed; bottom: 24px; right: 24px; background: var(--ink); color: var(--cream); padding: 10px 18px; border-radius: 6px; font-size: 13px; opacity: 0; transform: translateY(10px); transition: all 0.2s; pointer-events: none; z-index: 200; }
     .toast.show { opacity: 1; transform: translateY(0); }
-    @media (max-width: 768px) { .app { grid-template-columns: 1fr; } .sb { display: none; } }
+    .lang-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin-top: 14px; }
+    .lc { border: 1px solid var(--border); border-radius: 7px; padding: 9px 11px; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: border-color 0.15s, background 0.15s; user-select: none; position: relative; }
+    .lc:hover { background: var(--cream-mid); }
+    .lc.sel { border-color: var(--ink); background: var(--cream-mid); }
+    .lc.dis { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+    .lc-flag { font-size: 17px; line-height: 1; flex-shrink: 0; }
+    .lc-info { display: flex; flex-direction: column; min-width: 0; }
+    .lc-name { font-size: 12px; font-weight: 500; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .lc-code { font-size: 10px; color: var(--ink-faint); letter-spacing: 0.06em; text-transform: uppercase; }
+    .lc-chk { margin-left: auto; width: 15px; height: 15px; border-radius: 4px; border: 1.5px solid var(--border); flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: background 0.15s, border-color 0.15s; }
+    .lc.sel .lc-chk { background: var(--ink); border-color: var(--ink); }
+    .lc-chk svg { display: none; }
+    .lc.sel .lc-chk svg { display: block; }
+    .lang-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; }
+    .lang-count { font-size: 12px; color: var(--ink-faint); }
+    .lang-count strong { color: var(--accent); font-weight: 500; }
+    .btn-save { background: var(--ink); color: var(--cream); border: none; border-radius: 5px; padding: 8px 18px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background 0.15s; }
+    .btn-save:hover { background: #333; }
+    .btn-save:disabled { opacity: 0.4; cursor: not-allowed; }
+    .plan-langs { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--ink-faint); background: var(--cream-mid); padding: 3px 8px; border-radius: 4px; }
+    .plan-langs strong { color: var(--accent); font-weight: 500; }
+    .mob-menu-btn { display: none; background: none; border: none; cursor: pointer; padding: 6px; color: var(--ink); border-radius: 5px; margin-right: 6px; }
+    .mob-menu-btn i { font-size: 18px; }
+    .sb-overlay { display: none; position: fixed; inset: 0; background: rgba(28,27,24,0.35); z-index: 49; }
+    @media (max-width: 768px) {
+      .app { grid-template-columns: 1fr; }
+      .sb { display: none; position: fixed; left: 0; top: 0; bottom: 0; width: 240px; z-index: 50; box-shadow: 4px 0 20px rgba(0,0,0,0.12); }
+      .sb.open { display: flex; }
+      .sb-overlay.open { display: block; }
+      .mob-menu-btn { display: inline-flex; align-items: center; }
+      .lang-grid { grid-template-columns: repeat(2, 1fr); }
+    }
   </style>
 </head>
 <body>
@@ -90,7 +121,10 @@
   </aside>
 
   <div class="main">
-    <div class="topbar"><div class="tb-title">Settings</div></div>
+    <div class="topbar">
+      <button class="mob-menu-btn" onclick="toggleSidebar()"><i class="ti ti-menu-2"></i></button>
+      <div class="tb-title">Settings</div>
+    </div>
     <div class="body">
       <div class="body-inner">
 
@@ -115,6 +149,49 @@
             <div class="pf" style="color:#8B8070"><i class="ti ti-x" style="color:#C97070"></i>Priority support — Pro plan</div>
           </div>
           <button class="btn-upgrade">Upgrade to Pro — €99/mo</button>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Target languages</div>
+          <div class="section-desc">Choose which languages your products will be translated into. All 6 languages are included — select as many as you need.</div>
+
+          <div class="lang-grid" id="lang-grid">
+            <div class="lc" data-locale="de" onclick="toggleLang(this)">
+              <span class="lc-flag">🇩🇪</span>
+              <div class="lc-info"><div class="lc-name">German</div><div class="lc-code">DE</div></div>
+              <div class="lc-chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#FDFCF9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            </div>
+            <div class="lc" data-locale="fr" onclick="toggleLang(this)">
+              <span class="lc-flag">🇫🇷</span>
+              <div class="lc-info"><div class="lc-name">French</div><div class="lc-code">FR</div></div>
+              <div class="lc-chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#FDFCF9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            </div>
+            <div class="lc" data-locale="it" onclick="toggleLang(this)">
+              <span class="lc-flag">🇮🇹</span>
+              <div class="lc-info"><div class="lc-name">Italian</div><div class="lc-code">IT</div></div>
+              <div class="lc-chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#FDFCF9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            </div>
+            <div class="lc" data-locale="es" onclick="toggleLang(this)">
+              <span class="lc-flag">🇪🇸</span>
+              <div class="lc-info"><div class="lc-name">Spanish</div><div class="lc-code">ES</div></div>
+              <div class="lc-chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#FDFCF9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            </div>
+            <div class="lc" data-locale="pt" onclick="toggleLang(this)">
+              <span class="lc-flag">🇵🇹</span>
+              <div class="lc-info"><div class="lc-name">Portuguese</div><div class="lc-code">PT</div></div>
+              <div class="lc-chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#FDFCF9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            </div>
+            <div class="lc" data-locale="en" onclick="toggleLang(this)">
+              <span class="lc-flag">🇬🇧</span>
+              <div class="lc-info"><div class="lc-name">English</div><div class="lc-code">EN</div></div>
+              <div class="lc-chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#FDFCF9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            </div>
+          </div>
+
+          <div class="lang-footer">
+            <div class="lang-count"><strong id="lang-selected-count">0</strong> of 6 selected</div>
+            <button class="btn-save" id="save-langs-btn" onclick="saveLanguages()" disabled>Save languages</button>
+          </div>
         </div>
 
         <div class="section">
@@ -161,6 +238,8 @@
   </div>
 </div>
 
+</div>
+<div class="sb-overlay" id="sb-overlay" onclick="toggleSidebar()"></div>
 <div class="toast" id="toast">Done</div>
 
 <script>
@@ -175,12 +254,71 @@
 
   function nav(e, page) { e.preventDefault(); window.location.href = page + '?shop=' + shop; }
 
-  function showToast(msg) {
+  function toggleSidebar() {
+    document.querySelector('.sb').classList.toggle('open');
+    document.getElementById('sb-overlay').classList.toggle('open');
+  }
+
+  function showToast(msg, ok = true) {
     const t = document.getElementById('toast');
-    t.textContent = msg; t.classList.add('show');
+    t.textContent = msg;
+    t.style.background = ok ? 'var(--ink)' : '#C97070';
+    t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 2500);
   }
 
+  // --- Language selection ---
+  let selectedLangs = [];
+
+  function toggleLang(card) {
+    const locale = card.dataset.locale;
+    if (card.classList.contains('sel')) {
+      card.classList.remove('sel');
+      selectedLangs = selectedLangs.filter(l => l !== locale);
+    } else {
+      card.classList.add('sel');
+      selectedLangs.push(locale);
+    }
+    document.getElementById('lang-selected-count').textContent = selectedLangs.length;
+    document.getElementById('save-langs-btn').disabled = selectedLangs.length === 0;
+  }
+
+  async function loadSavedLanguages() {
+    try {
+      const res = await fetch('/store-settings?shop=' + shop);
+      const data = await res.json();
+      const saved = data.selected_locales || [];
+      saved.forEach(locale => {
+        const card = document.querySelector(`.lc[data-locale="${locale}"]`);
+        if (card) { card.classList.add('sel'); selectedLangs.push(locale); }
+      });
+      document.getElementById('lang-selected-count').textContent = selectedLangs.length;
+      document.getElementById('save-langs-btn').disabled = selectedLangs.length === 0;
+    } catch(e) {}
+  }
+
+  async function saveLanguages() {
+    const btn = document.getElementById('save-langs-btn');
+    btn.textContent = 'Saving...'; btn.disabled = true;
+    try {
+      const res = await fetch('/save-locales', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shop, selected_locales: selectedLangs })
+      });
+      if (res.ok) {
+        showToast('Languages saved');
+      } else {
+        showToast('Error saving', false);
+      }
+    } catch(e) {
+      showToast('Connection error', false);
+    }
+    btn.textContent = 'Save languages';
+    btn.disabled = selectedLangs.length === 0;
+  }
+
+  // --- Usage data ---
   async function loadData() {
     try {
       const res = await fetch('/status?shop=' + shop);
@@ -212,7 +350,7 @@
     }
   }
 
-  if (shop) loadData();
+  if (shop) { loadData(); loadSavedLanguages(); }
 </script>
 </body>
 </html>
