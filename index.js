@@ -219,34 +219,50 @@ async function getShopLocales(shop, token) {
     .map(l => ({ locale: l.locale, targetLang: LOCALE_MAP[l.locale] || l.name }));
 }
 
-async function localizeProduct(shop, token, productId, targetLang, locale, tone, glossary) {
-  const pid = normalizeProductId(productId);
-  const productRes = await axios.get(
+async function getPrimaryLocale(shop, token) {
+  const query = `query { shopLocales { locale primary } }`;
+  const res = await axios.post(
+    `https://${shop}/admin/api/2024-01/graphql.json`,
+    { query },
+    { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
+  );
+  const primary = (res.data.data?.shopLocales || []).find(l => l.primary);
+  return primary?.locale || 'en';
+}
+
+function productBodyIsEmpty(bodyHtml) {
+  return !(bodyHtml || '').replace(/<[^>]*>/g, '').trim();
+}
+
+function formatBodyHtml(text) {
+  if (!text) return '';
+  if (/<[a-z][\s\S]*>/i.test(text)) return text;
+  const escaped = String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  return `<p>${escaped}</p>`;
+}
+
+async function updateShopifyProductBodyIfEmpty(shop, token, pid, descriptionText) {
+  const checkRes = await axios.get(
     `https://${shop}/admin/api/2024-01/products/${pid}.json`,
     { headers: { 'X-Shopify-Access-Token': token } }
   );
-  const product = productRes.data.product;
+  if (!productBodyIsEmpty(checkRes.data.product?.body_html)) return false;
 
-  const digestQuery = `
-    query getTranslatableContent($resourceId: ID!) {
-      translatableResource(resourceId: $resourceId) {
-        translatableContent { key value digest locale }
-      }
-    }
-  `;
-  const digestRes = await axios.post(
-    `https://${shop}/admin/api/2024-01/graphql.json`,
-    { query: digestQuery, variables: { resourceId: `gid://shopify/Product/${pid}` } },
+  await axios.put(
+    `https://${shop}/admin/api/2024-01/products/${pid}.json`,
+    { product: { body_html: formatBodyHtml(descriptionText) } },
     { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
   );
-  const contents = digestRes.data.data.translatableResource.translatableContent;
-  const digests = {};
-  contents.forEach(c => { digests[c.key] = c.digest; });
+  console.log('Updated Shopify product body_html:', pid);
+  return true;
+}
 
-  const cleanBody = (product.body_html || '').replace(/<[^>]*>/g, '').trim();
+async function generateProductCopyWithClaude(product, targetLang, glossary, cleanBody) {
   const category = product.product_type || '';
   const tags = (product.tags || '').split(',').slice(0, 5).join(', ');
-  const vendor = product.vendor || '';
 
   const prompt = `You are a native ${targetLang} speaker and ecommerce expert.
 
@@ -287,18 +303,12 @@ Rules for meta_description (max 160 chars):
 Respond ONLY in this exact JSON format, no extra text, no markdown backticks:
 {"title":"...","description":"...","meta_title":"...","meta_description":"..."}`;
 
-  const requestBody = {
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 1500,
-    messages: [{ role: 'user', content: prompt }]
-  };
-
-  // web_search tool removed — Claude generates descriptions from its own knowledge
-  // which is more reliable and doesn't require beta headers
-
-  let translated;
   try {
-    const claudeRes = await axios.post('https://api.anthropic.com/v1/messages', requestBody, {
+    const claudeRes = await axios.post('https://api.anthropic.com/v1/messages', {
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1500,
+      messages: [{ role: 'user', content: prompt }]
+    }, {
       headers: {
         'x-api-key': process.env.ANTHROPIC_API_KEY,
         'anthropic-version': '2023-06-01',
@@ -307,38 +317,78 @@ Respond ONLY in this exact JSON format, no extra text, no markdown backticks:
       timeout: 30000
     });
 
-    console.log('Claude status:', claudeRes.status);
-
     let rawText = '';
     for (const block of claudeRes.data.content) {
       if (block.type === 'text') rawText += block.text;
     }
-
-    console.log('Claude raw response:', rawText.substring(0, 300));
-
     rawText = rawText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('No JSON in Claude response: ' + rawText.substring(0, 100));
-    translated = JSON.parse(jsonMatch[0]);
-    if (!translated.title || !translated.description) throw new Error('Missing title or description in Claude response');
-
+    if (!jsonMatch) throw new Error('No JSON in Claude response');
+    const parsed = JSON.parse(jsonMatch[0]);
+    if (!parsed.title || !parsed.description) throw new Error('Missing title or description');
+    return parsed;
   } catch (claudeErr) {
     console.error('Claude API failed:', claudeErr.response?.data || claudeErr.message);
-    // Fallback: use original title and generate minimal description
-    console.log('Using fallback translation for:', product.title);
-    translated = {
+    return {
       title: product.title,
       description: product.title,
       meta_title: product.title.substring(0, 60),
       meta_description: product.title.substring(0, 160)
     };
   }
+}
+
+async function localizeProduct(shop, token, productId, targetLang, locale, tone, glossary) {
+  const pid = normalizeProductId(productId);
+  const productRes = await axios.get(
+    `https://${shop}/admin/api/2024-01/products/${pid}.json`,
+    { headers: { 'X-Shopify-Access-Token': token } }
+  );
+  const product = productRes.data.product;
+
+  const digestQuery = `
+    query getTranslatableContent($resourceId: ID!) {
+      translatableResource(resourceId: $resourceId) {
+        translatableContent { key value digest locale }
+      }
+    }
+  `;
+  const digestRes = await axios.post(
+    `https://${shop}/admin/api/2024-01/graphql.json`,
+    { query: digestQuery, variables: { resourceId: `gid://shopify/Product/${pid}` } },
+    { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
+  );
+  const contents = digestRes.data.data.translatableResource.translatableContent;
+  const digests = {};
+  contents.forEach(c => { digests[c.key] = c.digest; });
+
+  const cleanBody = (product.body_html || '').replace(/<[^>]*>/g, '').trim();
+  const hadNoDescription = !cleanBody;
+
+  let translated = await generateProductCopyWithClaude(product, targetLang, glossary, cleanBody);
 
   if (!translated.meta_title) {
     translated.meta_title = (translated.title || product.title).substring(0, 60);
   }
   if (!translated.meta_description) {
     translated.meta_description = (translated.description || translated.title || product.title).substring(0, 160);
+  }
+
+  if (hadNoDescription) {
+    try {
+      const primaryLocale = await getPrimaryLocale(shop, token);
+      const localeKey = locale.split('-')[0];
+      const primaryKey = primaryLocale.split('-')[0];
+      let bodyForShopify = translated.description;
+      if (localeKey !== primaryKey) {
+        const primaryLang = LOCALE_MAP[primaryKey] || primaryLocale;
+        const primaryCopy = await generateProductCopyWithClaude(product, primaryLang, glossary, '');
+        bodyForShopify = primaryCopy.description;
+      }
+      await updateShopifyProductBodyIfEmpty(shop, token, pid, bodyForShopify);
+    } catch (bodyErr) {
+      console.error('Failed to update Shopify body_html:', bodyErr.response?.data || bodyErr.message);
+    }
   }
 
   const mutation = `
@@ -357,7 +407,9 @@ Respond ONLY in this exact JSON format, no extra text, no markdown backticks:
         resourceId: `gid://shopify/Product/${pid}`,
         translations: [
           { key: 'title', value: translated.title, locale, translatableContentDigest: digests['title'] },
-          { key: 'body_html', value: translated.description, locale, translatableContentDigest: digests['body_html'] },
+          ...(digests['body_html']
+            ? [{ key: 'body_html', value: translated.description, locale, translatableContentDigest: digests['body_html'] }]
+            : []),
           // meta_title: use its own digest if exists, otherwise use title digest as fallback
           ...(translated.meta_title ? [{ key: 'meta_title', value: translated.meta_title, locale, translatableContentDigest: digests['meta_title'] || digests['title'] }] : []),
           // meta_description: use its own digest if exists, otherwise use body_html digest as fallback
