@@ -82,7 +82,23 @@
     .st-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
     .d-gr { background: var(--green); }
     .loading { text-align: center; padding: 2rem; color: var(--ink-faint); font-size: 13px; }
-    @media (max-width: 768px) { .app { grid-template-columns: 1fr; } .sb { display: none; } .metrics { grid-template-columns: repeat(2, 1fr); } .row2 { grid-template-columns: 1fr; } }
+    .mob-menu-btn { display: none; background: none; border: none; cursor: pointer; padding: 6px; color: var(--ink); border-radius: 5px; }
+    .mob-menu-btn:hover { background: var(--cream-mid); }
+    .mob-menu-btn i { font-size: 18px; }
+    .sb-overlay { display: none; position: fixed; inset: 0; background: rgba(28,27,24,0.35); z-index: 49; }
+    @media (max-width: 768px) {
+      .app { grid-template-columns: 1fr; }
+      .sb { display: none; position: fixed; left: 0; top: 0; bottom: 0; width: 240px; z-index: 50; box-shadow: 4px 0 20px rgba(0,0,0,0.12); }
+      .sb.open { display: flex; }
+      .sb-overlay.open { display: block; }
+      .mob-menu-btn { display: flex; align-items: center; justify-content: center; }
+      .metrics { grid-template-columns: repeat(2, 1fr); }
+      .row2 { grid-template-columns: 1fr; }
+      .tb-right { gap: 6px; }
+      .btn { font-size: 11px; padding: 5px 9px; }
+      .btn span { max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      #btn-run { white-space: nowrap; }
+    }
     .modal-overlay { position: fixed; inset: 0; background: rgba(28,27,24,0.45); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 1rem; backdrop-filter: blur(2px); }
     .modal-overlay.hidden { display: none; }
     .modal { background: #FDFCF9; border-radius: 12px; padding: 2rem; width: 100%; max-width: 440px; box-shadow: 0 8px 32px rgba(0,0,0,0.12); }
@@ -134,7 +150,10 @@
   </aside>
   <div class="main">
     <div class="topbar">
-      <div class="tb-title">Overview</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="mob-menu-btn" onclick="toggleSidebar()" aria-label="Menu"><i class="ti ti-menu-2"></i></button>
+        <div class="tb-title">Overview</div>
+      </div>
       <div class="tb-right">
         <button class="btn"><i class="ti ti-plug"></i><span id="tb-shop">—</span></button>
         <button class="btn btn-dark" id="btn-run" onclick="runBulk()"><i class="ti ti-player-play"></i>Run bulk translate</button>
@@ -167,8 +186,7 @@
     </div>
   </div>
 </div>
-
-<!-- Language Setup Modal -->
+<div class="sb-overlay" id="sb-overlay" onclick="toggleSidebar()"></div>
 <div class="modal-overlay hidden" id="lang-modal">
   <div class="modal">
     <div class="modal-title">Choose your target languages</div>
@@ -230,6 +248,13 @@
 
   function nav(e, page) { e.preventDefault(); window.location.href = page + '?shop=' + shop; }
 
+  function toggleSidebar() {
+    const sb = document.querySelector('.sb');
+    const overlay = document.getElementById('sb-overlay');
+    sb.classList.toggle('open');
+    overlay.classList.toggle('open');
+  }
+
   async function loadData() {
     try {
       // Load translations from Supabase
@@ -237,7 +262,7 @@
       const statusData = await statusRes.json();
 
       // Count unique product IDs
-      const uniqueProducts = new Set(statusData.translations.map(t => t.product_id));
+      const uniqueProducts = new Set(statusData.translations.map(t => String(t.product_id)));
       const uniqueCount = uniqueProducts.size;
 
       document.getElementById('m-done').textContent = statusData.total;
