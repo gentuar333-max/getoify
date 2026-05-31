@@ -29,7 +29,8 @@ const LOCALE_MAP = {
   'fr': 'French', 'de': 'German', 'it': 'Italian', 'es': 'Spanish',
   'nl': 'Dutch', 'pt': 'Portuguese', 'pl': 'Polish', 'sv': 'Swedish',
   'da': 'Danish', 'fi': 'Finnish', 'nb': 'Norwegian', 'ja': 'Japanese',
-  'zh': 'Chinese', 'ar': 'Arabic', 'hi': 'Hindi', 'id': 'Indonesian'
+  'zh': 'Chinese', 'ar': 'Arabic', 'hi': 'Hindi', 'id': 'Indonesian',
+  'en': 'English'
 };
 
 // Static pages
