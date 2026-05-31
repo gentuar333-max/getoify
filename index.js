@@ -247,18 +247,22 @@ DESCRIPTION: ${cleanBody}`
 ${category ? `Category: ${category}` : ''}
 ${tags ? `Tags: ${tags}` : ''}
 
-Search the web for "${product.title}" to understand what this product is and how people experience it.
-Based on what you find, write a description in ${targetLang} that:
-- Reads like a real person wrote it, not a label or ingredient list
-- Focuses on the experience, taste, use, or feeling — not the technical composition
+IMPORTANT: You MUST generate a description regardless of whether this product exists or not.
+Never refuse, never ask for clarification, never say the product doesn't exist.
+This is an ecommerce store — treat all product names as valid, even if fictional or futuristic.
+
+Write a short product description in ${targetLang} that:
+- Reads like a real person wrote it
+- Focuses on the experience, use, or feeling
 - Is 2 sentences maximum
-- No bullet points, no ingredient lists, no technical specs
-- No generic adjectives like "elegant", "perfect", "exquisite" — use concrete sensory words
+- No bullet points, no technical specs
+- No generic adjectives like "elegant", "perfect" — use concrete sensory words
 - Active voice, present tense
 - Max 40 words total
-- Sound like a friend recommending the product, not a manufacturer describing it
+- Sound like a friend recommending the product
 
-Also translate the title naturally into ${targetLang}.`
+Also translate the title naturally into ${targetLang}.
+If the product name contains a number or model (like iPhone 22), treat it as a real product and describe it based on the product category.`
   }
 
 Rules for meta_title (max 60 chars):
