@@ -417,20 +417,59 @@ app.post('/bulk-localize-all', async (req, res) => {
   }
 });
 
+// Product create + update — lokalizon automatikisht
 app.post('/webhook/product-create', async (req, res) => {
   res.status(200).send('OK');
   const rawBody = req.body;
   const shop = req.headers['x-shopify-shop-domain'];
-  console.log('=== WEBHOOK HIT ===', shop);
+  console.log('=== WEBHOOK product-create/update ===', shop);
   try {
     const body = Buffer.isBuffer(rawBody) ? JSON.parse(rawBody.toString()) : rawBody;
     if (!body.title || !body.id) return;
+
+    // Kontrollo nëse titulli ka ndryshuar (product update)
+    const { data: existing } = await supabase
+      .from('translations')
+      .select('original_title')
+      .eq('shop', shop)
+      .eq('product_id', String(body.id))
+      .limit(1);
+
+    const titleChanged = existing && existing.length > 0 &&
+      existing[0].original_title?.toLowerCase() !== body.title.toLowerCase();
+
+    if (titleChanged) {
+      // Titulli ndryshoi — fshi translations e vjetra dhe rilokalizoje
+      console.log(`Title changed: "${existing[0].original_title}" → "${body.title}", relocalizing...`);
+      await supabase.from('translations').delete()
+        .eq('shop', shop)
+        .eq('product_id', String(body.id));
+    }
+
     console.log('Calling process-product for:', body.title);
     axios.post(`${APP_URL}/process-product`, {
       shop, productId: body.id, productTitle: body.title
     }, { timeout: 5000 }).catch(err => console.error('Trigger error:', err.message));
   } catch (err) {
     console.error('Webhook error:', err.message);
+  }
+});
+
+// Product delete — fshi nga Supabase
+app.post('/webhook/product-delete', async (req, res) => {
+  res.status(200).send('OK');
+  const rawBody = req.body;
+  const shop = req.headers['x-shopify-shop-domain'];
+  try {
+    const body = Buffer.isBuffer(rawBody) ? JSON.parse(rawBody.toString()) : rawBody;
+    if (!body.id) return;
+    console.log('=== WEBHOOK product-delete ===', shop, body.id);
+    await supabase.from('translations').delete()
+      .eq('shop', shop)
+      .eq('product_id', String(body.id));
+    console.log('Deleted translations for product:', body.id);
+  } catch (err) {
+    console.error('Webhook delete error:', err.message);
   }
 });
 
