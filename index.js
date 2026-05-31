@@ -385,7 +385,18 @@ async function localizeProduct(shop, token, productId, targetLang, locale, tone,
         const primaryCopy = await generateProductCopyWithClaude(product, primaryLang, glossary, '');
         bodyForShopify = primaryCopy.description;
       }
-      await updateShopifyProductBodyIfEmpty(shop, token, pid, bodyForShopify);
+      const bodyUpdated = await updateShopifyProductBodyIfEmpty(shop, token, pid, bodyForShopify);
+      if (bodyUpdated) {
+        // Re-fetch digests so body_html digest is available for translation registration
+        const freshDigestRes = await axios.post(
+          `https://${shop}/admin/api/2024-01/graphql.json`,
+          { query: digestQuery, variables: { resourceId: `gid://shopify/Product/${pid}` } },
+          { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
+        );
+        const freshContents = freshDigestRes.data.data.translatableResource.translatableContent;
+        freshContents.forEach(c => { digests[c.key] = c.digest; });
+        console.log('Re-fetched digests after body_html update, body_html digest:', digests['body_html']);
+      }
     } catch (bodyErr) {
       console.error('Failed to update Shopify body_html:', bodyErr.response?.data || bodyErr.message);
     }
