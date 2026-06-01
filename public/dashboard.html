@@ -82,6 +82,10 @@
     .st-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
     .d-gr { background: var(--green); }
     .loading { text-align: center; padding: 2rem; color: var(--ink-faint); font-size: 13px; }
+    .banner-warn { display: none; align-items: center; gap: 12px; background: #FEF3E2; border: 1px solid #C9A96E; border-radius: 7px; padding: 11px 16px; margin-bottom: 14px; }
+    .banner-warn i { color: #8B6030; font-size: 16px; flex-shrink: 0; }
+    .banner-warn-txt { flex: 1; font-size: 13px; color: #5C4020; }
+    .banner-warn-btn { background: var(--ink); color: var(--cream); border: none; border-radius: 5px; padding: 6px 14px; font-size: 12px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; white-space: nowrap; }
     .mob-menu-btn { display: none; background: none; border: none; cursor: pointer; padding: 6px; color: var(--ink); border-radius: 5px; }
     .mob-menu-btn:hover { background: var(--cream-mid); }
     .mob-menu-btn i { font-size: 18px; }
@@ -160,6 +164,11 @@
       </div>
     </div>
     <div class="body">
+      <div class="banner-warn" id="token-banner">
+        <i class="ti ti-alert-triangle"></i>
+        <div class="banner-warn-txt">Your store connection has expired. Reconnect to continue translating.</div>
+        <button class="banner-warn-btn" onclick="reconnectStore()">Reconnect store</button>
+      </div>
       <div class="metrics">
         <div class="mc"><div class="mc-lbl">Total products</div><div class="mc-val" id="m-total">—</div><div class="mc-sub c-gray" id="m-total-sub">In your store</div></div>
         <div class="mc"><div class="mc-lbl">Localized</div><div class="mc-val" id="m-localized">—</div><div class="mc-sub c-green" id="m-localized-sub">Unique products</div></div>
@@ -378,8 +387,25 @@
 
   function skipModal() { document.getElementById('lang-modal').classList.add('hidden'); }
 
+  function reconnectStore() {
+    window.location.href = '/auth?shop=' + shop;
+  }
+
+  async function checkTokenStatus() {
+    try {
+      const res = await fetch('/token-status?shop=' + shop);
+      const data = await res.json();
+      if (data.invalid) {
+        const banner = document.getElementById('token-banner');
+        banner.style.display = 'flex';
+        document.getElementById('btn-run').disabled = true;
+      }
+    } catch(e) {}
+  }
+
   loadData();
   checkLanguageSetup();
+  checkTokenStatus();
 
   const autorun = new URLSearchParams(window.location.search).get('autorun');
   if (autorun === '1' && token) { setTimeout(() => runBulk(), 2000); }
