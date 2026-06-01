@@ -33,6 +33,13 @@ axios.interceptors.response.use(
         await supabase.from('stores').update({ token_invalid: true }).eq('shop', shop);
       }
     }
+    // Reset token_invalid on successful auth
+    if (status !== 401 && url.includes('myshopify.com/admin/oauth/access_token')) {
+      const shopMatch = url.match(/https:\/\/([^/]+)/);
+      if (shopMatch) {
+        await supabase.from('stores').update({ token_invalid: false }).eq('shop', shopMatch[1]);
+      }
+    }
     return Promise.reject(err);
   }
 );
@@ -103,11 +110,12 @@ app.get('/auth/callback', async (req, res) => {
       code
     });
     const accessToken = response.data.access_token;
-    await supabase.from('stores').upsert({ shop, access_token: accessToken }, { onConflict: 'shop' });
+    await supabase.from('stores').upsert({ shop, access_token: accessToken, token_invalid: false }, { onConflict: 'shop' });
     console.log('Store connected:', shop);
     res.redirect('/dashboard?shop=' + shop + '&token=' + accessToken + '&autorun=1');
   } catch (error) {
-    res.status(500).send('OAuth failed');
+    console.error('OAuth callback error:', error.message);
+    res.redirect('/?error=oauth_failed&shop=' + (req.query.shop || ''));
   }
 });
 
