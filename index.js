@@ -19,6 +19,24 @@ const {
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
+// Intercept Shopify 401 — mark token invalid in Supabase
+axios.interceptors.response.use(
+  res => res,
+  async err => {
+    const url = err.config?.url || '';
+    const status = err.response?.status;
+    if (status === 401 && url.includes('myshopify.com')) {
+      const shopMatch = url.match(/https:\/\/([^/]+)/);
+      if (shopMatch) {
+        const shop = shopMatch[1];
+        console.warn(`[401] Token invalid for ${shop} — marking in Supabase`);
+        await supabase.from('stores').update({ token_invalid: true }).eq('shop', shop);
+      }
+    }
+    return Promise.reject(err);
+  }
+);
+
 const { normalizeProductId } = require('./lib/product-id');
 const { fetchAllRows } = require('./lib/supabase-pagination');
 
@@ -29,8 +47,7 @@ const LOCALE_MAP = {
   'fr': 'French', 'de': 'German', 'it': 'Italian', 'es': 'Spanish',
   'nl': 'Dutch', 'pt': 'Portuguese', 'pl': 'Polish', 'sv': 'Swedish',
   'da': 'Danish', 'fi': 'Finnish', 'nb': 'Norwegian', 'ja': 'Japanese',
-  'zh': 'Chinese', 'ar': 'Arabic', 'hi': 'Hindi', 'id': 'Indonesian',
-  'en': 'English'
+  'zh': 'Chinese', 'ar': 'Arabic', 'hi': 'Hindi', 'id': 'Indonesian'
 };
 
 // Static pages
@@ -58,6 +75,14 @@ app.get('/product-translations', async (req, res) => {
   } catch(e) {
     res.status(500).json({ error: e.message });
   }
+});
+
+// Token health check
+app.get('/token-status', async (req, res) => {
+  const { shop } = req.query;
+  if (!shop) return res.status(400).json({ error: 'Missing shop' });
+  const { data } = await supabase.from('stores').select('token_invalid').eq('shop', shop).single();
+  res.json({ invalid: data?.token_invalid === true });
 });
 
 // OAuth
@@ -386,18 +411,7 @@ async function localizeProduct(shop, token, productId, targetLang, locale, tone,
         const primaryCopy = await generateProductCopyWithClaude(product, primaryLang, glossary, '');
         bodyForShopify = primaryCopy.description;
       }
-      const bodyUpdated = await updateShopifyProductBodyIfEmpty(shop, token, pid, bodyForShopify);
-      if (bodyUpdated) {
-        // Re-fetch digests so body_html digest is available for translation registration
-        const freshDigestRes = await axios.post(
-          `https://${shop}/admin/api/2024-01/graphql.json`,
-          { query: digestQuery, variables: { resourceId: `gid://shopify/Product/${pid}` } },
-          { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
-        );
-        const freshContents = freshDigestRes.data.data.translatableResource.translatableContent;
-        freshContents.forEach(c => { digests[c.key] = c.digest; });
-        console.log('Re-fetched digests after body_html update, body_html digest:', digests['body_html']);
-      }
+      await updateShopifyProductBodyIfEmpty(shop, token, pid, bodyForShopify);
     } catch (bodyErr) {
       console.error('Failed to update Shopify body_html:', bodyErr.response?.data || bodyErr.message);
     }
