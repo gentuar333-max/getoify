@@ -130,25 +130,21 @@
 
         <div class="section">
           <div class="section-title">Current plan</div>
-          <div class="section-desc">You are on the Free plan. Upgrade to unlock unlimited products and languages.</div>
+          <div class="section-desc" id="plan-desc">Loading your plan...</div>
           <div class="field-row">
             <div><div class="field-lbl">Plan</div></div>
-            <div class="plan-badge"><i class="ti ti-sparkles"></i>Free</div>
+            <div class="plan-badge"><i class="ti ti-sparkles"></i><span id="plan-label">Free</span></div>
           </div>
           <div class="field-row">
             <div><div class="field-lbl">Products translated</div><div class="field-val" id="usage-text">Loading...</div></div>
-            <button class="field-action">Upgrade</button>
+            <button class="field-action" onclick="window.location.href='/pricing?shop='+shop">Upgrade</button>
           </div>
           <div class="usage-bar"><div class="usage-fill" id="usage-fill" style="width:0%"></div></div>
-          <div class="usage-row"><span class="usage-lbl" id="usage-used">0 used</span><span class="usage-val">500 limit</span></div>
-          <div class="plan-features">
-            <div class="pf"><i class="ti ti-check" style="color:#6BAF8A"></i>500 products free</div>
-            <div class="pf"><i class="ti ti-check" style="color:#6BAF8A"></i>All languages included</div>
-            <div class="pf"><i class="ti ti-check" style="color:#6BAF8A"></i>Webhook Auto-Sync</div>
-            <div class="pf" style="color:#8B8070"><i class="ti ti-x" style="color:#C97070"></i>Unlimited products — Pro plan</div>
-            <div class="pf" style="color:#8B8070"><i class="ti ti-x" style="color:#C97070"></i>Priority support — Pro plan</div>
+          <div class="usage-row"><span class="usage-lbl" id="usage-used">0 used</span><span class="usage-val" id="plan-limit">50 limit</span></div>
+          <div class="plan-features" id="plan-features" style="margin-top:12px;"></div>
+          <div id="upgrade-section" style="margin-top:14px;">
+            <button class="btn-upgrade" onclick="window.location.href='/pricing?shop='+shop">View all plans</button>
           </div>
-          <button class="btn-upgrade">Upgrade to Pro — €99/mo</button>
         </div>
 
         <div class="section">
@@ -319,17 +315,53 @@
   }
 
   // --- Usage data ---
+  const PLAN_CONFIG = {
+    free:    { label: 'Free',    limit: 50,   locales: 2, desc: 'You are on the Free plan. Upgrade to unlock more products and languages.', features: ['50 products', '2 languages', 'AI description generation', 'Auto-sync new products'] },
+    starter: { label: 'Starter', limit: 500,  locales: 3, desc: 'Starter plan — 500 products, 3 languages.', features: ['500 products', '3 languages', 'AI description generation', 'Brand voice & glossary', 'Auto-sync new products'] },
+    growth:  { label: 'Growth',  limit: 2500, locales: 5, desc: 'Growth plan — 2,500 products, 5 languages.', features: ['2,500 products', '5 languages', 'Everything in Starter', 'Priority processing', 'Email support'] },
+    pro:     { label: 'Pro',     limit: 5000, locales: 5, desc: 'Pro plan — 5,000 products, 5 languages.', features: ['5,000 products × 5 languages', 'Up to 25,000 translations', 'Full translation history', 'Auto-sync new products'] }
+  };
+
+  async function loadPlan() {
+    try {
+      const res = await fetch('/plan?shop=' + shop);
+      const data = await res.json();
+      const plan = PLAN_CONFIG[data.plan] || PLAN_CONFIG.free;
+
+      document.getElementById('plan-label').textContent = plan.label;
+      document.getElementById('plan-desc').textContent = plan.desc;
+      document.getElementById('plan-limit').textContent = plan.limit + ' limit';
+
+      const featEl = document.getElementById('plan-features');
+      featEl.innerHTML = plan.features.map(f =>
+        `<div class="pf"><i class="ti ti-check" style="color:#6BAF8A"></i>${f}</div>`
+      ).join('');
+
+      // Hide upgrade section if on Pro
+      if (data.plan === 'pro') {
+        document.getElementById('upgrade-section').style.display = 'none';
+      }
+    } catch(e) {}
+  }
+
   async function loadData() {
     try {
       const res = await fetch('/status?shop=' + shop);
       const data = await res.json();
       const total = data.total || 0;
-      const pct = Math.min((total / 500) * 100, 100);
-      document.getElementById('usage-text').textContent = total + ' of 500 free';
+
+      // Get plan limit dynamically
+      const planRes = await fetch('/plan?shop=' + shop);
+      const planData = await planRes.json();
+      const plan = PLAN_CONFIG[planData.plan] || PLAN_CONFIG.free;
+      const limit = plan.limit;
+
+      const pct = Math.min((total / limit) * 100, 100);
+      document.getElementById('usage-text').textContent = total + ' of ' + limit;
       document.getElementById('usage-fill').style.width = pct + '%';
       document.getElementById('usage-used').textContent = total + ' used';
       document.getElementById('api-total').textContent = total + ' records';
-      const cost = (total * 0.007).toFixed(2);
+      const cost = (total * 0.0012).toFixed(2);
       document.getElementById('api-cost').textContent = '~€' + cost;
     } catch(e) {}
   }
@@ -350,7 +382,7 @@
     }
   }
 
-  if (shop) { loadData(); loadSavedLanguages(); }
+  if (shop) { loadData(); loadPlan(); loadSavedLanguages(); checkTokenStatus(); }
 </script>
 </body>
 </html>
