@@ -33,7 +33,6 @@ axios.interceptors.response.use(
         await supabase.from('stores').update({ token_invalid: true }).eq('shop', shop);
       }
     }
-    // Reset token_invalid on successful auth
     if (status !== 401 && url.includes('myshopify.com/admin/oauth/access_token')) {
       const shopMatch = url.match(/https:\/\/([^/]+)/);
       if (shopMatch) {
@@ -54,7 +53,8 @@ const LOCALE_MAP = {
   'fr': 'French', 'de': 'German', 'it': 'Italian', 'es': 'Spanish',
   'nl': 'Dutch', 'pt': 'Portuguese', 'pl': 'Polish', 'sv': 'Swedish',
   'da': 'Danish', 'fi': 'Finnish', 'nb': 'Norwegian', 'ja': 'Japanese',
-  'zh': 'Chinese', 'ar': 'Arabic', 'hi': 'Hindi', 'id': 'Indonesian'
+  'zh': 'Chinese', 'ar': 'Arabic', 'hi': 'Hindi', 'id': 'Indonesian',
+  'en': 'English'
 };
 
 // Static pages
@@ -322,7 +322,8 @@ RULES:
 - Focus on what it does, how it feels, or why someone would want it
 - Max 40 words, no bullet points, no generic adjectives
 - Also translate the title naturally into ${targetLang}
-- NEVER say the product doesn't exist — all product names are valid`
+- NEVER say the product doesn't exist — all product names are valid
+- The title may be in any language — always translate it naturally into ${targetLang}`
   }
 
 Rules for meta_title (max 60 chars):
@@ -419,7 +420,18 @@ async function localizeProduct(shop, token, productId, targetLang, locale, tone,
         const primaryCopy = await generateProductCopyWithClaude(product, primaryLang, glossary, '');
         bodyForShopify = primaryCopy.description;
       }
-      await updateShopifyProductBodyIfEmpty(shop, token, pid, bodyForShopify);
+      const bodyUpdated = await updateShopifyProductBodyIfEmpty(shop, token, pid, bodyForShopify);
+      if (bodyUpdated) {
+        // Re-fetch digests so body_html digest is available for translation registration
+        const freshDigestRes = await axios.post(
+          `https://${shop}/admin/api/2024-01/graphql.json`,
+          { query: digestQuery, variables: { resourceId: `gid://shopify/Product/${pid}` } },
+          { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
+        );
+        const freshContents = freshDigestRes.data.data.translatableResource.translatableContent;
+        freshContents.forEach(c => { digests[c.key] = c.digest; });
+        console.log('Re-fetched digests after body_html update, body_html digest:', digests['body_html']);
+      }
     } catch (bodyErr) {
       console.error('Failed to update Shopify body_html:', bodyErr.response?.data || bodyErr.message);
     }
