@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Getoify — Pricing</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy: #0A2F6B; --navy-dark: #061e47;
+    --cream: #F9F6F0; --cream-warm: #F2EDE3; --cream-deep: #E8E0D0;
+    --white: #ffffff; --text-body: #2c2c2c; --text-muted: #6b6860;
+    --text-light: #9a9690; --border: #ddd8ce; --gold: #C8A84B;
+    --gold-light: #e8d08a; --green: #96BF48;
+  }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--text-body); font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+
+  nav { background: var(--white); border-bottom: 1px solid var(--border); padding: 0 5%; display: flex; align-items: center; justify-content: space-between; height: 68px; position: sticky; top: 0; z-index: 100; }
+  .logo-text { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--navy); letter-spacing: -0.5px; text-decoration: none; }
+  .nav-back { font-size: 13px; color: var(--text-muted); text-decoration: none; display: flex; align-items: center; gap: 6px; transition: color 0.2s; }
+  .nav-back:hover { color: var(--navy); }
+
+  .pricing-header { background: var(--white); border-bottom: 1px solid var(--border); padding: 80px 5% 70px; text-align: center; position: relative; overflow: hidden; }
+  .pricing-header::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--navy); }
+  .pricing-eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 2.5px; text-transform: uppercase; color: var(--navy); margin-bottom: 20px; }
+  .pricing-header h1 { font-family: 'Playfair Display', serif; font-size: clamp(38px, 5vw, 64px); font-weight: 900; color: var(--navy-dark); letter-spacing: -2px; line-height: 1.06; margin-bottom: 20px; }
+  .pricing-header h1 em { font-style: italic; color: var(--gold); }
+  .pricing-sub { font-size: 17px; color: var(--text-muted); font-weight: 300; max-width: 480px; margin: 0 auto; }
+
+  .billing-toggle { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 48px auto 0; }
+  .toggle-label { font-size: 14px; font-weight: 500; color: var(--text-muted); cursor: pointer; }
+  .toggle-label.active { color: var(--navy); }
+  .toggle-switch { width: 44px; height: 24px; background: var(--navy); border-radius: 12px; position: relative; cursor: pointer; }
+  .toggle-knob { width: 18px; height: 18px; background: white; border-radius: 50%; position: absolute; top: 3px; left: 3px; transition: transform 0.2s; }
+  .toggle-switch.annual .toggle-knob { transform: translateX(20px); }
+  .save-badge { background: var(--gold); color: var(--white); font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; padding: 3px 9px; border-radius: 100px; }
+
+  .plans-section { padding: 60px 5% 60px; max-width: 1140px; margin: 0 auto; }
+
+  .free-banner { background: var(--cream-warm); border: 1px solid var(--border); border-radius: 10px; padding: 28px 36px; display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 24px; flex-wrap: wrap; }
+  .free-banner-left { flex: 1; min-width: 200px; }
+  .free-banner-tag { font-size: 10px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--green); margin-bottom: 6px; }
+  .free-banner-title { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--navy-dark); letter-spacing: -0.5px; margin-bottom: 4px; }
+  .free-banner-desc { font-size: 13px; color: var(--text-muted); font-weight: 300; }
+  .free-banner-limits { display: flex; gap: 28px; flex-wrap: wrap; }
+  .free-lim { text-align: center; }
+  .free-lim-val { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700; color: var(--navy); letter-spacing: -0.5px; line-height: 1; }
+  .free-lim-lbl { font-size: 10px; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.8px; font-weight: 500; margin-top: 3px; }
+  .btn-free { background: var(--green); color: var(--white); border: none; padding: 12px 28px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; white-space: nowrap; text-decoration: none; display: inline-block; transition: background 0.2s; }
+  .btn-free:hover { background: #7aaa30; }
+
+  .plans-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; background: var(--border); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+
+  .plan-card { background: var(--white); padding: 44px 36px; display: flex; flex-direction: column; }
+  .plan-tag { font-size: 10px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--text-light); margin-bottom: 20px; }
+  .plan-name { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; color: var(--navy-dark); letter-spacing: -0.5px; margin-bottom: 8px; }
+  .plan-desc { font-size: 13px; color: var(--text-muted); font-weight: 300; margin-bottom: 28px; line-height: 1.6; min-height: 40px; }
+
+  .plan-price-row { display: flex; align-items: baseline; gap: 2px; margin-bottom: 6px; }
+  .plan-currency { font-size: 18px; font-weight: 500; color: var(--text-muted); }
+  .plan-amount { font-family: 'Playfair Display', serif; font-size: 56px; font-weight: 900; color: var(--white); background: var(--navy); letter-spacing: -2px; line-height: 1; padding: 4px 16px 6px; border-radius: 6px; display: inline-block; }
+  .plan-period { font-size: 13px; color: var(--text-muted); font-weight: 400; margin-left: 4px; }
+  .plan-annual-note { font-size: 12px; color: var(--text-light); margin-bottom: 28px; min-height: 18px; margin-top: 6px; }
+
+  .plan-limits { background: var(--cream-warm); border-radius: 7px; padding: 14px 16px; margin-bottom: 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .plan-limit-item { text-align: center; }
+  .plan-limit-val { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--navy); letter-spacing: -0.5px; line-height: 1; }
+  .plan-limit-lbl { font-size: 10px; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.8px; font-weight: 500; margin-top: 3px; }
+
+  .plan-features { list-style: none; margin-bottom: 32px; flex: 1; }
+  .plan-features li { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: var(--text-muted); padding: 7px 0; border-bottom: 1px solid var(--cream-deep); font-weight: 300; line-height: 1.5; }
+  .plan-features li:last-child { border-bottom: none; }
+  .feat-check { width: 16px; height: 16px; border-radius: 50%; background: var(--green); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+
+  .btn-plan { width: 100%; padding: 14px; border-radius: 6px; font-size: 14px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; text-align: center; text-decoration: none; display: block; transition: all 0.2s; border: 2px solid var(--navy); color: var(--navy); background: transparent; }
+  .btn-plan:hover { background: var(--navy); color: var(--white); }
+  .plan-note { text-align: center; font-size: 11px; color: var(--text-light); margin-top: 10px; }
+
+  .enterprise-section { padding: 0 5% 80px; max-width: 1140px; margin: 0 auto; }
+  .enterprise-card { background: var(--navy-dark); border-radius: 12px; padding: 56px 64px; display: flex; align-items: center; justify-content: space-between; gap: 40px; flex-wrap: wrap; position: relative; overflow: hidden; }
+  .enterprise-card::before { content: ''; position: absolute; top: -80px; right: -80px; width: 300px; height: 300px; border-radius: 50%; border: 1px solid rgba(200,168,75,0.15); pointer-events: none; }
+  .enterprise-left { flex: 1; min-width: 280px; position: relative; }
+  .enterprise-tag { font-size: 10px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); margin-bottom: 14px; }
+  .enterprise-title { font-family: 'Playfair Display', serif; font-size: clamp(28px, 3.5vw, 42px); font-weight: 700; color: var(--white); letter-spacing: -1px; line-height: 1.1; margin-bottom: 16px; }
+  .enterprise-title em { font-style: italic; color: var(--gold); }
+  .enterprise-desc { font-size: 15px; color: rgba(255,255,255,0.55); font-weight: 300; line-height: 1.7; max-width: 440px; }
+  .enterprise-perks { display: flex; flex-direction: column; gap: 10px; margin-top: 28px; }
+  .enterprise-perk { display: flex; align-items: center; gap: 10px; font-size: 13px; color: rgba(255,255,255,0.7); font-weight: 300; }
+  .perk-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); flex-shrink: 0; }
+  .btn-enterprise { background: var(--gold); color: var(--navy-dark); border: none; padding: 16px 40px; border-radius: 6px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background 0.2s; text-decoration: none; display: inline-block; white-space: nowrap; }
+  .btn-enterprise:hover { background: var(--gold-light); }
+  .enterprise-note { font-size: 12px; color: rgba(255,255,255,0.3); margin-top: 10px; text-align: center; }
+
+  .faq-section { padding: 60px 5% 80px; max-width: 1140px; margin: 0 auto; }
+  .faq-title { font-family: 'Playfair Display', serif; font-size: 32px; font-weight: 700; color: var(--navy-dark); letter-spacing: -1px; margin-bottom: 32px; text-align: center; }
+  .faq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: var(--border); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .faq-item { background: var(--white); padding: 28px 32px; }
+  .faq-q { font-size: 14px; font-weight: 600; color: var(--navy); margin-bottom: 8px; }
+  .faq-a { font-size: 13px; color: var(--text-muted); font-weight: 300; line-height: 1.7; }
+
+  @media (max-width: 900px) {
+    .plans-grid { grid-template-columns: 1fr; }
+    .faq-grid { grid-template-columns: 1fr; }
+    .enterprise-card { padding: 40px 32px; }
+  }
+  @media (max-width: 600px) {
+    .free-banner { flex-direction: column; }
+    .free-banner-limits { justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="logo-text">Getoify</a>
+  <a href="/" class="nav-back">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    Back
+  </a>
+</nav>
+
+<div class="pricing-header">
+  <div class="pricing-eyebrow">Simple pricing</div>
+  <h1>Pay for what<br>you <em>actually use.</em></h1>
+  <p class="pricing-sub">No setup fees. No hidden charges. Cancel anytime.</p>
+  <div class="billing-toggle">
+    <span class="toggle-label active" id="lbl-monthly">Monthly</span>
+    <div class="toggle-switch" id="toggle-sw" onclick="toggleBilling()">
+      <div class="toggle-knob"></div>
+    </div>
+    <span class="toggle-label" id="lbl-annual">Annual</span>
+    <span class="save-badge">Save 20%</span>
+  </div>
+</div>
+
+<div class="plans-section">
+
+  <div class="free-banner">
+    <div class="free-banner-left">
+      <div class="free-banner-tag">Free forever</div>
+      <div class="free-banner-title">Try before you commit.</div>
+      <div class="free-banner-desc">50 products, 2 languages. No credit card. No time limit.</div>
+    </div>
+    <div class="free-banner-limits">
+      <div class="free-lim"><div class="free-lim-val">50</div><div class="free-lim-lbl">Products</div></div>
+      <div class="free-lim"><div class="free-lim-val">2</div><div class="free-lim-lbl">Languages</div></div>
+      <div class="free-lim"><div class="free-lim-val">100</div><div class="free-lim-lbl">Translations</div></div>
+    </div>
+    <a href="/auth" class="btn-free">Connect Shopify Store</a>
+  </div>
+
+  <div class="plans-grid">
+
+    <div class="plan-card">
+      <div class="plan-tag">Starter</div>
+      <div class="plan-name">Starter</div>
+      <div class="plan-desc">For small stores getting started with multilingual selling.</div>
+      <div class="plan-price-row">
+        <span class="plan-currency">$</span>
+        <span class="plan-amount" id="starter-price">19</span>
+        <span class="plan-period">/mo</span>
+      </div>
+      <div class="plan-annual-note" id="starter-note">&nbsp;</div>
+      <div class="plan-limits">
+        <div class="plan-limit-item"><div class="plan-limit-val">500</div><div class="plan-limit-lbl">Products</div></div>
+        <div class="plan-limit-item"><div class="plan-limit-val">3</div><div class="plan-limit-lbl">Languages</div></div>
+      </div>
+      <ul class="plan-features">
+        <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>AI description generation</li>
+        <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Brand voice & glossary</li>
+        <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>SEO meta per language</li>
+        <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Auto-sync new products</li>
+        <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Dashboard & analytics</li>
+      </ul>
+      <a href="#" class="btn-plan" onclick="startCheckout('starter')">Get started</a>
+      <div class="plan-note">Cancel anytime</div>
+    </div>
+
+    <div class="plan-card">
+      <div class="plan-tag">Growth</div>
+      <div class="plan-name">Growth</div>
+      <div class="plan-desc">For growing stores expanding into European markets.</div>
+      <div class="plan-price-row">
+        <span class="plan-currency">$</span>
+        <span class="plan-amount" id="growth-price">49</span>
+        <span class="plan-period">/mo</span>
+      </div>
+      <div class="plan-annual-note" id="growth-note">&nbsp;</div>
+      <div class="plan-limits">
+        <div class="plan-limit-item"><div class="plan-limit-val">2,500</div><div class="plan-limit-lbl">Products</div></div>
+        <div class="plan-limit-item"><div class="plan-limit-val">5</div><div class="plan-limit-lbl">Languages</div></div>
+      </div>
+      <ul class="plan-features">
+        <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Everything in Starter</li>
+        <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>5 languages simultaneously</li>
+        <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Priority processing</li>
+        <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Bulk translate 2,500 products</li>
+        <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Email support</li>
+      </ul>
+      <a href="#" class="btn-plan" onclick="startCheckout('growth')">Get started</a>
+      <div class="plan-note">Cancel anytime</div>
+    </div>
+
+    <div class="plan-card">
+      <div class="plan-tag">Pro</div>
+      <div class="plan-name">Pro</div>
+      <div class="plan-desc">For established stores with large catalogs and global reach.</div>
+      <div class="plan-price-row">
+        <span class="plan-currency">$</span>
+        <span class="plan-amount" id="pro-price">99</span>
+        <span class="plan-period">/mo</span>
+      </div>
+      <div class="plan-annual-note" id="pro-note">&nbsp;</div>
+      <div class="plan-limits">
+        <div class="plan-limit-item"><div class="plan-limit-val">5,000</div><div class="plan-limit-lbl">Products</div></div>
+        <div class="plan-limit-item"><div class="plan-limit-val">5</div><div class="plan-limit-lbl">Languages</div></div>
+      </div>
+      <ul class="plan-features">
+        <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Everything in Growth</li>
+        <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>5,000 products</li>
+        <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Advanced QA flagging</li>
+        <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>API access</li>
+        <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Priority support</li>
+      </ul>
+      <a href="#" class="btn-plan" onclick="startCheckout('pro')">Get started</a>
+      <div class="plan-note">Cancel anytime</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="enterprise-section">
+  <div class="enterprise-card">
+    <div class="enterprise-left">
+      <div class="enterprise-tag">Enterprise</div>
+      <div class="enterprise-title">Built for<br><em>scale & compliance.</em></div>
+      <div class="enterprise-desc">Custom volume, dedicated infrastructure, SLA guarantees. For stores with 10,000+ products or specific compliance needs.</div>
+      <div class="enterprise-perks">
+        <div class="enterprise-perk"><span class="perk-dot"></span>Unlimited products & languages</div>
+        <div class="enterprise-perk"><span class="perk-dot"></span>Dedicated instance & SLA</div>
+        <div class="enterprise-perk"><span class="perk-dot"></span>Custom glossary & tone training</div>
+        <div class="enterprise-perk"><span class="perk-dot"></span>Onboarding & migration support</div>
+        <div class="enterprise-perk"><span class="perk-dot"></span>Invoicing & custom contracts</div>
+      </div>
+    </div>
+    <div>
+      <a href="mailto:contact@getoify.com" class="btn-enterprise">Contact sales</a>
+      <div class="enterprise-note">Usually responds within 24h</div>
+    </div>
+  </div>
+</div>
+
+<div class="faq-section">
+  <div class="faq-title">Common questions</div>
+  <div class="faq-grid">
+    <div class="faq-item"><div class="faq-q">What counts as a "product"?</div><div class="faq-a">One product in your Shopify catalog, regardless of how many variants it has. A t-shirt with 10 sizes counts as one product.</div></div>
+    <div class="faq-item"><div class="faq-q">Can I cancel anytime?</div><div class="faq-a">Yes. Cancel from your dashboard at any time. Your translations stay in Shopify — we never delete them on cancellation.</div></div>
+    <div class="faq-item"><div class="faq-q">What happens when I hit my limit?</div><div class="faq-a">New products above your limit won't be auto-translated. Existing translations are untouched. Upgrade anytime to continue.</div></div>
+    <div class="faq-item"><div class="faq-q">Do you support annual billing?</div><div class="faq-a">Yes — pay annually and save 20%. Billed once per year. Switch between monthly and annual at renewal.</div></div>
+    <div class="faq-item"><div class="faq-q">Which languages are supported?</div><div class="faq-a">French, German, Italian, Spanish, Portuguese. More languages coming soon.</div></div>
+    <div class="faq-item"><div class="faq-q">Is my store data safe?</div><div class="faq-a">We only access product data — titles, descriptions, metadata. Never orders, customers, or payment information.</div></div>
+  </div>
+</div>
+
+<script>
+  let isAnnual = false;
+  const prices = { starter: { monthly: 19, annual: 15 }, growth: { monthly: 49, annual: 39 }, pro: { monthly: 99, annual: 79 } };
+
+  function toggleBilling() {
+    isAnnual = !isAnnual;
+    document.getElementById('toggle-sw').classList.toggle('annual', isAnnual);
+    document.getElementById('lbl-monthly').classList.toggle('active', !isAnnual);
+    document.getElementById('lbl-annual').classList.toggle('active', isAnnual);
+    ['starter', 'growth', 'pro'].forEach(plan => {
+      const price = isAnnual ? prices[plan].annual : prices[plan].monthly;
+      document.getElementById(plan + '-price').textContent = price;
+      document.getElementById(plan + '-note').textContent = isAnnual ? 'Billed $' + (price * 12) + '/year' : '\u00a0';
+    });
+  }
+
+  function startCheckout(plan) {
+    const billing = isAnnual ? 'annual' : 'monthly';
+    const shop = localStorage.getItem('getoify_shop') || '';
+    window.location.href = '/checkout?plan=' + plan + '&billing=' + billing + '&shop=' + shop;
+  }
+</script>
+</body>
+</html>
