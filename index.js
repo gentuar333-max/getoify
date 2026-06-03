@@ -68,6 +68,7 @@ app.get('/products-page', (req, res) => res.sendFile(path.join(__dirname, 'publi
 app.get('/settings', (req, res) => res.sendFile(path.join(__dirname, 'public', 'settings.html')));
 app.get('/autosync', (req, res) => res.sendFile(path.join(__dirname, 'public', 'autosync.html')));
 app.get('/product', (req, res) => res.sendFile(path.join(__dirname, 'public', 'product-detail.html')));
+app.get('/pricing', (req, res) => res.sendFile(path.join(__dirname, 'public', 'pricing.html')));
 
 app.get('/product-translations', async (req, res) => {
   const { shop, productId } = req.query;
