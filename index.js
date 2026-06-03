@@ -512,12 +512,18 @@ app.post('/bulk-localize-all', async (req, res) => {
     const store = await getStore(shop);
     const savedLocales = store.selected_locales || [];
 
-    // Plan limit check
-    const checkPlanLimit = app.locals.checkPlanLimit;
-    if (checkPlanLimit) {
-      const limitCheck = await checkPlanLimit(shop, 99999, savedLocales.length);
-      if (!limitCheck.allowed) {
-        return res.status(403).json({ error: limitCheck.reason, upgrade_url: limitCheck.upgrade_url, plan: limitCheck.plan });
+    // Hard plan limit — slice products to plan maximum
+    const PLANS = app.locals.PLANS;
+    let productLimit = 50; // free default
+    let localeLimit = 2;
+    if (PLANS) {
+      const planName = store.plan || 'free';
+      const plan = PLANS[planName] || PLANS.free;
+      productLimit = plan.product_limit;
+      localeLimit = plan.locale_limit;
+      if (savedLocales.length > localeLimit) {
+        console.warn(`[plan-limit] ${shop} has ${savedLocales.length} locales but plan allows ${localeLimit}`);
+        savedLocales.splice(localeLimit);
       }
     }
     const locales = savedLocales.length > 0
@@ -535,6 +541,12 @@ app.post('/bulk-localize-all', async (req, res) => {
       const linkHeader = batchRes.headers['link'] || '';
       const nextMatch = linkHeader.match(/<([^>]+)>;\s*rel="next"/);
       bulkUrl = nextMatch ? nextMatch[1] : null;
+    }
+
+    // Enforce product limit — never translate more than plan allows
+    if (products.length > productLimit) {
+      console.warn(`[plan-limit] Slicing ${products.length} → ${productLimit} products for ${shop}`);
+      products = products.slice(0, productLimit);
     }
 
     res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -638,6 +650,27 @@ app.post('/process-product', async (req, res) => {
     const tone = store.tone || 'professional and elegant';
     const glossary = store.glossary || 'checkout, Shopify';
     const savedLocales = store.selected_locales || [];
+
+    // Hard plan limit check — count translated products for this shop
+    const PLANS = app.locals.PLANS;
+    if (PLANS) {
+      const planName = store.plan || 'free';
+      const plan = PLANS[planName] || PLANS.free;
+      const { count } = await supabase
+        .from('translations')
+        .select('product_id', { count: 'exact', head: true })
+        .eq('shop', shop);
+      const uniqueProducts = count || 0;
+      if (uniqueProducts >= plan.product_limit) {
+        console.warn(`[plan-limit] ${shop} hit ${planName} limit (${plan.product_limit} products)`);
+        return res.status(403).json({
+          error: `Plan limit reached. Your ${plan.label} plan supports ${plan.product_limit} products.`,
+          upgrade_url: `${process.env.APP_URL}/pricing`,
+          plan: planName,
+          limit: plan.product_limit
+        });
+      }
+    }
     console.log('savedLocales:', savedLocales);
     const locales = savedLocales.length > 0
       ? savedLocales.map(l => ({ locale: l, targetLang: LOCALE_MAP[l] || l }))
