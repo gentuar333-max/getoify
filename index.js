@@ -45,6 +45,8 @@ axios.interceptors.response.use(
 
 const { normalizeProductId } = require('./lib/product-id');
 const { fetchAllRows } = require('./lib/supabase-pagination');
+const registerStripe = require('./lib/stripe');
+registerStripe(app, { supabase });
 
 const SHOPIFY_PRODUCTS_PAGE = 250;
 const SHOPIFY_PRODUCTS_TIMEOUT_MS = 60000;
@@ -508,6 +510,15 @@ app.post('/bulk-localize-all', async (req, res) => {
   try {
     const store = await getStore(shop);
     const savedLocales = store.selected_locales || [];
+
+    // Plan limit check
+    const checkPlanLimit = app.locals.checkPlanLimit;
+    if (checkPlanLimit) {
+      const limitCheck = await checkPlanLimit(shop, 99999, savedLocales.length);
+      if (!limitCheck.allowed) {
+        return res.status(403).json({ error: limitCheck.reason, upgrade_url: limitCheck.upgrade_url, plan: limitCheck.plan });
+      }
+    }
     const locales = savedLocales.length > 0
       ? savedLocales.map(l => ({ locale: l, targetLang: LOCALE_MAP[l] || l }))
       : await getShopLocales(shop, token);
