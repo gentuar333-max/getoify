@@ -47,6 +47,8 @@ const { normalizeProductId } = require('./lib/product-id');
 const { fetchAllRows } = require('./lib/supabase-pagination');
 const registerStripe = require('./lib/stripe');
 registerStripe(app, { supabase });
+const registerShopifyBilling = require('./lib/shopify-billing');
+registerShopifyBilling(app, { supabase });
 
 const SHOPIFY_PRODUCTS_PAGE = 250;
 const SHOPIFY_PRODUCTS_TIMEOUT_MS = 60000;
