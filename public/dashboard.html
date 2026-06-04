@@ -200,7 +200,7 @@
     <p class="modal-sub">Select the languages you want to translate your products into. <strong>You can change this later in Settings.</strong></p>
     <div class="plan-note">
       <span class="plan-badge" id="plan-badge">Free</span>
-      <span id="plan-note-text">Free plan — 1 language. <a href="#" style="color:var(--accent);text-decoration:none;font-weight:500;">Upgrade for all 6</a></span>
+      <span id="plan-note-text">Free plan — up to 2 languages. <a href="#" style="color:var(--accent);text-decoration:none;font-weight:500;">Upgrade for all 8</a></span>
     </div>
     <div class="lang-grid" id="lang-grid">
       <div class="lang-card" data-locale="de" onclick="toggleLang(this)">
@@ -231,6 +231,16 @@
       <div class="lang-card" data-locale="en" onclick="toggleLang(this)">
         <span class="lang-flag">🇬🇧</span>
         <div class="lang-info"><div class="lang-name">English</div><div class="lang-code">EN</div></div>
+        <div class="lang-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#FDFCF9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="lang-card" data-locale="nl" onclick="toggleLang(this)">
+        <span class="lang-flag">🇳🇱</span>
+        <div class="lang-info"><div class="lang-name">Dutch</div><div class="lang-code">NL</div></div>
+        <div class="lang-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#FDFCF9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="lang-card" data-locale="pl" onclick="toggleLang(this)">
+        <span class="lang-flag">🇵🇱</span>
+        <div class="lang-info"><div class="lang-name">Polish</div><div class="lang-code">PL</div></div>
         <div class="lang-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#FDFCF9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
       </div>
     </div>
@@ -335,7 +345,7 @@
       btn.innerHTML = '<i class="ti ti-player-play"></i>Run bulk translate'; btn.disabled = false; }
   }
 
-  const MAX_FREE = 1; const MAX_PAID = 6;
+  const MAX_FREE = 2; const MAX_PAID = 8;
   let userPlan = 'free'; let selectedLangs = [];
 
   async function checkLanguageSetup() {
@@ -351,8 +361,8 @@
   function showModal() {
     document.getElementById('plan-badge').textContent = userPlan === 'free' ? 'Free' : 'Paid';
     document.getElementById('plan-note-text').innerHTML = userPlan === 'free'
-      ? 'Free plan — 1 language. <a href="#" style="color:var(--accent);text-decoration:none;font-weight:500;">Upgrade for all 6</a>'
-      : 'Paid plan — up to 6 languages.';
+      ? 'Free plan — up to 2 languages. <a href="#" style="color:var(--accent);text-decoration:none;font-weight:500;">Upgrade for all 8</a>'
+      : 'Paid plan — up to 8 languages.';
     document.getElementById('lang-modal').classList.remove('hidden');
   }
 
