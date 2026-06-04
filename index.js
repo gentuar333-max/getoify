@@ -599,13 +599,13 @@ app.post('/webhook/product-create', async (req, res) => {
         .from('stores').select('plan').eq('shop', shop).single();
       const planName = storeData?.plan || 'free';
       const plan = PLANS[planName] || PLANS.free;
-      const { count } = await supabase
+      const { data: productRows } = await supabase
         .from('translations')
-        .select('product_id', { count: 'exact', head: true })
+        .select('product_id')
         .eq('shop', shop);
-      const uniqueProducts = count || 0;
+      const uniqueProducts = new Set((productRows || []).map(r => r.product_id)).size;
       if (uniqueProducts >= plan.product_limit) {
-        console.warn(`[plan-limit] Webhook blocked for ${shop} — ${planName} limit (${plan.product_limit}) reached`);
+        console.warn(`[plan-limit] Webhook blocked for ${shop} — ${planName} limit (${plan.product_limit} products, ${uniqueProducts} used)`);
         return;
       }
     }
@@ -682,13 +682,13 @@ app.post('/process-product', async (req, res) => {
     if (PLANS) {
       const planName = store.plan || 'free';
       const plan = PLANS[planName] || PLANS.free;
-      const { count } = await supabase
+      const { data: productRows2 } = await supabase
         .from('translations')
-        .select('product_id', { count: 'exact', head: true })
+        .select('product_id')
         .eq('shop', shop);
-      const uniqueProducts = count || 0;
+      const uniqueProducts = new Set((productRows2 || []).map(r => r.product_id)).size;
       if (uniqueProducts >= plan.product_limit) {
-        console.warn(`[plan-limit] ${shop} hit ${planName} limit (${plan.product_limit} products)`);
+        console.warn(`[plan-limit] ${shop} hit ${planName} limit (${plan.product_limit} products, ${uniqueProducts} used)`);
         return res.status(403).json({
           error: `Plan limit reached. Your ${plan.label} plan supports ${plan.product_limit} products.`,
           upgrade_url: `${process.env.APP_URL}/pricing`,
