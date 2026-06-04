@@ -477,6 +477,7 @@ async function localizeProduct(shop, token, productId, targetLang, locale, tone,
     locale,
     status: 'done',
     original_title: product.title,
+    original_description: product.body_html || '',
     product_handle: product.handle || '',
     translated_title: translated.title,
     translated_description: translated.description,
@@ -589,20 +590,41 @@ app.post('/webhook/product-create', async (req, res) => {
     const body = Buffer.isBuffer(rawBody) ? JSON.parse(rawBody.toString()) : rawBody;
     if (!body.title || !body.id) return;
 
-    // Kontrollo nëse titulli ka ndryshuar (product update)
+    // Plan limit check before processing
+    const PLANS = app.locals.PLANS;
+    if (PLANS) {
+      const { data: storeData } = await supabase
+        .from('stores').select('plan').eq('shop', shop).single();
+      const planName = storeData?.plan || 'free';
+      const plan = PLANS[planName] || PLANS.free;
+      const { count } = await supabase
+        .from('translations')
+        .select('product_id', { count: 'exact', head: true })
+        .eq('shop', shop);
+      const uniqueProducts = count || 0;
+      if (uniqueProducts >= plan.product_limit) {
+        console.warn(`[plan-limit] Webhook blocked for ${shop} — ${planName} limit (${plan.product_limit}) reached`);
+        return;
+      }
+    }
+
+    // Kontrollo nëse titulli OSE description ka ndryshuar
     const { data: existing } = await supabase
       .from('translations')
-      .select('original_title')
+      .select('original_title, original_description')
       .eq('shop', shop)
       .eq('product_id', String(body.id))
       .limit(1);
 
+    const currentDesc = (body.body_html || '').replace(/<[^>]*>/g, '').trim();
+    const savedDesc = (existing?.[0]?.original_description || '').replace(/<[^>]*>/g, '').trim();
     const titleChanged = existing && existing.length > 0 &&
       existing[0].original_title?.toLowerCase() !== body.title.toLowerCase();
+    const descChanged = existing && existing.length > 0 &&
+      currentDesc.length > 0 && savedDesc !== currentDesc;
 
-    if (titleChanged) {
-      // Titulli ndryshoi — fshi translations e vjetra dhe rilokalizoje
-      console.log(`Title changed: "${existing[0].original_title}" → "${body.title}", relocalizing...`);
+    if (titleChanged || descChanged) {
+      console.log(`Product changed for ${body.title} — title:${titleChanged} desc:${descChanged} — relocalizing...`);
       await supabase.from('translations').delete()
         .eq('shop', shop)
         .eq('product_id', String(body.id));
