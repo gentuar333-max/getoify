@@ -265,6 +265,7 @@
 
   // --- Language selection ---
   let selectedLangs = [];
+  let currentPlanLocaleLimit = 2; // default free
 
   function toggleLang(card) {
     const locale = card.dataset.locale;
@@ -272,6 +273,10 @@
       card.classList.remove('sel');
       selectedLangs = selectedLangs.filter(l => l !== locale);
     } else {
+      if (selectedLangs.length >= currentPlanLocaleLimit) {
+        showToast(`Your plan allows ${currentPlanLocaleLimit} languages. Upgrade to add more.`, false);
+        return;
+      }
       card.classList.add('sel');
       selectedLangs.push(locale);
     }
@@ -346,6 +351,7 @@
       document.getElementById('plan-label').textContent = plan.label;
       document.getElementById('plan-desc').textContent = plan.desc;
       document.getElementById('plan-limit').textContent = plan.limit + ' limit';
+      currentPlanLocaleLimit = plan.locales;
 
       const featEl = document.getElementById('plan-features');
       featEl.innerHTML = plan.features.map(f =>
