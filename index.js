@@ -520,7 +520,7 @@ app.post('/bulk-localize-all', async (req, res) => {
 
     // Hard plan limit — slice products to plan maximum
     const PLANS = app.locals.PLANS;
-    let productLimit = 25; // free default
+    let productLimit = 15; // free default
     let localeLimit = 2;
     if (PLANS) {
       const planName = store.plan || 'free';
