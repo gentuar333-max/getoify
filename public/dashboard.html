@@ -294,7 +294,7 @@
 
       const byLocale = {};
       statusData.translations.forEach(t => { byLocale[t.locale] = (byLocale[t.locale] || 0) + 1; });
-      const langNames = { de: '🇩🇪 German', fr: '🇫🇷 French', it: '🇮🇹 Italian', es: '🇪🇸 Spanish', nl: '🇳🇱 Dutch', pt: '🇵🇹 Portuguese' };
+      const langNames = { de: '🇩🇪 German', fr: '🇫🇷 French', it: '🇮🇹 Italian', es: '🇪🇸 Spanish', nl: '🇳🇱 Dutch', pt: '🇵🇹 Portuguese', 'pt-BR': '🇧🇷 Portuguese (BR)', 'pt-br': '🇧🇷 Portuguese (BR)', en: '🇬🇧 English', sv: '🇸🇪 Swedish', da: '🇩🇰 Danish', fi: '🇫🇮 Finnish', nb: '🇳🇴 Norwegian', ja: '🇯🇵 Japanese', zh: '🇨🇳 Chinese', ar: '🇸🇦 Arabic', hi: '🇮🇳 Hindi', id: '🇮🇩 Indonesian' };
       const total = uniqueCount || 1;
       const langHtml = Object.entries(byLocale).map(([locale, count]) => {
         const pct = Math.round((count / total) * 100);
