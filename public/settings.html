@@ -142,6 +142,7 @@
           <div class="plan-features" id="plan-features" style="margin-top:12px;"></div>
           <div id="upgrade-section" style="margin-top:14px;">
             <button class="btn-upgrade" onclick="window.location.href='/pricing?shop='+shop">View all plans</button>
+            <button class="btn-upgrade" id="manage-sub-btn" style="display:none;background:#2c2c2c;margin-left:8px;" onclick="manageSubscription()">Manage subscription</button>
           </div>
         </div>
 
@@ -213,7 +214,7 @@
             <span class="field-val" id="api-total">0 records</span>
           </div>
           <div class="field-row">
-            <div><div class="field-lbl">Estimated cost</div><div class="field-val">Covered by your plan</div></div>
+
             <span class="field-val" id="api-cost">~€0.00</span>
           </div>
         </div>
@@ -314,11 +315,26 @@
 
   // --- Usage data ---
   const PLAN_CONFIG = {
-    free:    { label: 'Free',    limit: 50,   locales: 2, desc: 'You are on the Free plan. Upgrade to unlock more products and languages.', features: ['50 products', '2 languages', 'AI description generation', 'Auto-sync new products'] },
+    free:    { label: 'Free',    limit: 25,   locales: 2, desc: 'You are on the Free plan. Upgrade to unlock more products and languages.', features: ['50 products', '2 languages', 'AI description generation', 'Auto-sync new products'] },
     starter: { label: 'Starter', limit: 500,  locales: 3, desc: 'Starter plan — 500 products, 3 languages.', features: ['500 products', '3 languages', 'AI description generation', 'Brand voice & glossary', 'Auto-sync new products'] },
     growth:  { label: 'Growth',  limit: 2500, locales: 5, desc: 'Growth plan — 2,500 products, 5 languages.', features: ['2,500 products', '5 languages', 'Everything in Starter', 'Priority processing', 'Email support'] },
     pro:     { label: 'Pro',     limit: 5000, locales: 5, desc: 'Pro plan — 5,000 products, 5 languages.', features: ['5,000 products × 5 languages', 'Up to 25,000 translations', 'Full translation history', 'Auto-sync new products'] }
   };
+
+  async function manageSubscription() {
+    try {
+      const res = await fetch('/customer-portal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shop })
+      });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+      else showToast('Portal not available', false);
+    } catch(e) {
+      showToast('Connection error', false);
+    }
+  }
 
   async function loadPlan() {
     try {
@@ -338,6 +354,10 @@
       // Hide upgrade section if on Pro
       if (data.plan === 'pro') {
         document.getElementById('upgrade-section').style.display = 'none';
+      }
+      // Show manage subscription if paid plan
+      if (data.plan !== 'free') {
+        document.getElementById('manage-sub-btn').style.display = 'inline-block';
       }
     } catch(e) {}
   }
