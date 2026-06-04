@@ -79,6 +79,22 @@
     color: var(--gold);
   }
 
+  /* Wordmark PNG is 800×800; opaque pixels ~686×241 starting at y=280 (~30% of canvas height). */
+  .nav-logo-wrap {
+    display: block;
+    height: 68px;
+    overflow: hidden;
+    flex-shrink: 0;
+    line-height: 0;
+  }
+
+  .nav-logo {
+    display: block;
+    width: auto;
+    height: calc(64px * 800 / 241);
+    margin-top: calc(-280px * 64 / 241);
+  }
+
   .nav-right {
     display: flex;
     align-items: center;
@@ -737,7 +753,9 @@
 
 <!-- NAV -->
 <nav>
-  <img src="/images/logo-wordmark.png" height="48" alt="Getoify" style="display:block;height:48px;width:auto;">
+  <a href="/" class="nav-logo-wrap" aria-label="Getoify home">
+    <img class="nav-logo" src="/images/logo-wordmark.png" alt="Getoify">
+  </a>
   <div class="nav-right">
     <a href="#features" class="nav-link">Features</a>
     <a href="#how" class="nav-link">How it works</a>
@@ -1037,6 +1055,42 @@
   document.getElementById('modal-store-url').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') submitConnect();
   });
+
+  // #region agent log
+  document.addEventListener('DOMContentLoaded', function() {
+    var nav = document.querySelector('nav');
+    var wrap = nav && nav.querySelector('.nav-logo-wrap');
+    var img = wrap && wrap.querySelector('img.nav-logo');
+    if (!img) return;
+    var cs = window.getComputedStyle(img);
+    var wcs = wrap ? window.getComputedStyle(wrap) : {};
+    var payload = {
+      sessionId: 'c63411',
+      runId: 'crop-fix',
+      hypothesisId: 'B',
+      location: 'index.html:nav-logo-metrics',
+      message: 'Nav logo layout metrics',
+      data: {
+        navClientHeight: nav.clientHeight,
+        wrapClientHeight: wrap ? wrap.clientHeight : null,
+        imgOffsetHeight: img.offsetHeight,
+        imgOffsetWidth: img.offsetWidth,
+        computedHeight: cs.height,
+        computedWidth: cs.width,
+        computedMarginTop: cs.marginTop,
+        naturalWidth: img.naturalWidth,
+        naturalHeight: img.naturalHeight,
+        expectedInkHeightPx: 64
+      },
+      timestamp: Date.now()
+    };
+    fetch('http://127.0.0.1:7593/ingest/114aa971-1b56-45a2-b9aa-49d60743ac7c', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'c63411' },
+      body: JSON.stringify(payload)
+    }).catch(function() {});
+  });
+  // #endregion
 </script>
 </body>
 </html>
