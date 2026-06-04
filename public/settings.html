@@ -139,6 +139,10 @@
           </div>
           <div class="usage-bar"><div class="usage-fill" id="usage-fill" style="width:0%"></div></div>
           <div class="usage-row"><span class="usage-lbl" id="usage-used">0 used</span><span class="usage-val" id="plan-limit">50 limit</span></div>
+          <div class="field-row" style="margin-top:10px;">
+            <div><div class="field-lbl">Total translations</div></div>
+            <span class="field-val" id="api-total">—</span>
+          </div>
           <div class="plan-features" id="plan-features" style="margin-top:12px;"></div>
           <div id="upgrade-section" style="margin-top:14px;">
             <button class="btn-upgrade" onclick="window.location.href='/pricing?shop='+shop">View all plans</button>
@@ -365,9 +369,7 @@
       document.getElementById('usage-text').textContent = total + ' of ' + limit;
       document.getElementById('usage-fill').style.width = pct + '%';
       document.getElementById('usage-used').textContent = total + ' used';
-      document.getElementById('api-total').textContent = total + ' records';
-      const cost = (total * 0.0012).toFixed(2);
-      document.getElementById('api-cost').textContent = '~€' + cost;
+      document.getElementById('api-total').textContent = (data.total_records || total) + ' translations';
     } catch(e) {}
   }
 
