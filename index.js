@@ -1,1042 +1,804 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Getoify — Shopify Localization with Brand Voice & Auto-Sync</title>
-  <meta name="description" content="Connect your store. Set your brand voice, glossary, and tone. Getoify translates 12,000 products in 6 languages — SEO included, auto-synced in 2 minutes." />
-  <meta name="robots" content="index, follow" />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://getoify.com/" />
-  <meta property="og:title" content="Getoify — Shopify Localization with Brand Voice & Auto-Sync" />
-  <meta property="og:description" content="Not just translation. Getoify pulls your Shopify products, applies your brand voice and glossary, generates SEO per locale, and auto-syncs every new product in under 2 minutes." />
-  <meta property="og:image" content="https://getoify.com/og-image.png" />
-  <meta property="og:image:width" content="1200" />
-  <meta property="og:image:height" content="630" />
-  <meta property="og:locale" content="en_US" />
-  <meta property="og:site_name" content="Getoify" />
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Getoify — Shopify Localization with Brand Voice & Auto-Sync" />
-  <meta name="twitter:description" content="Not just translation. Getoify pulls your Shopify products, applies your brand voice and glossary, generates SEO per locale, and auto-syncs every new product in under 2 minutes." />
-  <meta name="twitter:image" content="https://getoify.com/og-image.png" />
-  <link rel="icon" type="image/png" href="/images/logo-icon.png" />
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet">
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  :root {
-    --navy: #0A2F6B;
-    --navy-light: #1a4a9e;
-    --navy-dark: #061e47;
-    --cream: #F9F6F0;
-    --cream-warm: #F2EDE3;
-    --cream-deep: #E8E0D0;
-    --white: #ffffff;
-    --text-body: #2c2c2c;
-    --text-muted: #6b6860;
-    --text-light: #9a9690;
-    --border: #ddd8ce;
-    --gold: #C8A84B;
-    --shopify-green: #96BF48;
-  }
-
-  html { scroll-behavior: smooth; }
-
-  body {
-    font-family: 'DM Sans', sans-serif;
-    background: var(--cream);
-    color: var(--text-body);
-    font-size: 16px;
-    line-height: 1.6;
-    -webkit-font-smoothing: antialiased;
-  }
-
-  /* NAV */
-  nav {
-    background: var(--white);
-    border-bottom: 1px solid var(--border);
-    padding: 0 5%;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 68px;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-  }
-
-  .logo-text {
-    font-family: 'Playfair Display', serif;
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--navy);
-    letter-spacing: -0.5px;
-  }
-
-  .logo-dot {
-    color: var(--gold);
-  }
-
-  .nav-right {
-    display: flex;
-    align-items: center;
-    gap: 24px;
-  }
-
-  .nav-link {
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--text-muted);
-    text-decoration: none;
-    transition: color 0.2s;
-  }
-
-  .nav-link:hover { color: var(--navy); }
-
-  .btn-nav {
-    background: var(--shopify-green);
-    color: var(--white);
-    border: none;
-    padding: 10px 22px;
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
-    transition: background 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .btn-nav:hover { background: #7aaa30; }
-
-  .shopify-s {
-    width: 16px;
-    height: 16px;
-    display: inline-block;
-  }
-
-  /* HERO */
-  .hero {
-    background: var(--white);
-    padding: 100px 5% 80px;
-    text-align: center;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .hero::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 4px;
-    background: var(--navy);
-  }
-
-  .hero-badge {
-    display: inline-block;
-    background: var(--cream-warm);
-    border: 1px solid var(--cream-deep);
-    color: var(--text-muted);
-    font-size: 12px;
-    font-weight: 500;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    padding: 7px 18px;
-    border-radius: 100px;
-    margin-bottom: 36px;
-  }
-
-  .hero h1 {
-    font-family: 'Playfair Display', serif;
-    font-size: clamp(42px, 6vw, 80px);
-    font-weight: 900;
-    color: var(--navy);
-    line-height: 1.08;
-    letter-spacing: -2px;
-    max-width: 900px;
-    margin: 0 auto 28px;
-  }
-
-  .hero h1 em {
-    font-style: italic;
-    color: var(--gold);
-  }
-
-  .hero-sub {
-    font-size: clamp(17px, 2.2vw, 21px);
-    color: var(--text-muted);
-    font-weight: 300;
-    max-width: 580px;
-    margin: 0 auto 52px;
-    line-height: 1.65;
-  }
-
-  .hero-ctas {
-    display: flex;
-    gap: 14px;
-    justify-content: center;
-    flex-wrap: wrap;
-    margin-bottom: 20px;
-  }
-
-  .btn-primary-shopify {
-    background: var(--shopify-green);
-    color: var(--white);
-    border: 2px solid var(--shopify-green);
-    padding: 15px 36px;
-    border-radius: 6px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
-    transition: all 0.2s;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .btn-primary-shopify:hover { background: #7aaa30; border-color: #7aaa30; }
-
-  .btn-secondary {
-    background: transparent;
-    color: var(--navy);
-    border: 2px solid var(--navy);
-    padding: 15px 36px;
-    border-radius: 6px;
-    font-size: 16px;
-    font-weight: 500;
-    cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
-    transition: all 0.2s;
-    text-decoration: none;
-    display: inline-block;
-  }
-
-  .btn-secondary:hover { background: var(--cream-warm); }
-
-  .hero-note {
-    font-size: 13px;
-    color: var(--text-light);
-    margin-top: 16px;
-  }
-
-  /* STATS BAND */
-  .stats-band {
-    background: var(--navy);
-    color: var(--white);
-    padding: 40px 5%;
-    display: flex;
-    justify-content: center;
-    gap: clamp(30px, 6vw, 100px);
-    flex-wrap: wrap;
-  }
-
-  .stat-item { text-align: center; }
-
-  .stat-number {
-    font-family: 'Playfair Display', serif;
-    font-size: 42px;
-    font-weight: 700;
-    line-height: 1;
-    color: var(--white);
-    letter-spacing: -1px;
-  }
-
-  .stat-label {
-    font-size: 13px;
-    color: rgba(255,255,255,0.6);
-    margin-top: 6px;
-    font-weight: 400;
-    letter-spacing: 0.5px;
-  }
-
-  /* VALUE PROP */
-  .value-section {
-    padding: 90px 5%;
-    background: var(--cream);
-    text-align: center;
-  }
-
-  .section-eyebrow {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 2.5px;
-    text-transform: uppercase;
-    color: var(--navy);
-    margin-bottom: 18px;
-  }
-
-  .section-title {
-    font-family: 'Playfair Display', serif;
-    font-size: clamp(32px, 4vw, 52px);
-    font-weight: 700;
-    color: var(--navy-dark);
-    letter-spacing: -1.5px;
-    line-height: 1.1;
-    max-width: 720px;
-    margin: 0 auto 20px;
-  }
-
-  .section-sub {
-    font-size: 17px;
-    color: var(--text-muted);
-    font-weight: 300;
-    max-width: 500px;
-    margin: 0 auto 60px;
-  }
-
-  /* VALUE CARDS */
-  .value-cards {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 2px;
-    background: var(--border);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    overflow: hidden;
-    max-width: 980px;
-    margin: 0 auto;
-  }
-
-  .value-card {
-    background: var(--white);
-    padding: 40px 32px;
-    text-align: left;
-  }
-
-  .value-number {
-    font-family: 'Playfair Display', serif;
-    font-size: 48px;
-    font-weight: 900;
-    color: var(--cream-deep);
-    line-height: 1;
-    margin-bottom: 16px;
-    letter-spacing: -2px;
-  }
-
-  .value-title {
-    font-size: 20px;
-    font-weight: 600;
-    color: var(--navy);
-    margin-bottom: 10px;
-    line-height: 1.25;
-  }
-
-  .value-desc {
-    font-size: 14px;
-    color: var(--text-muted);
-    line-height: 1.7;
-    font-weight: 300;
-  }
-
-  /* FEATURES */
-  .features-section {
-    padding: 90px 5%;
-    background: var(--white);
-  }
-
-  .features-header {
-    text-align: center;
-    margin-bottom: 64px;
-  }
-
-  .features-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 2px;
-    background: var(--border);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    overflow: hidden;
-    max-width: 1060px;
-    margin: 0 auto;
-  }
-
-  .feature-card {
-    background: var(--cream);
-    padding: 40px 36px;
-    transition: background 0.2s;
-  }
-
-  .feature-card:hover { background: var(--cream-warm); }
-
-  .feature-tag {
-    display: inline-block;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--navy);
-    background: rgba(10,47,107,0.08);
-    padding: 4px 12px;
-    border-radius: 100px;
-    margin-bottom: 20px;
-  }
-
-  .feature-name {
-    font-family: 'Playfair Display', serif;
-    font-size: 26px;
-    font-weight: 700;
-    color: var(--navy-dark);
-    margin-bottom: 12px;
-    letter-spacing: -0.5px;
-  }
-
-  .feature-desc {
-    font-size: 15px;
-    color: var(--text-muted);
-    line-height: 1.7;
-    font-weight: 300;
-  }
-
-  .feature-highlight {
-    display: inline-block;
-    margin-top: 18px;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--navy);
-  }
-
-  /* HOW IT WORKS */
-  .how-section {
-    padding: 90px 5%;
-    background: var(--cream);
-    text-align: center;
-  }
-
-  .steps-row {
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-    gap: 0;
-    max-width: 900px;
-    margin: 60px auto 0;
-    position: relative;
-  }
-
-  .step {
-    flex: 1;
-    text-align: center;
-    padding: 0 24px;
-    position: relative;
-  }
-
-  .step::after {
-    content: '';
-    position: absolute;
-    top: 22px;
-    right: -2px;
-    width: 50%;
-    height: 1px;
-    background: var(--border);
-  }
-
-  .step:last-child::after { display: none; }
-
-  .step::before {
-    content: '';
-    position: absolute;
-    top: 22px;
-    left: -2px;
-    width: 50%;
-    height: 1px;
-    background: var(--border);
-  }
-
-  .step:first-child::before { display: none; }
-
-  .step-num {
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    background: var(--navy);
-    color: var(--white);
-    font-family: 'Playfair Display', serif;
-    font-size: 18px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 20px;
-    position: relative;
-    z-index: 1;
-  }
-
-  .step-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--navy);
-    margin-bottom: 8px;
-  }
-
-  .step-desc {
-    font-size: 14px;
-    color: var(--text-muted);
-    line-height: 1.6;
-    font-weight: 300;
-  }
-
-  /* PARTNERS */
-  .partners-section {
-    padding: 80px 5%;
-    background: var(--white);
-    text-align: center;
-  }
-
-  .partners-title {
-    font-size: 12px;
-    font-weight: 500;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--text-light);
-    margin-bottom: 48px;
-  }
-
-  .partners-row {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: clamp(40px, 8vw, 100px);
-    flex-wrap: wrap;
-  }
-
-  .partner-badge {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .shopify-logo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .shopify-wordmark {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 30px;
-    font-weight: 600;
-    color: var(--shopify-green);
-    letter-spacing: -0.5px;
-  }
-
-  .partner-label {
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--text-light);
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-  }
-
-  .partner-divider {
-    width: 1px;
-    height: 60px;
-    background: var(--border);
-  }
-
-  .anthropic-logo-wrap {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-  }
-
-  /* CERTIFICATIONS */
-  .certs-section {
-    padding: 0 5% 80px;
-    background: var(--white);
-  }
-
-  .certs-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    overflow: hidden;
-    max-width: 860px;
-    margin: 0 auto;
-    background: var(--border);
-  }
-
-  .cert-card {
-    background: var(--white);
-    padding: 36px 28px;
-    text-align: center;
-  }
-
-  .cert-logo-area {
-    height: 64px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 20px;
-  }
-
-  .cert-name {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    line-height: 1.5;
-  }
-
-  /* CTA BAND */
-  .cta-band {
-    background: var(--navy-dark);
-    padding: 90px 5%;
-    text-align: center;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .cta-band::before {
-    content: '';
-    position: absolute;
-    top: -100px; left: 50%; transform: translateX(-50%);
-    width: 600px;
-    height: 600px;
-    border-radius: 50%;
-    border: 1px solid rgba(255,255,255,0.04);
-    pointer-events: none;
-  }
-
-  .cta-band::after {
-    content: '';
-    position: absolute;
-    top: -60px; left: 50%; transform: translateX(-50%);
-    width: 400px;
-    height: 400px;
-    border-radius: 50%;
-    border: 1px solid rgba(255,255,255,0.04);
-    pointer-events: none;
-  }
-
-  .cta-band h2 {
-    font-family: 'Playfair Display', serif;
-    font-size: clamp(34px, 5vw, 60px);
-    font-weight: 700;
-    color: var(--white);
-    letter-spacing: -1.5px;
-    margin-bottom: 20px;
-    position: relative;
-  }
-
-  .cta-band h2 em { color: var(--gold); font-style: italic; }
-
-  .cta-band p {
-    font-size: 18px;
-    color: rgba(255,255,255,0.55);
-    margin-bottom: 44px;
-    font-weight: 300;
-    position: relative;
-  }
-
-  .btn-cta-shopify {
-    background: var(--shopify-green);
-    color: var(--white);
-    border: none;
-    padding: 17px 44px;
-    border-radius: 6px;
-    font-size: 17px;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
-    transition: background 0.2s;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    position: relative;
-  }
-
-  .btn-cta-shopify:hover { background: #7aaa30; }
-
-  /* FOOTER */
-  footer {
-    background: var(--cream-warm);
-    border-top: 1px solid var(--border);
-    padding: 48px 5%;
-  }
-
-  .footer-grid {
-    display: grid;
-    grid-template-columns: 200px repeat(4, 1fr);
-    gap: 40px;
-    max-width: 1100px;
-    margin: 0 auto 36px;
-  }
-
-  .footer-brand .logo-text {
-    font-size: 20px;
-    margin-bottom: 10px;
-    display: block;
-  }
-
-  .footer-tagline {
-    font-size: 13px;
-    color: var(--text-muted);
-    line-height: 1.6;
-  }
-
-  .footer-col-title {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    color: var(--text-body);
-    margin-bottom: 18px;
-  }
-
-  .footer-link {
-    display: block;
-    font-size: 14px;
-    color: var(--text-muted);
-    text-decoration: none;
-    margin-bottom: 10px;
-    transition: color 0.2s;
-  }
-
-  .footer-link:hover { color: var(--navy); }
-
-  .footer-bottom {
-    border-top: 1px solid var(--border);
-    padding-top: 24px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    max-width: 1100px;
-    margin: 0 auto;
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-
-  .footer-copy { font-size: 13px; color: var(--text-light); }
-
-  @media (max-width: 768px) {
-    .value-cards { grid-template-columns: 1fr; }
-    .features-grid { grid-template-columns: 1fr; }
-    .certs-grid { grid-template-columns: 1fr; }
-    .footer-grid { grid-template-columns: 1fr 1fr; }
-    .partner-divider { display: none; }
-    .partners-row { gap: 36px; }
-    .nav-right .nav-link { display: none; }
-    .steps-row { flex-direction: column; gap: 32px; align-items: center; }
-    .step::before, .step::after { display: none; }
-  }
-</style>
-</head>
-<body>
-
-<!-- NAV -->
-<nav>
-  <img src="/images/logo-wordmark.png" height="44" alt="Getoify" style="display:block;">
-  <div class="nav-right">
-    <a href="#features" class="nav-link">Features</a>
-    <a href="#how" class="nav-link">How it works</a>
-    <a href="#partners" class="nav-link">Partners</a>
-    <button class="btn-nav" onclick="handleConnectModal()">
-      <svg width="16" height="16" viewBox="0 0 109 124" fill="none" xmlns="http://www.w3.org/2000/svg" class="shopify-s">
-        <path d="M74.7 14.8c-.1-.6-.6-1-1.1-1-.5 0-9.5-.2-9.5-.2s-7.6-7.4-8.3-8.1c-.3-.3-.6-.4-.9-.4V124l30.3-7.5L74.7 14.8z" fill="white" opacity="0.9"/>
-        <path d="M55.5 5.1l-3.7 1.1c-.4-1.3-1-2.8-1.8-4.2C47.5.3 45.1-.9 42.2-.5c-.1 0-.3.1-.4.1-.4-.5-.8-.9-1.2-1.3C38.4-4 35.3-3 32.7-1c-7.3 5.4-10.8 17-11.9 25.7-3.3 1-5.7 1.8-5.8 1.8C13.2 27.5 13 27.7 12.7 29.5L2 107.6l78.2 14.6V5.1H55.5z" fill="white" opacity="0.7"/>
-      </svg>
-      Connect Shopify Store
-    </button>
-  </div>
-</nav>
-
-<!-- HERO -->
-<section class="hero">
-  <div class="hero-badge">Shopify AI Localization</div>
-  <h1>Localize everything,<br><em>automatically.</em></h1>
-  <p class="hero-sub">Connect your Shopify store. Your entire catalog — translated in 5 languages, brand-accurate, SEO-optimized — without a single manual click.</p>
-  <div class="hero-ctas">
-    <a href="#connect-modal" class="btn-primary-shopify" onclick="handleConnectModal(event)">
-      <svg width="18" height="18" viewBox="0 0 109 124" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M74.7 14.8c-.1-.6-.6-1-1.1-1-.5 0-9.5-.2-9.5-.2s-7.6-7.4-8.3-8.1c-.3-.3-.6-.4-.9-.4V124l30.3-7.5L74.7 14.8z" fill="white"/>
-        <path d="M55.5 5.1l-3.7 1.1C51.4 4.9 50.8 3.4 50 2c-2.5-1.7-4.9-2.9-7.8-2.5-.1 0-.3.1-.4.1-.4-.5-.8-.9-1.2-1.3C38.4-4 35.3-3 32.7-1c-7.3 5.4-10.8 17-11.9 25.7-3.3 1-5.7 1.8-5.8 1.8C13.2 27.5 13 27.7 12.7 29.5L2 107.6l78.2 14.6V5.1H55.5z" fill="white" opacity="0.7"/>
-      </svg>
-      Connect Shopify Store
-    </a>
-    <a href="#features" class="btn-secondary">See how it works</a>
-  </div>
-  <p class="hero-note">No credit card required &middot; 14-day free trial &middot; Setup in 2 minutes</p>
-</section>
-
-<!-- STATS BAND -->
-<div class="stats-band">
-  <div class="stat-item">
-    <div class="stat-number">12,000</div>
-    <div class="stat-label">products translated in one run</div>
-  </div>
-  <div class="stat-item">
-    <div class="stat-number">5</div>
-    <div class="stat-label">languages simultaneously</div>
-  </div>
-  <div class="stat-item">
-    <div class="stat-number">2 min</div>
-    <div class="stat-label">auto-sync on new product</div>
-  </div>
-  <div class="stat-item">
-    <div class="stat-number">100%</div>
-    <div class="stat-label">brand voice preserved</div>
-  </div>
-</div>
-
-<!-- VALUE PROP -->
-<section class="value-section">
-  <div class="section-eyebrow">Why Getoify</div>
-  <h2 class="section-title">What you lose without it</h2>
-  <p class="section-sub">Every unlocalized product is a lost sale. Every hour spent translating is a wasted resource.</p>
-
-  <div class="value-cards">
-    <div class="value-card">
-      <div class="value-number">01</div>
-      <div class="value-title">You sell in one language only</div>
-      <div class="value-desc">Competitors capture French, Spanish, and German markets while you watch the traffic pass. Localization is no longer optional.</div>
-    </div>
-    <div class="value-card">
-      <div class="value-number">02</div>
-      <div class="value-title">Generic tools kill your brand voice</div>
-      <div class="value-desc">Standard tools translate words. They don't know your tone, your banned terms, or your brand glossary. The result sounds foreign — because it is.</div>
-    </div>
-    <div class="value-card">
-      <div class="value-number">03</div>
-      <div class="value-title">Your multilingual SEO doesn't exist</div>
-      <div class="value-desc">Without per-language meta_title, meta_description, and hreflang tags, Google ignores you in every target market. You rank nowhere.</div>
-    </div>
-  </div>
-</section>
-
-<!-- HOW IT WORKS -->
-<section class="how-section" id="how">
-  <div class="section-eyebrow">How it works</div>
-  <h2 class="section-title">Three steps. Zero friction.</h2>
-  <p class="section-sub">From Shopify store to fully localized catalog in minutes.</p>
-
-  <div class="steps-row">
-    <div class="step">
-      <div class="step-num">1</div>
-      <div class="step-title">Connect your store</div>
-      <div class="step-desc">One click. Getoify pulls your entire product catalog via the Shopify API — titles, descriptions, variants, metadata.</div>
-    </div>
-    <div class="step">
-      <div class="step-num">2</div>
-      <div class="step-title">Set your brand voice</div>
-      <div class="step-desc">Define tone, glossary, and banned words once. Every translation — across every language — respects your identity.</div>
-    </div>
-    <div class="step">
-      <div class="step-num">3</div>
-      <div class="step-title">Publish everywhere</div>
-      <div class="step-desc">AI generates translations + SEO metadata and pushes them back to Shopify automatically. New product added? Localized in 2 minutes.</div>
-    </div>
-  </div>
-</section>
-
-<!-- FEATURES -->
-<section class="features-section" id="features">
-  <div class="features-header">
-    <div class="section-eyebrow">Features</div>
-    <h2 class="section-title">Everything you need, built in</h2>
-    <p class="section-sub">Eight modules designed to work together.</p>
-  </div>
-
-  <div class="features-grid">
-
-    <div class="feature-card">
-      <span class="feature-tag">Connection</span>
-      <div class="feature-name">Brand Sync</div>
-      <div class="feature-desc">Connect your Shopify store in one click. Getoify imports your full catalog — with variants, images, and metadata. No CSV export, no configuration, no engineering work.</div>
-      <span class="feature-highlight">Direct Shopify API integration</span>
-    </div>
-
-    <div class="feature-card">
-      <span class="feature-tag">Identity</span>
-      <div class="feature-name">Voice Setup</div>
-      <div class="feature-desc">Set your brand tone: formal or casual, forbidden words, preferred expressions. Every translation respects your identity — in every language, every time.</div>
-      <span class="feature-highlight">Your voice. Everywhere.</span>
-    </div>
-
-    <div class="feature-card">
-      <span class="feature-tag">Consistency</span>
-      <div class="feature-name">Glossary</div>
-      <div class="feature-desc">Define once. Applied everywhere. "Checkout" stays "checkout" — never "basket", never "cart". Your technical terms, product names, and brand expressions are protected across every language.</div>
-      <span class="feature-highlight">100% terminological consistency</span>
-    </div>
-
-    <div class="feature-card">
-      <span class="feature-tag">Volume</span>
-      <div class="feature-name">Bulk Translate</div>
-      <div class="feature-desc">12,000 products × 5 languages. No manual clicks. Getoify processes your entire catalog in bulk, maintains consistency, and notifies you when it's ready.</div>
-      <span class="feature-highlight">60,000 translations. One click.</span>
-    </div>
-
-    <div class="feature-card">
-      <span class="feature-tag">Search</span>
-      <div class="feature-name">SEO Pack</div>
-      <div class="feature-desc">For every product, in every language: auto-generated meta_title, meta_description, and hreflang tags. Google will find you wherever your customers search — in their language.</div>
-      <span class="feature-highlight">Visible in every market</span>
-    </div>
-
-    <div class="feature-card">
-      <span class="feature-tag">Real-time</span>
-      <div class="feature-name">Auto-Sync</div>
-      <div class="feature-desc">New product added to Shopify? Localized in 5 languages within 2 minutes, automatically. Native webhook integration. Your catalog is always current, always localized.</div>
-      <span class="feature-highlight">New product → localized in 2 min</span>
-    </div>
-
-    <div class="feature-card" style="grid-column: 1 / -1;">
-      <span class="feature-tag">Control</span>
-      <div class="feature-name">Dashboard</div>
-      <div class="feature-desc">Live status at a glance: how many products are localized, how many are pending, how many have issues. API cost tracking, automatic alerts, full history. You stay in control at every moment — without micromanaging.</div>
-      <span class="feature-highlight">Full visibility across your entire localization pipeline</span>
-    </div>
-
-  </div>
-</section>
-
-<!-- PARTNERS -->
-<section class="partners-section" id="partners">
-  <div class="partners-title">Certifications and partnerships</div>
-  <div class="partners-row">
-
-    <!-- Shopify Partner -->
-    <div class="partner-badge">
-      <div class="shopify-logo">
-        <svg width="44" height="50" viewBox="0 0 109 124" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M95.5 23.7c-.1-.7-.7-1.1-1.3-1.1-.6 0-11.1-.2-11.1-.2s-8.9-8.6-9.7-9.4c-.8-.8-2.5-.6-3.2-.4l-4.3 1.3c-.5-1.5-1.2-3.2-2.1-4.9C61 5.1 58 3.6 54.4 4c-.2 0-.3.1-.5.1-.4-.6-.9-1.1-1.4-1.5C49.7-1.3 46.1-.1 43 2.3 34.5 8.6 30.4 22.5 29.1 32.9c-3.8 1.2-6.6 2-6.8 2.1-2 .6-2.1.7-2.4 2.6L7.4 121.8l79.6 14.9 34.9-8.7-26.4-104.3zM64.3 14.9c-1.1.3-2.3.7-3.5 1.1.1-4.2.6-10.2 2.5-13.7.7-.1 1.4.1 2 .7 1.6 1.7 2.4 5 2.5 7.5-.8 1.2-1.4 2.8-1.5 4.4zM54.4 4.2c1.1 0 2 .5 2.7 1.1-.9-.1-1.9-.1-2.8.1-2.4-8.6-6.4-12.8-9.7-15.4 3.5-2.6 7.2 3.8 9.8 14.2zm-10.5 2.2C38.4 7.3 33.2 15.2 30.8 28.3c-3 .9-6 1.8-8.9 2.7 2.8-13 10.5-24.5 21.2-24.5.5 0 .6 0 .8-.1z" fill="#95BF47"/>
-          <path d="M94.2 22.6c-.6 0-11.1-.2-11.1-.2s-8.9-8.6-9.7-9.4c-.3-.3-.7-.5-1.1-.5v137.1l35.4-8.7-13.5-118.3z" fill="#5E8E3E"/>
-        </svg>
-        <span class="shopify-wordmark">Shopify</span>
-      </div>
-      <span class="partner-label">Official partner</span>
-    </div>
-
-    <div class="partner-divider"></div>
-
-    <!-- Anthropic Partner -->
-    <div class="anthropic-logo-wrap">
-      <svg width="210" height="48" viewBox="0 0 210 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="0" y="9" width="30" height="30" rx="3" fill="#0A2F6B"/>
-        <polygon points="15,13 24,32 6,32" fill="white"/>
-        <text x="42" y="33" font-family="'DM Sans', sans-serif" font-size="26" font-weight="400" fill="#0A2F6B" letter-spacing="-0.5">Anthropic</text>
-      </svg>
-      <span class="partner-label">Powered by Anthropic</span>
-    </div>
-
-  </div>
-</section>
-
-<!-- CTA BAND -->
-<section class="cta-band">
-  <h2>Your store speaks<br><em>every language</em> tomorrow.</h2>
-  <p>No credit card required. Setup in under 2 minutes.</p>
-  <a href="#connect-modal" class="btn-cta-shopify" onclick="handleConnectModal(event)">
-    <svg width="20" height="20" viewBox="0 0 109 124" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M74.7 14.8c-.1-.6-.6-1-1.1-1-.5 0-9.5-.2-9.5-.2s-7.6-7.4-8.3-8.1c-.3-.3-.6-.4-.9-.4V124l30.3-7.5L74.7 14.8z" fill="white"/>
-      <path d="M55.5 5.1l-3.7 1.1C51.4 4.9 50.8 3.4 50 2c-2.5-1.7-4.9-2.9-7.8-2.5-.1 0-.3.1-.4.1-.4-.5-.8-.9-1.2-1.3C38.4-4 35.3-3 32.7-1c-7.3 5.4-10.8 17-11.9 25.7-3.3 1-5.7 1.8-5.8 1.8C13.2 27.5 13 27.7 12.7 29.5L2 107.6l78.2 14.6V5.1H55.5z" fill="white" opacity="0.7"/>
-    </svg>
-    Connect Shopify Store
-  </a>
-</section>
-
-<!-- FOOTER -->
-<footer>
-  <div class="footer-grid">
-    <div class="footer-brand">
-      <img src="/images/logo-wordmark.png" height="44" alt="Getoify" style="display:block;">
-      <p class="footer-tagline">Shopify localization, powered by AI. Every product. Every language. Automatically.</p>
-    </div>
-    <div>
-      <div class="footer-col-title">Product</div>
-      <a href="#" class="footer-link">What's new</a>
-      <a href="#features" class="footer-link">Features</a>
-      <a href="#how" class="footer-link">How it works</a>
-      <a href="#" class="footer-link">About</a>
-    </div>
-    <div>
-      <div class="footer-col-title">Resources</div>
-      <a href="#" class="footer-link">Documentation</a>
-      <a href="#" class="footer-link">Invoice validator</a>
-      <a href="#" class="footer-link">Directory info</a>
-    </div>
-    <div>
-      <div class="footer-col-title">Legal</div>
-      <a href="#" class="footer-link">Terms of service</a>
-      <a href="#" class="footer-link">Legal notice</a>
-      <a href="#" class="footer-link">Privacy policy</a>
-      <a href="#" class="footer-link">Cookies</a>
-    </div>
-    <div>
-      <div class="footer-col-title">Links</div>
-      <a href="#" class="footer-link">LinkedIn page</a>
-    </div>
-  </div>
-  <div class="footer-bottom">
-    <span class="footer-copy">&copy; 2025 Getoify. All rights reserved.</span>
-
-  </div>
-</footer>
-
-<!-- Connect Modal -->
-<div id="connect-modal" style="display:none;position:fixed;inset:0;background:rgba(10,47,107,0.5);z-index:1000;align-items:center;justify-content:center;padding:1rem;">
-  <div style="background:#fff;border-radius:10px;padding:2rem;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
-    <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#0A2F6B;margin-bottom:8px;">Connect your store</div>
-    <p style="font-size:13px;color:#6b6860;margin-bottom:1.5rem;">Enter your Shopify store URL to get started.</p>
-    <label style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#2c2c2c;display:block;margin-bottom:6px;">Shopify store URL</label>
-    <div style="position:relative;margin-bottom:10px;">
-      <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:13px;color:#9a9690;pointer-events:none;">https://</span>
-      <input id="modal-store-url" type="url" placeholder="your-store.myshopify.com" autocomplete="off" spellcheck="false" style="width:100%;padding:13px 12px 13px 78px;border:1px solid #ddd8ce;border-radius:6px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;" />
-    </div>
-    <button onclick="submitConnect()" style="width:100%;background:#96BF48;color:#fff;border:none;border-radius:6px;padding:13px;font-size:14px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;margin-bottom:8px;">Connect Shopify Store</button>
-    <p style="text-align:center;font-size:12px;color:#9a9690;margin-bottom:1rem;">Free · No credit card required</p>
-    <button onclick="closeModal()" style="width:100%;background:transparent;color:#6b6860;border:1px solid #ddd8ce;border-radius:6px;padding:10px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;">Cancel</button>
-  </div>
-</div>
-
-<script>
-  const params = new URLSearchParams(window.location.search);
-  const token = params.get('token');
-  if (token) localStorage.setItem('getoify_token', token);
-
-  function handleConnectModal(e) {
-    if (e) e.preventDefault();
-    const modal = document.getElementById('connect-modal');
-    modal.style.display = 'flex';
-    setTimeout(() => { document.getElementById('modal-store-url').focus(); }, 100);
-  }
-
-  function closeModal() {
-    document.getElementById('connect-modal').style.display = 'none';
-  }
-
-  function submitConnect() {
-    const input = document.getElementById('modal-store-url');
-    let val = input.value.trim();
-    if (!val) {
-      input.style.borderColor = '#c0392b';
-      input.focus();
-      setTimeout(() => { input.style.borderColor = '#ddd8ce'; }, 1800);
-      return;
+const express = require('express');
+const dotenv = require('dotenv');
+const axios = require('axios');
+const path = require('path');
+const { createClient } = require('@supabase/supabase-js');
+
+dotenv.config({ override: false });
+
+const app = express();
+
+app.use('/webhook', express.raw({ type: 'application/json' }));
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
+
+const { 
+  SHOPIFY_API_KEY, SHOPIFY_API_SECRET, SHOPIFY_SCOPES, 
+  APP_URL, SUPABASE_URL, SUPABASE_SERVICE_KEY
+} = process.env;
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
+// Intercept Shopify 401 — mark token invalid in Supabase
+axios.interceptors.response.use(
+  res => res,
+  async err => {
+    const url = err.config?.url || '';
+    const status = err.response?.status;
+    if (status === 401 && url.includes('myshopify.com')) {
+      const shopMatch = url.match(/https:\/\/([^/]+)/);
+      if (shopMatch) {
+        const shop = shopMatch[1];
+        console.warn(`[401] Token invalid for ${shop} — marking in Supabase`);
+        await supabase.from('stores').update({ token_invalid: true }).eq('shop', shop);
+      }
     }
-    val = val.replace('https://', '').replace('http://', '').replace('.myshopify.com', '');
-    window.location.href = '/auth?shop=' + val + '.myshopify.com';
+    if (status !== 401 && url.includes('myshopify.com/admin/oauth/access_token')) {
+      const shopMatch = url.match(/https:\/\/([^/]+)/);
+      if (shopMatch) {
+        await supabase.from('stores').update({ token_invalid: false }).eq('shop', shopMatch[1]);
+      }
+    }
+    return Promise.reject(err);
+  }
+);
+
+const { normalizeProductId } = require('./lib/product-id');
+const { fetchAllRows } = require('./lib/supabase-pagination');
+const registerStripe = require('./lib/stripe');
+registerStripe(app, { supabase });
+const registerShopifyBilling = require('./lib/shopify-billing');
+registerShopifyBilling(app, { supabase });
+
+const SHOPIFY_PRODUCTS_PAGE = 250;
+const SHOPIFY_PRODUCTS_TIMEOUT_MS = 60000;
+
+const LOCALE_MAP = {
+  'fr': 'French', 'de': 'German', 'it': 'Italian', 'es': 'Spanish',
+  'nl': 'Dutch', 'pt': 'Portuguese', 'pl': 'Polish', 'sv': 'Swedish',
+  'da': 'Danish', 'fi': 'Finnish', 'nb': 'Norwegian', 'ja': 'Japanese',
+  'zh': 'Chinese', 'ar': 'Arabic', 'hi': 'Hindi', 'id': 'Indonesian',
+  'en': 'English'
+};
+
+// Static pages
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'public', 'dashboard.html')));
+app.get('/tone', (req, res) => res.sendFile(path.join(__dirname, 'public', 'tone.html')));
+app.get('/glossary', (req, res) => res.sendFile(path.join(__dirname, 'public', 'glossary.html')));
+app.get('/products-page', (req, res) => res.sendFile(path.join(__dirname, 'public', 'products.html')));
+app.get('/settings', (req, res) => res.sendFile(path.join(__dirname, 'public', 'settings.html')));
+app.get('/autosync', (req, res) => res.sendFile(path.join(__dirname, 'public', 'autosync.html')));
+app.get('/product', (req, res) => res.sendFile(path.join(__dirname, 'public', 'product-detail.html')));
+app.get('/pricing', (req, res) => res.sendFile(path.join(__dirname, 'public', 'pricing.html')));
+app.get('/shopify-translation-app', (req, res) => res.sendFile(path.join(__dirname, 'public', 'shopify-translation-app.html')));
+app.get('/vs/langify', (req, res) => res.sendFile(path.join(__dirname, 'public', 'vs', 'langify.html')));
+
+app.get('/product-translations', async (req, res) => {
+  const { shop, productId } = req.query;
+  if (!shop || !productId) return res.status(400).json({ error: 'Missing shop or productId' });
+  try {
+    const pid = normalizeProductId(productId);
+    const data = await fetchAllRows(supabase, {
+      table: 'translations',
+      select: 'locale, status, translated_title, translated_description, meta_title, meta_description, original_title, product_handle, product_id, created_at',
+      eq: { shop, product_id: pid },
+      order: { column: 'created_at', ascending: false }
+    });
+    res.json({ product_id: pid, translations: data });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Token health check
+app.get('/token-status', async (req, res) => {
+  const { shop } = req.query;
+  if (!shop) return res.status(400).json({ error: 'Missing shop' });
+  const { data } = await supabase.from('stores').select('token_invalid').eq('shop', shop).single();
+  res.json({ invalid: data?.token_invalid === true });
+});
+
+// OAuth
+app.get('/auth', (req, res) => {
+  const shop = req.query.shop;
+  if (!shop) return res.status(400).send('Missing shop parameter');
+  const redirectUri = `${APP_URL}/auth/callback`;
+  const installUrl = `https://${shop}/admin/oauth/authorize?client_id=${SHOPIFY_API_KEY}&scope=${SHOPIFY_SCOPES}&redirect_uri=${redirectUri}`;
+  res.redirect(installUrl);
+});
+
+app.get('/auth/callback', async (req, res) => {
+  const { shop, code } = req.query;
+  try {
+    const response = await axios.post(`https://${shop}/admin/oauth/access_token`, {
+      client_id: SHOPIFY_API_KEY,
+      client_secret: SHOPIFY_API_SECRET,
+      code
+    });
+    const accessToken = response.data.access_token;
+    await supabase.from('stores').upsert({ shop, access_token: accessToken, token_invalid: false }, { onConflict: 'shop' });
+    console.log('Store connected:', shop);
+    res.redirect('/dashboard?shop=' + shop + '&token=' + accessToken + '&autorun=1');
+  } catch (error) {
+    console.error('OAuth callback error:', error.message);
+    res.redirect('/?error=oauth_failed&shop=' + (req.query.shop || ''));
+  }
+});
+
+// API routes
+app.get('/locales', async (req, res) => {
+  const { shop, token } = req.query;
+  if (!shop || !token) return res.status(400).json({ error: 'Missing shop or token' });
+  try {
+    const query = `query { shopLocales { locale name primary published } }`;
+    const response = await axios.post(
+      `https://${shop}/admin/api/2024-01/graphql.json`,
+      { query },
+      { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
+    );
+    const locales = response.data.data.shopLocales
+      .filter(l => !l.primary)
+      .map(l => ({ locale: l.locale, name: l.name, published: l.published, targetLang: LOCALE_MAP[l.locale] || l.name }));
+    res.json({ locales });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/products', async (req, res) => {
+  const { shop, token } = req.query;
+  if (!shop || !token) return res.status(400).json({ error: 'Missing shop or token' });
+  try {
+    let allProducts = [];
+    let url = `https://${shop}/admin/api/2024-01/products.json?limit=${SHOPIFY_PRODUCTS_PAGE}`;
+
+    while (url) {
+      const response = await axios.get(url, {
+        headers: { 'X-Shopify-Access-Token': token },
+        timeout: SHOPIFY_PRODUCTS_TIMEOUT_MS
+      });
+      const batch = response.data.products || [];
+      allProducts = allProducts.concat(batch);
+
+      const linkHeader = response.headers['link'] || '';
+      const nextMatch = linkHeader.match(/<([^>]+)>;\s*rel="next"/);
+      url = nextMatch ? nextMatch[1] : null;
+    }
+
+    res.json({
+      total: allProducts.length,
+      products: allProducts.map(p => ({
+        id: normalizeProductId(p.id),
+        title: p.title,
+        body: p.body_html,
+        created_at: p.created_at
+      }))
+    });
+  } catch (error) {
+    console.error('/products error:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/status', async (req, res) => {
+  const { shop } = req.query;
+  if (!shop) return res.status(400).json({ error: 'Missing shop' });
+  try {
+    const data = await fetchAllRows(supabase, {
+      table: 'translations',
+      select: 'locale, status, translated_title, original_title, product_id, created_at',
+      eq: { shop },
+      order: { column: 'created_at', ascending: false }
+    });
+    const translations = data.map(row => ({
+      ...row,
+      product_id: normalizeProductId(row.product_id)
+    }));
+    res.json({ total: translations.length, translations });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/store-settings', async (req, res) => {
+  const { shop } = req.query;
+  try {
+    const { data, error } = await supabase
+      .from('stores')
+      .select('tone, glossary, selected_locales, plan, access_token')
+      .eq('shop', shop)
+      .single();
+    if (error) throw error;
+    res.json(data);
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/settings', async (req, res) => {
+  const { shop, tone, glossary } = req.body;
+  try {
+    const { error } = await supabase.from('stores').update({ tone, glossary }).eq('shop', shop);
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/save-locales', async (req, res) => {
+  const { shop, selected_locales } = req.body;
+  if (!shop || !selected_locales) return res.status(400).json({ error: 'Missing data' });
+  try {
+    const { error } = await supabase
+      .from('stores')
+      .update({ selected_locales })
+      .eq('shop', shop);
+    if (error) throw error;
+    res.json({ ok: true });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+async function getStore(shop) {
+  const { data, error } = await supabase.from('stores').select('*').eq('shop', shop).single();
+  if (error) throw new Error('Store not found: ' + shop);
+  return data;
+}
+
+async function getShopLocales(shop, token) {
+  const query = `query { shopLocales { locale name primary published } }`;
+  const res = await axios.post(
+    `https://${shop}/admin/api/2024-01/graphql.json`,
+    { query },
+    { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
+  );
+  return res.data.data.shopLocales
+    .filter(l => !l.primary)
+    .map(l => ({ locale: l.locale, targetLang: LOCALE_MAP[l.locale] || l.name }));
+}
+
+async function getPrimaryLocale(shop, token) {
+  const query = `query { shopLocales { locale primary } }`;
+  const res = await axios.post(
+    `https://${shop}/admin/api/2024-01/graphql.json`,
+    { query },
+    { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
+  );
+  const primary = (res.data.data?.shopLocales || []).find(l => l.primary);
+  return primary?.locale || 'en';
+}
+
+function productBodyIsEmpty(bodyHtml) {
+  return !(bodyHtml || '').replace(/<[^>]*>/g, '').trim();
+}
+
+function formatBodyHtml(text) {
+  if (!text) return '';
+  if (/<[a-z][\s\S]*>/i.test(text)) return text;
+  const escaped = String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  return `<p>${escaped}</p>`;
+}
+
+async function updateShopifyProductBodyIfEmpty(shop, token, pid, descriptionText) {
+  const checkRes = await axios.get(
+    `https://${shop}/admin/api/2024-01/products/${pid}.json`,
+    { headers: { 'X-Shopify-Access-Token': token } }
+  );
+  if (!productBodyIsEmpty(checkRes.data.product?.body_html)) return false;
+
+  await axios.put(
+    `https://${shop}/admin/api/2024-01/products/${pid}.json`,
+    { product: { body_html: formatBodyHtml(descriptionText) } },
+    { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
+  );
+  console.log('Updated Shopify product body_html:', pid);
+  return true;
+}
+
+async function generateProductCopyWithClaude(product, targetLang, glossary, cleanBody) {
+  const category = product.product_type || '';
+  const tags = (product.tags || '').split(',').slice(0, 5).join(', ');
+
+  const prompt = `You are a native ${targetLang} speaker and ecommerce expert.
+
+Glossary (never translate these terms, keep them exactly as written): ${glossary || 'checkout, Shopify'}
+Target language: ${targetLang}
+
+${cleanBody
+    ? `The merchant has written this product description. Translate it faithfully into ${targetLang}.
+Do NOT rewrite, do NOT add new information, do NOT change the style.
+Just translate accurately, preserving the original meaning and tone.
+
+TITLE: ${product.title}
+DESCRIPTION: ${cleanBody}`
+    : `Product name: "${product.title}"
+${category ? `Category: ${category}` : ''}
+${tags ? `Tags: ${tags}` : ''}
+
+This product has no description. Based ONLY on the product name above, write a 2-sentence description in ${targetLang}.
+
+RULES:
+- Use the actual product name — do NOT use placeholder phrases like "ce produit" or "this product"
+- Write as if describing this specific product to a friend
+- Focus on what it does, how it feels, or why someone would want it
+- Max 40 words, no bullet points, no generic adjectives
+- Also translate the title naturally into ${targetLang}
+- NEVER say the product doesn't exist — all product names are valid
+- The title may be in any language — always translate it naturally into ${targetLang}`
   }
 
-  document.getElementById('connect-modal').addEventListener('click', function(e) {
-    if (e.target === this) closeModal();
-  });
+Rules for meta_title (max 60 chars):
+- Main keyword first
+- Natural language, no keyword stuffing
 
-  document.getElementById('modal-store-url').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') submitConnect();
-  });
-</script>
-</body>
-</html>
+Rules for meta_description (max 160 chars):
+- Start with action verb in ${targetLang}
+- One specific concrete benefit
+- Sound like a human wrote it
+
+Respond ONLY in this exact JSON format, no extra text, no markdown backticks:
+{"title":"...","description":"...","meta_title":"...","meta_description":"..."}`;
+
+  try {
+    const claudeRes = await axios.post('https://api.anthropic.com/v1/messages', {
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1500,
+      messages: [{ role: 'user', content: prompt }]
+    }, {
+      headers: {
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json'
+      },
+      timeout: 30000
+    });
+
+    let rawText = '';
+    for (const block of claudeRes.data.content) {
+      if (block.type === 'text') rawText += block.text;
+    }
+    rawText = rawText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('No JSON in Claude response');
+    const parsed = JSON.parse(jsonMatch[0]);
+    if (!parsed.title || !parsed.description) throw new Error('Missing title or description');
+    return parsed;
+  } catch (claudeErr) {
+    console.error('Claude API failed:', claudeErr.response?.data || claudeErr.message);
+    return {
+      title: product.title,
+      description: product.title,
+      meta_title: product.title.substring(0, 60),
+      meta_description: product.title.substring(0, 160)
+    };
+  }
+}
+
+async function localizeProduct(shop, token, productId, targetLang, locale, tone, glossary) {
+  const pid = normalizeProductId(productId);
+  const productRes = await axios.get(
+    `https://${shop}/admin/api/2024-01/products/${pid}.json`,
+    { headers: { 'X-Shopify-Access-Token': token } }
+  );
+  const product = productRes.data.product;
+
+  const digestQuery = `
+    query getTranslatableContent($resourceId: ID!) {
+      translatableResource(resourceId: $resourceId) {
+        translatableContent { key value digest locale }
+      }
+    }
+  `;
+  const digestRes = await axios.post(
+    `https://${shop}/admin/api/2024-01/graphql.json`,
+    { query: digestQuery, variables: { resourceId: `gid://shopify/Product/${pid}` } },
+    { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
+  );
+  const contents = digestRes.data.data.translatableResource.translatableContent;
+  const digests = {};
+  contents.forEach(c => { digests[c.key] = c.digest; });
+
+  const cleanBody = (product.body_html || '').replace(/<[^>]*>/g, '').trim();
+  const hadNoDescription = !cleanBody;
+
+  let translated = await generateProductCopyWithClaude(product, targetLang, glossary, cleanBody);
+
+  if (!translated.meta_title) {
+    translated.meta_title = (translated.title || product.title).substring(0, 60);
+  }
+  if (!translated.meta_description) {
+    translated.meta_description = (translated.description || translated.title || product.title).substring(0, 160);
+  }
+
+  if (hadNoDescription) {
+    try {
+      const primaryLocale = await getPrimaryLocale(shop, token);
+      const localeKey = locale.split('-')[0];
+      const primaryKey = primaryLocale.split('-')[0];
+      let bodyForShopify = translated.description;
+      if (localeKey !== primaryKey) {
+        const primaryLang = LOCALE_MAP[primaryKey] || primaryLocale;
+        const primaryCopy = await generateProductCopyWithClaude(product, primaryLang, glossary, '');
+        bodyForShopify = primaryCopy.description;
+      }
+      const bodyUpdated = await updateShopifyProductBodyIfEmpty(shop, token, pid, bodyForShopify);
+      if (bodyUpdated) {
+        // Re-fetch digests so body_html digest is available for translation registration
+        const freshDigestRes = await axios.post(
+          `https://${shop}/admin/api/2024-01/graphql.json`,
+          { query: digestQuery, variables: { resourceId: `gid://shopify/Product/${pid}` } },
+          { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
+        );
+        const freshContents = freshDigestRes.data.data.translatableResource.translatableContent;
+        freshContents.forEach(c => { digests[c.key] = c.digest; });
+        console.log('Re-fetched digests after body_html update, body_html digest:', digests['body_html']);
+      }
+    } catch (bodyErr) {
+      console.error('Failed to update Shopify body_html:', bodyErr.response?.data || bodyErr.message);
+    }
+  }
+
+  const mutation = `
+    mutation translationsRegister($resourceId: ID!, $translations: [TranslationInput!]!) {
+      translationsRegister(resourceId: $resourceId, translations: $translations) {
+        translations { key value }
+        userErrors { field message }
+      }
+    }
+  `;
+  const pushRes = await axios.post(
+    `https://${shop}/admin/api/2024-01/graphql.json`,
+    {
+      query: mutation,
+      variables: {
+        resourceId: `gid://shopify/Product/${pid}`,
+        translations: [
+          { key: 'title', value: translated.title, locale, translatableContentDigest: digests['title'] },
+          ...(digests['body_html']
+            ? [{ key: 'body_html', value: translated.description, locale, translatableContentDigest: digests['body_html'] }]
+            : []),
+          // meta_title: use its own digest if exists, otherwise use title digest as fallback
+          ...(translated.meta_title ? [{ key: 'meta_title', value: translated.meta_title, locale, translatableContentDigest: digests['meta_title'] || digests['title'] }] : []),
+          // meta_description: use its own digest if exists, otherwise use body_html digest as fallback
+          ...(translated.meta_description ? [{ key: 'meta_description', value: translated.meta_description, locale, translatableContentDigest: digests['meta_description'] || digests['body_html'] || digests['title'] }] : [])
+        ]
+      }
+    },
+    { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
+  );
+
+  await supabase.from('translations').upsert({
+    shop,
+    product_id: pid,
+    locale,
+    status: 'done',
+    original_title: product.title,
+    original_description: product.body_html || '',
+    product_handle: product.handle || '',
+    translated_title: translated.title,
+    translated_description: translated.description,
+    meta_title: translated.meta_title,
+    meta_description: translated.meta_description
+  }, { onConflict: 'shop,product_id,locale' });
+
+  // Log Shopify response për debugging
+  const shopifyResult = pushRes.data.data?.translationsRegister;
+  if (shopifyResult?.userErrors?.length > 0) {
+    console.error('Shopify userErrors:', JSON.stringify(shopifyResult.userErrors));
+  } else {
+    console.log('Shopify translations pushed OK:', shopifyResult?.translations?.length, 'fields');
+  }
+
+  console.log('Saved translation:', { shop, product_id: pid, locale, title: product.title });
+
+  return { product_id: pid, product: product.title, translated, shopify: shopifyResult };
+}
+
+app.post('/localize', async (req, res) => {
+  const { shop, token, productId, targetLang, locale, tone, glossary } = req.body;
+  try {
+    const pid = normalizeProductId(productId);
+    const result = await localizeProduct(shop, token, pid, targetLang, locale, tone, glossary);
+    res.json({ success: true, product_id: pid, ...result });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/bulk-localize-all', async (req, res) => {
+  const { shop, token, tone, glossary } = req.body;
+  try {
+    const store = await getStore(shop);
+    const savedLocales = store.selected_locales || [];
+
+    // Hard plan limit — slice products to plan maximum
+    const PLANS = app.locals.PLANS;
+    let productLimit = 50; // free default
+    let localeLimit = 2;
+    if (PLANS) {
+      const planName = store.plan || 'free';
+      const plan = PLANS[planName] || PLANS.free;
+      productLimit = plan.product_limit;
+      localeLimit = plan.locale_limit;
+      if (savedLocales.length > localeLimit) {
+        console.warn(`[plan-limit] ${shop} has ${savedLocales.length} locales but plan allows ${localeLimit}`);
+        savedLocales.splice(localeLimit);
+      }
+    }
+    const locales = savedLocales.length > 0
+      ? savedLocales.map(l => ({ locale: l, targetLang: LOCALE_MAP[l] || l }))
+      : await getShopLocales(shop, token);
+    // Fetch all products with cursor pagination (supports 500+)
+    let products = [];
+    let bulkUrl = `https://${shop}/admin/api/2024-01/products.json?limit=${SHOPIFY_PRODUCTS_PAGE}`;
+    while (bulkUrl) {
+      const batchRes = await axios.get(bulkUrl, {
+        headers: { 'X-Shopify-Access-Token': token },
+        timeout: SHOPIFY_PRODUCTS_TIMEOUT_MS
+      });
+      products = products.concat(batchRes.data.products || []);
+      const linkHeader = batchRes.headers['link'] || '';
+      const nextMatch = linkHeader.match(/<([^>]+)>;\s*rel="next"/);
+      bulkUrl = nextMatch ? nextMatch[1] : null;
+    }
+
+    // Enforce product limit — never translate more than plan allows
+    if (products.length > productLimit) {
+      console.warn(`[plan-limit] Slicing ${products.length} → ${productLimit} products for ${shop}`);
+      products = products.slice(0, productLimit);
+    }
+
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.write('{"results":[');
+    let first = true;
+
+    for (const product of products) {
+      const bulkPid = normalizeProductId(product.id);
+      for (const lang of locales) {
+        try {
+          const result = await localizeProduct(shop, token, bulkPid, lang.targetLang, lang.locale, tone, glossary);
+          if (!first) res.write(',');
+          res.write(JSON.stringify({ success: true, product_id: bulkPid, locale: lang.locale, ...result }));
+          first = false;
+        } catch (err) {
+          if (!first) res.write(',');
+          res.write(JSON.stringify({ product_id: bulkPid, product: product.title, locale: lang.locale, success: false, error: err.message }));
+          first = false;
+        }
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+    }
+
+    res.write(']}');
+    res.end();
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Product create + update — lokalizon automatikisht
+app.post('/webhook/product-create', async (req, res) => {
+  res.status(200).send('OK');
+  const rawBody = req.body;
+  const shop = req.headers['x-shopify-shop-domain'];
+  console.log('=== WEBHOOK product-create/update ===', shop);
+  try {
+    const body = Buffer.isBuffer(rawBody) ? JSON.parse(rawBody.toString()) : rawBody;
+    if (!body.title || !body.id) return;
+
+    // Plan limit check before processing
+    const PLANS = app.locals.PLANS;
+    if (PLANS) {
+      const { data: storeData } = await supabase
+        .from('stores').select('plan').eq('shop', shop).single();
+      const planName = storeData?.plan || 'free';
+      const plan = PLANS[planName] || PLANS.free;
+      const { count } = await supabase
+        .from('translations')
+        .select('product_id', { count: 'exact', head: true })
+        .eq('shop', shop);
+      const uniqueProducts = count || 0;
+      if (uniqueProducts >= plan.product_limit) {
+        console.warn(`[plan-limit] Webhook blocked for ${shop} — ${planName} limit (${plan.product_limit}) reached`);
+        return;
+      }
+    }
+
+    // Kontrollo nëse titulli OSE description ka ndryshuar
+    const { data: existing } = await supabase
+      .from('translations')
+      .select('original_title, original_description')
+      .eq('shop', shop)
+      .eq('product_id', String(body.id))
+      .limit(1);
+
+    const currentDesc = (body.body_html || '').replace(/<[^>]*>/g, '').trim();
+    const savedDesc = (existing?.[0]?.original_description || '').replace(/<[^>]*>/g, '').trim();
+    const titleChanged = existing && existing.length > 0 &&
+      existing[0].original_title?.toLowerCase() !== body.title.toLowerCase();
+    const descChanged = existing && existing.length > 0 &&
+      currentDesc.length > 0 && savedDesc !== currentDesc;
+
+    if (titleChanged || descChanged) {
+      console.log(`Product changed for ${body.title} — title:${titleChanged} desc:${descChanged} — relocalizing...`);
+      await supabase.from('translations').delete()
+        .eq('shop', shop)
+        .eq('product_id', String(body.id));
+    }
+
+    console.log('Calling process-product for:', body.title);
+    axios.post(`${APP_URL}/process-product`, {
+      shop, productId: normalizeProductId(body.id), productTitle: body.title
+    }, { timeout: 5000 }).catch(err => console.error('Trigger error:', err.message));
+  } catch (err) {
+    console.error('Webhook error:', err.message);
+  }
+});
+
+// Product delete — fshi nga Supabase
+app.post('/webhook/product-delete', async (req, res) => {
+  res.status(200).send('OK');
+  const rawBody = req.body;
+  const shop = req.headers['x-shopify-shop-domain'];
+  try {
+    const body = Buffer.isBuffer(rawBody) ? JSON.parse(rawBody.toString()) : rawBody;
+    if (!body.id) return;
+    console.log('=== WEBHOOK product-delete ===', shop, body.id);
+    await supabase.from('translations').delete()
+      .eq('shop', shop)
+      .eq('product_id', String(body.id));
+    console.log('Deleted translations for product:', body.id);
+  } catch (err) {
+    console.error('Webhook delete error:', err.message);
+  }
+});
+
+app.post('/process-product', async (req, res) => {
+  const { shop, productId, productTitle } = req.body;
+  let pid;
+  try {
+    pid = normalizeProductId(productId);
+  } catch (e) {
+    return res.status(400).json({ error: e.message });
+  }
+  console.log('process-product called:', { shop, product_id: pid, productTitle });
+  try {
+    const store = await getStore(shop);
+    console.log('store found:', store.shop, 'locales:', store.selected_locales, 'token:', store.access_token ? 'ok' : 'MISSING');
+    const token = store.access_token;
+    if (!token) throw new Error('No access_token in store');
+    const tone = store.tone || 'professional and elegant';
+    const glossary = store.glossary || 'checkout, Shopify';
+    const savedLocales = store.selected_locales || [];
+
+    // Hard plan limit check — count translated products for this shop
+    const PLANS = app.locals.PLANS;
+    if (PLANS) {
+      const planName = store.plan || 'free';
+      const plan = PLANS[planName] || PLANS.free;
+      const { count } = await supabase
+        .from('translations')
+        .select('product_id', { count: 'exact', head: true })
+        .eq('shop', shop);
+      const uniqueProducts = count || 0;
+      if (uniqueProducts >= plan.product_limit) {
+        console.warn(`[plan-limit] ${shop} hit ${planName} limit (${plan.product_limit} products)`);
+        return res.status(403).json({
+          error: `Plan limit reached. Your ${plan.label} plan supports ${plan.product_limit} products.`,
+          upgrade_url: `${process.env.APP_URL}/pricing`,
+          plan: planName,
+          limit: plan.product_limit
+        });
+      }
+    }
+    console.log('savedLocales:', savedLocales);
+    const locales = savedLocales.length > 0
+      ? savedLocales.map(l => ({ locale: l, targetLang: LOCALE_MAP[l] || l }))
+      : await getShopLocales(shop, token);
+    console.log('locales to process:', locales);
+    if (!locales || locales.length === 0) throw new Error('No locales found for this store');
+    const results = [];
+    for (const lang of locales) {
+      try {
+        await localizeProduct(shop, token, pid, lang.targetLang, lang.locale, tone, glossary);
+        console.log(`Done: ${productTitle} (${pid}) in ${lang.targetLang}`);
+        results.push({ product_id: pid, locale: lang.locale, success: true });
+      } catch (err) {
+        console.error(`Error ${lang.locale}:`, err.message);
+        results.push({ product_id: pid, locale: lang.locale, success: false, error: err.message });
+      }
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
+    res.json({ success: true, product_id: pid, results });
+  } catch (err) {
+    console.error('Process error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+async function pollNewProducts() {
+  console.log('Polling for new products...');
+  try {
+    const { data: stores } = await supabase.from('stores').select('*');
+    if (!stores || !stores.length) return;
+
+    for (const store of stores) {
+      const token = store.access_token;
+      const shop = store.shop;
+      const tone = store.tone || 'professional and elegant';
+      const glossary = store.glossary || 'checkout, Shopify';
+
+      // Skip stores with old/invalid tokens
+      if (!token || token.startsWith('shpua_')) {
+        console.log('Skipping store with invalid token:', shop);
+        continue;
+      }
+
+      try {
+        const res = await axios.get(
+          `https://${shop}/admin/api/2024-01/products.json?limit=50&order=created_at+desc`,
+          { headers: { 'X-Shopify-Access-Token': token } }
+        );
+
+        for (const product of res.data.products) {
+          // Only localize if this product_id has never been translated.
+          // Never delete existing translations automatically — this caused
+          // data corruption where old product descriptions overwrote new ones.
+          const { data } = await supabase
+            .from('translations')
+            .select('id')
+            .eq('shop', shop)
+            .eq('product_id', String(product.id))
+            .limit(1);
+
+          const needsLocalize = !data || data.length === 0;
+
+          if (needsLocalize) {
+
+            console.log('New product found via polling:', product.title);
+            const savedLocales = store.selected_locales || [];
+            const locales = savedLocales.length > 0
+              ? savedLocales.map(l => ({ locale: l, targetLang: LOCALE_MAP[l] || l }))
+              : await getShopLocales(shop, token);
+            for (const lang of locales) {
+              try {
+                await localizeProduct(shop, token, normalizeProductId(product.id), lang.targetLang, lang.locale, tone, glossary);
+                console.log(`Poll done: ${product.title} in ${lang.targetLang}`);
+              } catch(e) {
+                console.error('Poll localize error:', e.message);
+              }
+            }
+          }
+        }
+      } catch(e) {
+        console.error('Poll store error:', shop, e.message);
+      }
+    }
+  } catch(e) {
+    console.error('Poll error:', e.message);
+  }
+}
+
+// Vercel Cron endpoint — called every 5 minutes by vercel.json crons config
+// setInterval does not work on Vercel serverless — use this instead
+app.get('/poll', async (req, res) => {
+  await pollNewProducts();
+  res.json({ ok: true, time: new Date().toISOString() });
+});
+
+// Keep setInterval only for local development
+if (process.env.NODE_ENV !== 'production') {
+  setInterval(pollNewProducts, 5 * 60 * 1000);
+  setTimeout(pollNewProducts, 15000);
+}
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Getoify server running on port ${PORT}`);
+});
