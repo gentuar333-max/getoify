@@ -287,6 +287,13 @@
     if (activeFilter === 'done') filtered = filtered.filter(p => getStatus(p) === 'done');
     if (activeFilter === 'pending') filtered = filtered.filter(p => getStatus(p) === 'none');
 
+    // Sort: recently translated first, not started last
+    filtered.sort((a, b) => {
+      const aDate = a.created_at ? new Date(a.created_at) : new Date(0);
+      const bDate = b.created_at ? new Date(b.created_at) : new Date(0);
+      return bDate - aDate;
+    });
+
     const total = filtered.length;
     const pages = Math.ceil(total / perPage);
     const start = (currentPage - 1) * perPage;
