@@ -195,7 +195,8 @@ app.get('/status', async (req, res) => {
       ...row,
       product_id: normalizeProductId(row.product_id)
     }));
-    res.json({ total: translations.length, translations });
+    const uniqueProducts = new Set(translations.map(t => t.product_id)).size;
+    res.json({ total: uniqueProducts, total_records: translations.length, translations });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -519,7 +520,7 @@ app.post('/bulk-localize-all', async (req, res) => {
 
     // Hard plan limit — slice products to plan maximum
     const PLANS = app.locals.PLANS;
-    let productLimit = 50; // free default
+    let productLimit = 25; // free default
     let localeLimit = 2;
     if (PLANS) {
       const planName = store.plan || 'free';
