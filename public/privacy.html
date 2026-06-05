@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy Policy — Getoify</title>
+<meta name="robots" content="noindex" />
+<link rel="icon" type="image/png" href="/images/logo-icon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy: #0A2F6B;
+    --navy-light: #1a4a9e;
+    --navy-dark: #061e47;
+    --cream: #F9F6F0;
+    --cream-warm: #F2EDE3;
+    --cream-deep: #E8E0D0;
+    --white: #ffffff;
+    --text-body: #2c2c2c;
+    --text-muted: #6b6860;
+    --text-light: #9a9690;
+    --border: #ddd8ce;
+    --gold: #C8A84B;
+    --shopify-green: #96BF48;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--text-body);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* NAV */
+  nav {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 0 5%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 68px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--navy);
+    letter-spacing: -0.5px;
+  }
+
+  .logo-dot {
+    color: var(--gold);
+  }
+
+  .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .nav-link {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .nav-link:hover { color: var(--navy); }
+
+  .btn-nav {
+    background: var(--shopify-green);
+    color: var(--white);
+    border: none;
+    padding: 10px 22px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-nav:hover { background: #7aaa30; }
+
+  .shopify-s {
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+  }
+
+  /* HERO */
+  .hero {
+    background: var(--white);
+    padding: 100px 5% 80px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: var(--navy);
+  }
+
+  .hero-badge {
+    display: inline-block;
+    background: var(--cream-warm);
+    border: 1px solid var(--cream-deep);
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 7px 18px;
+    border-radius: 100px;
+    margin-bottom: 36px;
+  }
+
+  .hero h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(42px, 6vw, 80px);
+    font-weight: 900;
+    color: var(--navy);
+    line-height: 1.08;
+    letter-spacing: -2px;
+    max-width: 900px;
+    margin: 0 auto 28px;
+  }
+
+  .hero h1 em {
+    font-style: italic;
+    color: var(--gold);
+  }
+
+  .hero-sub {
+    font-size: clamp(17px, 2.2vw, 21px);
+    color: var(--text-muted);
+    font-weight: 300;
+    max-width: 580px;
+    margin: 0 auto 52px;
+    line-height: 1.65;
+  }
+
+  .hero-ctas {
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+
+  .btn-primary-shopify {
+    background: var(--shopify-green);
+    color: var(--white);
+    border: 2px solid var(--shopify-green);
+    padding: 15px 36px;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .btn-primary-shopify:hover { background: #7aaa30; border-color: #7aaa30; }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--navy);
+    border: 2px solid var(--navy);
+    padding: 15px 36px;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-block;
+  }
+
+  .btn-secondary:hover { background: var(--cream-warm); }
+
+  .hero-note {
+    font-size: 13px;
+    color: var(--text-light);
+    margin-top: 16px;
+  }
+
+  /* STATS BAND */
+  .stats-band {
+    background: var(--navy);
+    color: var(--white);
+    padding: 40px 5%;
+    display: flex;
+    justify-content: center;
+    gap: clamp(30px, 6vw, 100px);
+    flex-wrap: wrap;
+  }
+
+  .stat-item { text-align: center; }
+
+  .stat-number {
+    font-family: 'Playfair Display', serif;
+    font-size: 42px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--white);
+    letter-spacing: -1px;
+  }
+
+  .stat-label {
+    font-size: 13px;
+    color: rgba(255,255,255,0.6);
+    margin-top: 6px;
+    font-weight: 400;
+    letter-spacing: 0.5px;
+  }
+
+  /* VALUE PROP */
+  .value-section {
+    padding: 90px 5%;
+    background: var(--cream);
+    text-align: center;
+  }
+
+  .section-eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--navy);
+    margin-bottom: 18px;
+  }
+
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(32px, 4vw, 52px);
+    font-weight: 700;
+    color: var(--navy-dark);
+    letter-spacing: -1.5px;
+    line-height: 1.1;
+    max-width: 720px;
+    margin: 0 auto 20px;
+  }
+
+  .section-sub {
+    font-size: 17px;
+    color: var(--text-muted);
+    font-weight: 300;
+    max-width: 500px;
+    margin: 0 auto 60px;
+  }
+
+  /* VALUE CARDS */
+  .value-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    max-width: 980px;
+    margin: 0 auto;
+  }
+
+  .value-card {
+    background: var(--white);
+    padding: 40px 32px;
+    text-align: left;
+  }
+
+  .value-number {
+    font-family: 'Playfair Display', serif;
+    font-size: 48px;
+    font-weight: 900;
+    color: var(--cream-deep);
+    line-height: 1;
+    margin-bottom: 16px;
+    letter-spacing: -2px;
+  }
+
+  .value-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--navy);
+    margin-bottom: 10px;
+    line-height: 1.25;
+  }
+
+  .value-desc {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.7;
+    font-weight: 300;
+  }
+
+  /* FEATURES */
+  .features-section {
+    padding: 90px 5%;
+    background: var(--white);
+  }
+
+  .features-header {
+    text-align: center;
+    margin-bottom: 64px;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    max-width: 1060px;
+    margin: 0 auto;
+  }
+
+  .feature-card {
+    background: var(--cream);
+    padding: 40px 36px;
+    transition: background 0.2s;
+  }
+
+  .feature-card:hover { background: var(--cream-warm); }
+
+  .feature-tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--navy);
+    background: rgba(10,47,107,0.08);
+    padding: 4px 12px;
+    border-radius: 100px;
+    margin-bottom: 20px;
+  }
+
+  .feature-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--navy-dark);
+    margin-bottom: 12px;
+    letter-spacing: -0.5px;
+  }
+
+  .feature-desc {
+    font-size: 15px;
+    color: var(--text-muted);
+    line-height: 1.7;
+    font-weight: 300;
+  }
+
+  .feature-highlight {
+    display: inline-block;
+    margin-top: 18px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--navy);
+  }
+
+  /* HOW IT WORKS */
+  .how-section {
+    padding: 90px 5%;
+    background: var(--cream);
+    text-align: center;
+  }
+
+  .steps-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 0;
+    max-width: 900px;
+    margin: 60px auto 0;
+    position: relative;
+  }
+
+  .step {
+    flex: 1;
+    text-align: center;
+    padding: 0 24px;
+    position: relative;
+  }
+
+  .step::after {
+    content: '';
+    position: absolute;
+    top: 22px;
+    right: -2px;
+    width: 50%;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .step:last-child::after { display: none; }
+
+  .step::before {
+    content: '';
+    position: absolute;
+    top: 22px;
+    left: -2px;
+    width: 50%;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .step:first-child::before { display: none; }
+
+  .step-num {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--navy);
+    color: var(--white);
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .step-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--navy);
+    margin-bottom: 8px;
+  }
+
+  .step-desc {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    font-weight: 300;
+  }
+
+  /* PARTNERS */
+  .partners-section {
+    padding: 80px 5%;
+    background: var(--white);
+    text-align: center;
+  }
+
+  .partners-title {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-light);
+    margin-bottom: 48px;
+  }
+
+  .partners-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(40px, 8vw, 100px);
+    flex-wrap: wrap;
+  }
+
+  .partner-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .shopify-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .shopify-wordmark {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 30px;
+    font-weight: 600;
+    color: var(--shopify-green);
+    letter-spacing: -0.5px;
+  }
+
+  .partner-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-light);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+
+  .partner-divider {
+    width: 1px;
+    height: 60px;
+    background: var(--border);
+  }
+
+  .anthropic-logo-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  /* CERTIFICATIONS */
+  .certs-section {
+    padding: 0 5% 80px;
+    background: var(--white);
+  }
+
+  .certs-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    max-width: 860px;
+    margin: 0 auto;
+    background: var(--border);
+  }
+
+  .cert-card {
+    background: var(--white);
+    padding: 36px 28px;
+    text-align: center;
+  }
+
+  .cert-logo-area {
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+
+  .cert-name {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  /* CTA BAND */
+  .cta-band {
+    background: var(--navy-dark);
+    padding: 90px 5%;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cta-band::before {
+    content: '';
+    position: absolute;
+    top: -100px; left: 50%; transform: translateX(-50%);
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.04);
+    pointer-events: none;
+  }
+
+  .cta-band::after {
+    content: '';
+    position: absolute;
+    top: -60px; left: 50%; transform: translateX(-50%);
+    width: 400px;
+    height: 400px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.04);
+    pointer-events: none;
+  }
+
+  .cta-band h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(34px, 5vw, 60px);
+    font-weight: 700;
+    color: var(--white);
+    letter-spacing: -1.5px;
+    margin-bottom: 20px;
+    position: relative;
+  }
+
+  .cta-band h2 em { color: var(--gold); font-style: italic; }
+
+  .cta-band p {
+    font-size: 18px;
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 44px;
+    font-weight: 300;
+    position: relative;
+  }
+
+  .btn-cta-shopify {
+    background: var(--shopify-green);
+    color: var(--white);
+    border: none;
+    padding: 17px 44px;
+    border-radius: 6px;
+    font-size: 17px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: background 0.2s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+  }
+
+  .btn-cta-shopify:hover { background: #7aaa30; }
+
+  /* FOOTER */
+  footer {
+    background: var(--cream-warm);
+    border-top: 1px solid var(--border);
+    padding: 48px 5%;
+  }
+
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 200px repeat(4, 1fr);
+    gap: 40px;
+    max-width: 1100px;
+    margin: 0 auto 36px;
+  }
+
+  .footer-brand .logo-text {
+    font-size: 20px;
+    margin-bottom: 10px;
+    display: block;
+  }
+
+  .footer-tagline {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  .footer-col-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-body);
+    margin-bottom: 18px;
+  }
+
+  .footer-link {
+    display: block;
+    font-size: 14px;
+    color: var(--text-muted);
+    text-decoration: none;
+    margin-bottom: 10px;
+    transition: color 0.2s;
+  }
+
+  .footer-link:hover { color: var(--navy); }
+
+  .footer-bottom {
+    border-top: 1px solid var(--border);
+    padding-top: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1100px;
+    margin: 0 auto;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .footer-copy { font-size: 13px; color: var(--text-light); }
+
+  @media (max-width: 768px) {
+    .value-cards { grid-template-columns: 1fr; }
+    .features-grid { grid-template-columns: 1fr; }
+    .certs-grid { grid-template-columns: 1fr; }
+    .footer-grid { grid-template-columns: 1fr 1fr; }
+    .partner-divider { display: none; }
+    .partners-row { gap: 36px; }
+    .nav-right .nav-link { display: none; }
+    .steps-row { flex-direction: column; gap: 32px; align-items: center; }
+    .step::before, .step::after { display: none; }
+  }
+</style>
+<style>
+  .legal-hero { background: var(--white); padding: 80px 5% 60px; border-bottom: 1px solid var(--border); position: relative; }
+  .legal-hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--navy); }
+  .legal-content { max-width: 780px; margin: 0 auto; padding: 60px 5% 80px; }
+  .legal-content h2 { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 700; color: var(--navy-dark); margin: 40px 0 12px; letter-spacing: -0.3px; }
+  .legal-content h3 { font-size: 16px; font-weight: 600; color: var(--navy); margin: 24px 0 8px; }
+  .legal-content p { font-size: 15px; color: var(--text-muted); line-height: 1.8; margin-bottom: 16px; font-weight: 300; }
+  .legal-content ul { list-style: none; margin: 0 0 20px; padding: 0; }
+  .legal-content ul li { font-size: 15px; color: var(--text-muted); padding: 6px 0 6px 20px; position: relative; font-weight: 300; line-height: 1.7; }
+  .legal-content ul li::before { content: '—'; position: absolute; left: 0; color: var(--navy); }
+  .legal-date { font-size: 13px; color: var(--text-light); margin-top: 8px; }
+  .legal-contact { background: var(--cream-warm); border: 1px solid var(--border); border-radius: 8px; padding: 24px 28px; margin-top: 40px; }
+  .legal-contact p { margin: 0; font-size: 14px; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/"><img src="/images/logo-wordmark.png" height="44" alt="Getoify" style="display:block;"></a>
+  <div class="nav-right">
+    <a href="/" class="nav-link">Home</a>
+    <a href="/pricing" class="nav-link">Pricing</a>
+  </div>
+</nav>
+
+<div class="legal-hero">
+  <div style="max-width:780px;margin:0 auto;">
+    <div class="section-eyebrow">Legal</div>
+    <h1 style="font-family:'Playfair Display',serif;font-size:clamp(32px,4vw,52px);font-weight:700;color:var(--navy);letter-spacing:-1.5px;margin:12px 0 8px;">Privacy Policy</h1>
+    <p class="legal-date">Last updated: June 5, 2026</p>
+  </div>
+</div>
+
+<div class="legal-content">
+
+  <p>This Privacy Policy describes how Getoify ("we", "us", or "our") collects, uses, and protects information when you use our Shopify localization application ("the App") available at getoify.com.</p>
+
+  <h2>1. Information we collect</h2>
+
+  <h3>Store data</h3>
+  <p>When you connect your Shopify store to Getoify, we access the following data through the Shopify API:</p>
+  <ul>
+    <li>Product titles, descriptions, variants, and metadata</li>
+    <li>Store locale settings and published languages</li>
+    <li>Your Shopify store URL (myshopify.com domain)</li>
+    <li>Shopify access token required to read and write translations</li>
+  </ul>
+
+  <h3>Account data</h3>
+  <p>We store the following information to operate the service:</p>
+  <ul>
+    <li>Your store domain and OAuth access token</li>
+    <li>Your selected target languages and brand voice settings</li>
+    <li>Your glossary and tone configuration</li>
+    <li>Translation history and status per product</li>
+    <li>Subscription plan and billing status (managed by Stripe)</li>
+  </ul>
+
+  <h3>What we do NOT collect</h3>
+  <p>We never access, store, or process:</p>
+  <ul>
+    <li>Customer orders, payment details, or personal customer data</li>
+    <li>Customer names, emails, or addresses from your store</li>
+    <li>Financial reports or analytics beyond plan status</li>
+  </ul>
+
+  <h2>2. How we use your data</h2>
+  <p>We use the data we collect solely to provide and improve the Getoify service:</p>
+  <ul>
+    <li>To generate AI-powered product descriptions and translations using Claude (Anthropic)</li>
+    <li>To push localized content back to your Shopify store via the Translations API</li>
+    <li>To monitor new products via webhook and auto-sync translations</li>
+    <li>To enforce plan limits and manage your subscription</li>
+    <li>To display your translation status in the Getoify dashboard</li>
+  </ul>
+
+  <h2>3. Third-party services</h2>
+  <p>Getoify integrates with the following third-party services to operate:</p>
+  <ul>
+    <li><strong>Shopify</strong> — store connection, product data, and translation publishing</li>
+    <li><strong>Anthropic (Claude AI)</strong> — AI generation of product descriptions and translations</li>
+    <li><strong>Stripe</strong> — payment processing and subscription management</li>
+    <li><strong>Supabase</strong> — secure storage of store settings and translation records</li>
+  </ul>
+  <p>Each of these services has its own privacy policy and data handling practices. We do not sell your data to any third party.</p>
+
+  <h2>4. Data retention</h2>
+  <p>We retain your store data and translation records for as long as your account is active. If you uninstall Getoify or request deletion, we will remove your store data within 30 days. Translations already published to your Shopify store remain in Shopify and are not affected by account deletion.</p>
+
+  <h2>5. Data security</h2>
+  <p>We use industry-standard security practices to protect your data, including encrypted storage, HTTPS-only communication, and restricted access to production systems. Your Shopify access token is stored securely and never exposed publicly.</p>
+
+  <h2>6. Your rights</h2>
+  <p>You have the right to:</p>
+  <ul>
+    <li>Request a copy of the data we hold about your store</li>
+    <li>Request deletion of your store data at any time</li>
+    <li>Disconnect Getoify from your Shopify store at any time</li>
+  </ul>
+
+  <h2>7. Changes to this policy</h2>
+  <p>We may update this Privacy Policy from time to time. We will notify active users of significant changes via email or in-app notification. Continued use of Getoify after changes constitutes acceptance of the updated policy.</p>
+
+  <h2>8. Contact</h2>
+  <div class="legal-contact">
+    <p>For privacy-related questions or data deletion requests, contact us at:</p>
+    <p style="margin-top:8px;font-weight:500;color:var(--navy);">contact@getoify.com</p>
+  </div>
+
+</div>
+
+<footer>
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <img src="/images/logo-wordmark.png" height="30" alt="Getoify" style="display:block;margin-bottom:10px;">
+      <p class="footer-tagline">Shopify localization, powered by AI.</p>
+    </div>
+    <div>
+      <div class="footer-col-title">Product</div>
+      <a href="/" class="footer-link">Home</a>
+      <a href="/pricing" class="footer-link">Pricing</a>
+    </div>
+    <div>
+      <div class="footer-col-title">Legal</div>
+      <a href="/privacy" class="footer-link">Privacy policy</a>
+      <a href="/terms" class="footer-link">Terms of service</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span class="footer-copy">&copy; 2026 Getoify. All rights reserved.</span>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Terms of Service — Getoify</title>
+<meta name="robots" content="noindex" />
+<link rel="icon" type="image/png" href="/images/logo-icon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy: #0A2F6B;
+    --navy-light: #1a4a9e;
+    --navy-dark: #061e47;
+    --cream: #F9F6F0;
+    --cream-warm: #F2EDE3;
+    --cream-deep: #E8E0D0;
+    --white: #ffffff;
+    --text-body: #2c2c2c;
+    --text-muted: #6b6860;
+    --text-light: #9a9690;
+    --border: #ddd8ce;
+    --gold: #C8A84B;
+    --shopify-green: #96BF48;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--text-body);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* NAV */
+  nav {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 0 5%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 68px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--navy);
+    letter-spacing: -0.5px;
+  }
+
+  .logo-dot {
+    color: var(--gold);
+  }
+
+  .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .nav-link {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .nav-link:hover { color: var(--navy); }
+
+  .btn-nav {
+    background: var(--shopify-green);
+    color: var(--white);
+    border: none;
+    padding: 10px 22px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-nav:hover { background: #7aaa30; }
+
+  .shopify-s {
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+  }
+
+  /* HERO */
+  .hero {
+    background: var(--white);
+    padding: 100px 5% 80px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: var(--navy);
+  }
+
+  .hero-badge {
+    display: inline-block;
+    background: var(--cream-warm);
+    border: 1px solid var(--cream-deep);
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 7px 18px;
+    border-radius: 100px;
+    margin-bottom: 36px;
+  }
+
+  .hero h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(42px, 6vw, 80px);
+    font-weight: 900;
+    color: var(--navy);
+    line-height: 1.08;
+    letter-spacing: -2px;
+    max-width: 900px;
+    margin: 0 auto 28px;
+  }
+
+  .hero h1 em {
+    font-style: italic;
+    color: var(--gold);
+  }
+
+  .hero-sub {
+    font-size: clamp(17px, 2.2vw, 21px);
+    color: var(--text-muted);
+    font-weight: 300;
+    max-width: 580px;
+    margin: 0 auto 52px;
+    line-height: 1.65;
+  }
+
+  .hero-ctas {
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+
+  .btn-primary-shopify {
+    background: var(--shopify-green);
+    color: var(--white);
+    border: 2px solid var(--shopify-green);
+    padding: 15px 36px;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .btn-primary-shopify:hover { background: #7aaa30; border-color: #7aaa30; }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--navy);
+    border: 2px solid var(--navy);
+    padding: 15px 36px;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-block;
+  }
+
+  .btn-secondary:hover { background: var(--cream-warm); }
+
+  .hero-note {
+    font-size: 13px;
+    color: var(--text-light);
+    margin-top: 16px;
+  }
+
+  /* STATS BAND */
+  .stats-band {
+    background: var(--navy);
+    color: var(--white);
+    padding: 40px 5%;
+    display: flex;
+    justify-content: center;
+    gap: clamp(30px, 6vw, 100px);
+    flex-wrap: wrap;
+  }
+
+  .stat-item { text-align: center; }
+
+  .stat-number {
+    font-family: 'Playfair Display', serif;
+    font-size: 42px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--white);
+    letter-spacing: -1px;
+  }
+
+  .stat-label {
+    font-size: 13px;
+    color: rgba(255,255,255,0.6);
+    margin-top: 6px;
+    font-weight: 400;
+    letter-spacing: 0.5px;
+  }
+
+  /* VALUE PROP */
+  .value-section {
+    padding: 90px 5%;
+    background: var(--cream);
+    text-align: center;
+  }
+
+  .section-eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--navy);
+    margin-bottom: 18px;
+  }
+
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(32px, 4vw, 52px);
+    font-weight: 700;
+    color: var(--navy-dark);
+    letter-spacing: -1.5px;
+    line-height: 1.1;
+    max-width: 720px;
+    margin: 0 auto 20px;
+  }
+
+  .section-sub {
+    font-size: 17px;
+    color: var(--text-muted);
+    font-weight: 300;
+    max-width: 500px;
+    margin: 0 auto 60px;
+  }
+
+  /* VALUE CARDS */
+  .value-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    max-width: 980px;
+    margin: 0 auto;
+  }
+
+  .value-card {
+    background: var(--white);
+    padding: 40px 32px;
+    text-align: left;
+  }
+
+  .value-number {
+    font-family: 'Playfair Display', serif;
+    font-size: 48px;
+    font-weight: 900;
+    color: var(--cream-deep);
+    line-height: 1;
+    margin-bottom: 16px;
+    letter-spacing: -2px;
+  }
+
+  .value-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--navy);
+    margin-bottom: 10px;
+    line-height: 1.25;
+  }
+
+  .value-desc {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.7;
+    font-weight: 300;
+  }
+
+  /* FEATURES */
+  .features-section {
+    padding: 90px 5%;
+    background: var(--white);
+  }
+
+  .features-header {
+    text-align: center;
+    margin-bottom: 64px;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    max-width: 1060px;
+    margin: 0 auto;
+  }
+
+  .feature-card {
+    background: var(--cream);
+    padding: 40px 36px;
+    transition: background 0.2s;
+  }
+
+  .feature-card:hover { background: var(--cream-warm); }
+
+  .feature-tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--navy);
+    background: rgba(10,47,107,0.08);
+    padding: 4px 12px;
+    border-radius: 100px;
+    margin-bottom: 20px;
+  }
+
+  .feature-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--navy-dark);
+    margin-bottom: 12px;
+    letter-spacing: -0.5px;
+  }
+
+  .feature-desc {
+    font-size: 15px;
+    color: var(--text-muted);
+    line-height: 1.7;
+    font-weight: 300;
+  }
+
+  .feature-highlight {
+    display: inline-block;
+    margin-top: 18px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--navy);
+  }
+
+  /* HOW IT WORKS */
+  .how-section {
+    padding: 90px 5%;
+    background: var(--cream);
+    text-align: center;
+  }
+
+  .steps-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 0;
+    max-width: 900px;
+    margin: 60px auto 0;
+    position: relative;
+  }
+
+  .step {
+    flex: 1;
+    text-align: center;
+    padding: 0 24px;
+    position: relative;
+  }
+
+  .step::after {
+    content: '';
+    position: absolute;
+    top: 22px;
+    right: -2px;
+    width: 50%;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .step:last-child::after { display: none; }
+
+  .step::before {
+    content: '';
+    position: absolute;
+    top: 22px;
+    left: -2px;
+    width: 50%;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .step:first-child::before { display: none; }
+
+  .step-num {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--navy);
+    color: var(--white);
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .step-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--navy);
+    margin-bottom: 8px;
+  }
+
+  .step-desc {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    font-weight: 300;
+  }
+
+  /* PARTNERS */
+  .partners-section {
+    padding: 80px 5%;
+    background: var(--white);
+    text-align: center;
+  }
+
+  .partners-title {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-light);
+    margin-bottom: 48px;
+  }
+
+  .partners-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(40px, 8vw, 100px);
+    flex-wrap: wrap;
+  }
+
+  .partner-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .shopify-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .shopify-wordmark {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 30px;
+    font-weight: 600;
+    color: var(--shopify-green);
+    letter-spacing: -0.5px;
+  }
+
+  .partner-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-light);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+
+  .partner-divider {
+    width: 1px;
+    height: 60px;
+    background: var(--border);
+  }
+
+  .anthropic-logo-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  /* CERTIFICATIONS */
+  .certs-section {
+    padding: 0 5% 80px;
+    background: var(--white);
+  }
+
+  .certs-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    max-width: 860px;
+    margin: 0 auto;
+    background: var(--border);
+  }
+
+  .cert-card {
+    background: var(--white);
+    padding: 36px 28px;
+    text-align: center;
+  }
+
+  .cert-logo-area {
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+
+  .cert-name {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  /* CTA BAND */
+  .cta-band {
+    background: var(--navy-dark);
+    padding: 90px 5%;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cta-band::before {
+    content: '';
+    position: absolute;
+    top: -100px; left: 50%; transform: translateX(-50%);
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.04);
+    pointer-events: none;
+  }
+
+  .cta-band::after {
+    content: '';
+    position: absolute;
+    top: -60px; left: 50%; transform: translateX(-50%);
+    width: 400px;
+    height: 400px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.04);
+    pointer-events: none;
+  }
+
+  .cta-band h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(34px, 5vw, 60px);
+    font-weight: 700;
+    color: var(--white);
+    letter-spacing: -1.5px;
+    margin-bottom: 20px;
+    position: relative;
+  }
+
+  .cta-band h2 em { color: var(--gold); font-style: italic; }
+
+  .cta-band p {
+    font-size: 18px;
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 44px;
+    font-weight: 300;
+    position: relative;
+  }
+
+  .btn-cta-shopify {
+    background: var(--shopify-green);
+    color: var(--white);
+    border: none;
+    padding: 17px 44px;
+    border-radius: 6px;
+    font-size: 17px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: background 0.2s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+  }
+
+  .btn-cta-shopify:hover { background: #7aaa30; }
+
+  /* FOOTER */
+  footer {
+    background: var(--cream-warm);
+    border-top: 1px solid var(--border);
+    padding: 48px 5%;
+  }
+
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 200px repeat(4, 1fr);
+    gap: 40px;
+    max-width: 1100px;
+    margin: 0 auto 36px;
+  }
+
+  .footer-brand .logo-text {
+    font-size: 20px;
+    margin-bottom: 10px;
+    display: block;
+  }
+
+  .footer-tagline {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  .footer-col-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-body);
+    margin-bottom: 18px;
+  }
+
+  .footer-link {
+    display: block;
+    font-size: 14px;
+    color: var(--text-muted);
+    text-decoration: none;
+    margin-bottom: 10px;
+    transition: color 0.2s;
+  }
+
+  .footer-link:hover { color: var(--navy); }
+
+  .footer-bottom {
+    border-top: 1px solid var(--border);
+    padding-top: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1100px;
+    margin: 0 auto;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .footer-copy { font-size: 13px; color: var(--text-light); }
+
+  @media (max-width: 768px) {
+    .value-cards { grid-template-columns: 1fr; }
+    .features-grid { grid-template-columns: 1fr; }
+    .certs-grid { grid-template-columns: 1fr; }
+    .footer-grid { grid-template-columns: 1fr 1fr; }
+    .partner-divider { display: none; }
+    .partners-row { gap: 36px; }
+    .nav-right .nav-link { display: none; }
+    .steps-row { flex-direction: column; gap: 32px; align-items: center; }
+    .step::before, .step::after { display: none; }
+  }
+</style>
+<style>
+  .legal-hero { background: var(--white); padding: 80px 5% 60px; border-bottom: 1px solid var(--border); position: relative; }
+  .legal-hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--navy); }
+  .legal-content { max-width: 780px; margin: 0 auto; padding: 60px 5% 80px; }
+  .legal-content h2 { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 700; color: var(--navy-dark); margin: 40px 0 12px; letter-spacing: -0.3px; }
+  .legal-content h3 { font-size: 16px; font-weight: 600; color: var(--navy); margin: 24px 0 8px; }
+  .legal-content p { font-size: 15px; color: var(--text-muted); line-height: 1.8; margin-bottom: 16px; font-weight: 300; }
+  .legal-content ul { list-style: none; margin: 0 0 20px; padding: 0; }
+  .legal-content ul li { font-size: 15px; color: var(--text-muted); padding: 6px 0 6px 20px; position: relative; font-weight: 300; line-height: 1.7; }
+  .legal-content ul li::before { content: '—'; position: absolute; left: 0; color: var(--navy); }
+  .legal-date { font-size: 13px; color: var(--text-light); margin-top: 8px; }
+  .legal-contact { background: var(--cream-warm); border: 1px solid var(--border); border-radius: 8px; padding: 24px 28px; margin-top: 40px; }
+  .legal-contact p { margin: 0; font-size: 14px; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/"><img src="/images/logo-wordmark.png" height="44" alt="Getoify" style="display:block;"></a>
+  <div class="nav-right">
+    <a href="/" class="nav-link">Home</a>
+    <a href="/pricing" class="nav-link">Pricing</a>
+  </div>
+</nav>
+
+<div class="legal-hero">
+  <div style="max-width:780px;margin:0 auto;">
+    <div class="section-eyebrow">Legal</div>
+    <h1 style="font-family:'Playfair Display',serif;font-size:clamp(32px,4vw,52px);font-weight:700;color:var(--navy);letter-spacing:-1.5px;margin:12px 0 8px;">Terms of Service</h1>
+    <p class="legal-date">Last updated: June 5, 2026</p>
+  </div>
+</div>
+
+<div class="legal-content">
+
+  <p>These Terms of Service ("Terms") govern your use of Getoify ("the App", "we", "us", or "our"), a Shopify localization application available at getoify.com. By installing or using Getoify, you agree to these Terms.</p>
+
+  <h2>1. The service</h2>
+  <p>Getoify is a Shopify application that automatically translates product titles, descriptions, and metadata into multiple languages using AI, and publishes those translations back to your Shopify store via the Shopify Translations API.</p>
+  <p>The service includes: AI-powered product description generation, multilingual translation, SEO metadata generation per language, auto-sync via Shopify webhooks, and a translation management dashboard.</p>
+
+  <h2>2. Eligibility</h2>
+  <p>To use Getoify, you must:</p>
+  <ul>
+    <li>Have an active Shopify store</li>
+    <li>Be authorized to install apps on that store</li>
+    <li>Agree to these Terms and our Privacy Policy</li>
+    <li>Be at least 18 years of age or the legal age of majority in your jurisdiction</li>
+  </ul>
+
+  <h2>3. Free plan and paid subscriptions</h2>
+
+  <h3>Free plan</h3>
+  <p>The Free plan allows translation of up to 15 products in 2 languages at no cost, with no credit card required and no time limit. Free plan users have access to all core features within those limits.</p>
+
+  <h3>Paid plans</h3>
+  <p>Paid plans (Starter, Growth, Pro, Enterprise) are billed monthly or annually via Stripe. Prices are displayed on our pricing page at getoify.com/pricing. By subscribing, you authorize Getoify to charge your payment method on a recurring basis until you cancel.</p>
+
+  <h3>Cancellation</h3>
+  <p>You may cancel your subscription at any time from your Getoify settings. Cancellation takes effect at the end of the current billing period. We do not provide refunds for partial months. Translations already published to your Shopify store remain in place after cancellation.</p>
+
+  <h2>4. Acceptable use</h2>
+  <p>You agree not to:</p>
+  <ul>
+    <li>Use Getoify to generate or publish illegal, harmful, or misleading content</li>
+    <li>Attempt to reverse-engineer, copy, or redistribute the Getoify service</li>
+    <li>Use automated means to exceed plan limits or circumvent usage restrictions</li>
+    <li>Resell or sublicense access to Getoify to third parties</li>
+    <li>Use the service in a way that violates Shopify's terms of service</li>
+  </ul>
+
+  <h2>5. AI-generated content</h2>
+  <p>Getoify uses Claude AI (Anthropic) to generate product descriptions and translations. While we strive for accuracy and quality, AI-generated content may occasionally contain errors, inaccuracies, or culturally inappropriate phrasing. You are responsible for reviewing published translations and ensuring they meet your standards before use in a live storefront.</p>
+  <p>You retain full ownership of all content generated for your store. Getoify does not claim any intellectual property rights over AI-generated translations.</p>
+
+  <h2>6. Service availability</h2>
+  <p>We aim to maintain high availability but do not guarantee uninterrupted service. Getoify may be temporarily unavailable due to maintenance, updates, or circumstances beyond our control. We are not liable for losses resulting from service interruptions.</p>
+
+  <h2>7. Limitation of liability</h2>
+  <p>To the maximum extent permitted by law, Getoify shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the service, including but not limited to loss of revenue, data loss, or business interruption.</p>
+  <p>Our total liability to you for any claim arising from these Terms shall not exceed the amount you paid to Getoify in the three months preceding the claim.</p>
+
+  <h2>8. Shopify partnership</h2>
+  <p>Getoify is an independent application that integrates with Shopify. We are not affiliated with, endorsed by, or sponsored by Shopify Inc. Your use of Shopify is governed by Shopify's own terms of service.</p>
+
+  <h2>9. Changes to these terms</h2>
+  <p>We may update these Terms from time to time. We will notify active subscribers of material changes via email or in-app notification at least 14 days before they take effect. Continued use of Getoify after the effective date constitutes acceptance of the updated Terms.</p>
+
+  <h2>10. Governing law</h2>
+  <p>These Terms are governed by the laws of the European Union and the applicable laws of the country in which Getoify operates. Any disputes shall be resolved through good-faith negotiation before pursuing formal legal action.</p>
+
+  <h2>11. Contact</h2>
+  <div class="legal-contact">
+    <p>For questions about these Terms, contact us at:</p>
+    <p style="margin-top:8px;font-weight:500;color:var(--navy);">contact@getoify.com</p>
+  </div>
+
+</div>
+
+<footer>
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <img src="/images/logo-wordmark.png" height="30" alt="Getoify" style="display:block;margin-bottom:10px;">
+      <p class="footer-tagline">Shopify localization, powered by AI.</p>
+    </div>
+    <div>
+      <div class="footer-col-title">Product</div>
+      <a href="/" class="footer-link">Home</a>
+      <a href="/pricing" class="footer-link">Pricing</a>
+    </div>
+    <div>
+      <div class="footer-col-title">Legal</div>
+      <a href="/privacy" class="footer-link">Privacy policy</a>
+      <a href="/terms" class="footer-link">Terms of service</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span class="footer-copy">&copy; 2026 Getoify. All rights reserved.</span>
+  </div>
+</footer>
+
+</body>
+</html>
