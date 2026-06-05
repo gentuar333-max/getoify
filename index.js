@@ -319,7 +319,7 @@ async function generateProductCopyWithClaude(product, targetLang, glossary, clea
   const category = product.product_type || '';
   const tags = (product.tags || '').split(',').slice(0, 5).join(', ');
 
-  const prompt = `You are a native ${targetLang} speaker and ecommerce expert.
+  const prompt = `You are a native ${targetLang} speaker and ecommerce copywriter expert.
 
 Glossary (never translate these terms, keep them exactly as written): ${glossary || 'checkout, Shopify'}
 Target language: ${targetLang}
@@ -335,16 +335,20 @@ DESCRIPTION: ${cleanBody}`
 ${category ? `Category: ${category}` : ''}
 ${tags ? `Tags: ${tags}` : ''}
 
-This product has no description. Based ONLY on the product name above, write a 2-sentence description in ${targetLang}.
+This product has no description. Write a compelling product description in ${targetLang} (80-120 words).
+
+STRUCTURE:
+- Paragraph 1 (2-3 sentences): What this product is and its main benefit. Use the actual product name, not "this product".
+- Paragraph 2 (2-3 sentences): Who it is for and one specific use case or situation where it shines.
 
 RULES:
-- Use the actual product name — do NOT use placeholder phrases like "ce produit" or "this product"
-- Write as if describing this specific product to a friend
-- Focus on what it does, how it feels, or why someone would want it
-- Max 40 words, no bullet points, no generic adjectives
+- Use the actual product name naturally in the text
+- Write in a warm, confident tone — like a knowledgeable friend recommending it
+- Focus on benefits, not just features
+- No bullet points, no generic adjectives like "high quality" or "amazing"
 - Also translate the title naturally into ${targetLang}
-- NEVER say the product doesn't exist — all product names are valid
-- The title may be in any language — always translate it naturally into ${targetLang}`
+- The title may be in any language — always translate it naturally into ${targetLang}
+- NEVER say the product doesn't exist — all product names are valid`
   }
 
 Rules for meta_title (max 60 chars):
