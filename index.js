@@ -187,6 +187,12 @@ app.get('/status', async (req, res) => {
   const { shop } = req.query;
   if (!shop) return res.status(400).json({ error: 'Missing shop' });
   try {
+    const { data: storeRow } = await supabase.from('stores').select('plan, plan_started_at').eq('shop', shop).single();
+    const planName = storeRow?.plan || 'free';
+    const planStartedAt = storeRow?.plan_started_at || null;
+    const PLANS = app.locals.PLANS;
+    const plan = PLANS ? (PLANS[planName] || PLANS.free) : { product_limit: 15 };
+
     const data = await fetchAllRows(supabase, {
       table: 'translations',
       select: 'locale, status, translated_title, original_title, product_id, created_at',
@@ -197,11 +203,11 @@ app.get('/status', async (req, res) => {
       ...row,
       product_id: normalizeProductId(row.product_id)
     }));
-    const uniqueProducts = new Set(translations.map(t => t.product_id)).size;
-    const { data: storeData } = await supabase.from('stores').select('plan').eq('shop', shop).single();
-    const planName = storeData?.plan || 'free';
-    const PLANS = app.locals.PLANS;
-    const plan = PLANS ? (PLANS[planName] || PLANS.free) : { product_limit: 15 };
+    // Count only products translated after plan started
+    const relevantTranslations = planStartedAt
+      ? translations.filter(t => new Date(t.created_at) >= new Date(planStartedAt))
+      : translations;
+    const uniqueProducts = new Set(relevantTranslations.map(t => t.product_id)).size;
     res.json({ total: uniqueProducts, total_records: translations.length, plan_limit: plan.product_limit, translations });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -603,13 +609,13 @@ app.post('/webhook/product-create', async (req, res) => {
     const PLANS = app.locals.PLANS;
     if (PLANS) {
       const { data: storeData } = await supabase
-        .from('stores').select('plan').eq('shop', shop).single();
+        .from('stores').select('plan, plan_started_at').eq('shop', shop).single();
       const planName = storeData?.plan || 'free';
+      const planStartedAt = storeData?.plan_started_at || null;
       const plan = PLANS[planName] || PLANS.free;
-      const { data: productRows } = await supabase
-        .from('translations')
-        .select('product_id')
-        .eq('shop', shop);
+      let productQuery = supabase.from('translations').select('product_id, created_at').eq('shop', shop);
+      if (planStartedAt) productQuery = productQuery.gte('created_at', planStartedAt);
+      const { data: productRows } = await productQuery;
       const uniqueProducts = new Set((productRows || []).map(r => r.product_id)).size;
       if (uniqueProducts >= plan.product_limit) {
         console.warn(`[plan-limit] Webhook blocked for ${shop} — ${planName} limit (${plan.product_limit} products, ${uniqueProducts} used)`);
@@ -688,11 +694,11 @@ app.post('/process-product', async (req, res) => {
     const PLANS = app.locals.PLANS;
     if (PLANS) {
       const planName = store.plan || 'free';
+      const planStartedAt2 = store.plan_started_at || null;
       const plan = PLANS[planName] || PLANS.free;
-      const { data: productRows2 } = await supabase
-        .from('translations')
-        .select('product_id')
-        .eq('shop', shop);
+      let productQuery2 = supabase.from('translations').select('product_id, created_at').eq('shop', shop);
+      if (planStartedAt2) productQuery2 = productQuery2.gte('created_at', planStartedAt2);
+      const { data: productRows2 } = await productQuery2;
       const uniqueProducts = new Set((productRows2 || []).map(r => r.product_id)).size;
       if (uniqueProducts >= plan.product_limit) {
         console.warn(`[plan-limit] ${shop} hit ${planName} limit (${plan.product_limit} products, ${uniqueProducts} used)`);
