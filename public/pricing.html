@@ -307,7 +307,12 @@
 
   function startCheckout(plan) {
     const billing = isAnnual ? 'annual' : 'monthly';
-    const shop = localStorage.getItem('getoify_shop') || '';
+    const urlParams = new URLSearchParams(window.location.search);
+    const shop = urlParams.get('shop') || localStorage.getItem('getoify_shop') || '';
+    if (!shop) {
+      window.location.href = '/?goto=pricing&plan=' + plan;
+      return;
+    }
     window.location.href = '/checkout?plan=' + plan + '&billing=' + billing + '&shop=' + shop;
   }
 </script>
