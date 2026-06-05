@@ -319,7 +319,7 @@ async function generateProductCopyWithClaude(product, targetLang, glossary, clea
   const category = product.product_type || '';
   const tags = (product.tags || '').split(',').slice(0, 5).join(', ');
 
-  const prompt = `You are a native ${targetLang} speaker and ecommerce copywriter expert.
+  const prompt = `You are a native ${targetLang} speaker and ecommerce expert.
 
 Glossary (never translate these terms, keep them exactly as written): ${glossary || 'checkout, Shopify'}
 Target language: ${targetLang}
@@ -335,20 +335,16 @@ DESCRIPTION: ${cleanBody}`
 ${category ? `Category: ${category}` : ''}
 ${tags ? `Tags: ${tags}` : ''}
 
-This product has no description. Write a compelling product description in ${targetLang} (80-120 words).
-
-STRUCTURE:
-- Paragraph 1 (2-3 sentences): What this product is and its main benefit. Use the actual product name, not "this product".
-- Paragraph 2 (2-3 sentences): Who it is for and one specific use case or situation where it shines.
+This product has no description. Based ONLY on the product name above, write a 2-sentence description in ${targetLang}.
 
 RULES:
-- Use the actual product name naturally in the text
-- Write in a warm, confident tone — like a knowledgeable friend recommending it
-- Focus on benefits, not just features
-- No bullet points, no generic adjectives like "high quality" or "amazing"
+- Use the actual product name — do NOT use placeholder phrases like "ce produit" or "this product"
+- Write as if describing this specific product to a friend
+- Focus on what it does, how it feels, or why someone would want it
+- Max 40 words, no bullet points, no generic adjectives
 - Also translate the title naturally into ${targetLang}
-- The title may be in any language — always translate it naturally into ${targetLang}
-- NEVER say the product doesn't exist — all product names are valid`
+- NEVER say the product doesn't exist — all product names are valid
+- The title may be in any language — always translate it naturally into ${targetLang}`
   }
 
 Rules for meta_title (max 60 chars):
@@ -651,10 +647,10 @@ app.post('/webhook/product-create', async (req, res) => {
     }
 
     console.log('Calling process-product for:', body.title);
-    const renderUrl = process.env.RENDER_URL || process.env.APP_URL;
+    const renderUrl = process.env.RENDER_URL || APP_URL;
     axios.post(`${renderUrl}/process-product`, {
       shop, productId: normalizeProductId(body.id), productTitle: body.title
-    }, { timeout: 5000 }).catch(err => console.error('Trigger error:', err.message));
+    }, { timeout: 60000 }).catch(err => console.error('Trigger error:', err.message));
   } catch (err) {
     console.error('Webhook error:', err.message);
   }
