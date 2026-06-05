@@ -114,7 +114,7 @@
 <body>
 
 <nav>
-  <a href="/" class="logo-text">Getoify</a>
+  <a href="/"><img src="/images/logo-wordmark.png" height="44" alt="Getoify" style="display:block;"></a>
   <a href="/" class="nav-back">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
     Back
@@ -291,14 +291,14 @@
 
 <script>
   let isAnnual = false;
-  const prices = { starter: { monthly: 19, annual: 15 }, growth: { monthly: 49, annual: 39 }, pro: { monthly: 99, annual: 79 } };
+  const prices = { starter: { monthly: 19, annual: 15 }, growth: { monthly: 49, annual: 39 }, pro: { monthly: 99, annual: 79 }, enterprise: { monthly: 199, annual: 159 } };
 
   function toggleBilling() {
     isAnnual = !isAnnual;
     document.getElementById('toggle-sw').classList.toggle('annual', isAnnual);
     document.getElementById('lbl-monthly').classList.toggle('active', !isAnnual);
     document.getElementById('lbl-annual').classList.toggle('active', isAnnual);
-    ['starter', 'growth', 'pro'].forEach(plan => {
+    ['starter', 'growth', 'pro', 'enterprise'].forEach(plan => {
       const price = isAnnual ? prices[plan].annual : prices[plan].monthly;
       document.getElementById(plan + '-price').textContent = price;
       document.getElementById(plan + '-note').textContent = isAnnual ? 'Billed $' + (price * 12) + '/year' : '\u00a0';
