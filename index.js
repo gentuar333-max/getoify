@@ -208,7 +208,8 @@ app.get('/status', async (req, res) => {
       ? translations.filter(t => new Date(t.created_at) >= new Date(planStartedAt))
       : translations;
     const uniqueProducts = new Set(relevantTranslations.map(t => t.product_id)).size;
-    res.json({ total: uniqueProducts, total_records: translations.length, plan_limit: plan.product_limit, translations });
+    const allUniqueProducts = new Set(translations.map(t => t.product_id)).size;
+    res.json({ total: allUniqueProducts, period_used: uniqueProducts, total_records: translations.length, plan_limit: plan.product_limit, translations });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

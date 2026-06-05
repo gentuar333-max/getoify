@@ -373,7 +373,8 @@
     try {
       const res = await fetch('/status?shop=' + shop);
       const data = await res.json();
-      const total = data.total || 0;
+      const periodUsed = data.period_used !== undefined ? data.period_used : (data.total || 0);
+      const allTime = data.total || 0;
 
       // Get plan limit dynamically
       const planRes = await fetch('/plan?shop=' + shop);
@@ -381,11 +382,11 @@
       const plan = PLAN_CONFIG[planData.plan] || PLAN_CONFIG.free;
       const limit = plan.limit;
 
-      const pct = Math.min((total / limit) * 100, 100);
-      document.getElementById('usage-text').textContent = total + ' of ' + limit;
+      const pct = Math.min((periodUsed / limit) * 100, 100);
+      document.getElementById('usage-text').textContent = periodUsed + ' of ' + limit;
       document.getElementById('usage-fill').style.width = pct + '%';
-      document.getElementById('usage-used').textContent = total + ' used';
-      document.getElementById('api-total').textContent = (data.total_records || total) + ' translations';
+      document.getElementById('usage-used').textContent = periodUsed + ' used this period';
+      document.getElementById('api-total').textContent = allTime + ' total products localized';
     } catch(e) {}
   }
 
