@@ -196,7 +196,11 @@ app.get('/status', async (req, res) => {
       product_id: normalizeProductId(row.product_id)
     }));
     const uniqueProducts = new Set(translations.map(t => t.product_id)).size;
-    res.json({ total: uniqueProducts, total_records: translations.length, translations });
+    const { data: storeData } = await supabase.from('stores').select('plan').eq('shop', shop).single();
+    const planName = storeData?.plan || 'free';
+    const PLANS = app.locals.PLANS;
+    const plan = PLANS ? (PLANS[planName] || PLANS.free) : { product_limit: 15 };
+    res.json({ total: uniqueProducts, total_records: translations.length, plan_limit: plan.product_limit, translations });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
