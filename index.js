@@ -651,7 +651,8 @@ app.post('/webhook/product-create', async (req, res) => {
     }
 
     console.log('Calling process-product for:', body.title);
-    axios.post(`${APP_URL}/process-product`, {
+    const renderUrl = process.env.RENDER_URL || process.env.APP_URL;
+    axios.post(`${renderUrl}/process-product`, {
       shop, productId: normalizeProductId(body.id), productTitle: body.title
     }, { timeout: 5000 }).catch(err => console.error('Trigger error:', err.message));
   } catch (err) {
