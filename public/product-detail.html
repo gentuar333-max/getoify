@@ -41,6 +41,26 @@
     .btn-outline { background: var(--cream); color: var(--ink); border: 1px solid var(--border); border-radius: 5px; padding: 6px 12px; font-size: 12px; cursor: pointer; font-family: 'DM Sans', sans-serif; }
     .body { padding: 20px 24px; overflow-y: auto; flex: 1; max-width: 720px; }
     .section { background: var(--cream); border: 1px solid var(--border); border-radius: 8px; padding: 16px 18px; margin-bottom: 12px; }
+    .overlay-bar { background: var(--cream); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 12px; overflow: hidden; }
+    .overlay-header { padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+    .overlay-title { font-size: 11px; font-weight: 600; color: var(--ink-faint); letter-spacing: 0.07em; text-transform: uppercase; }
+    .lang-tabs { display: flex; gap: 4px; }
+    .lang-tab { padding: 5px 10px; border-radius: 4px; border: 1px solid var(--border); background: var(--cream-bg); font-size: 12px; color: var(--ink-muted); cursor: pointer; transition: all 0.15s; }
+    .lang-tab.active { background: #0A2F6B; color: #fff; border-color: #0A2F6B; }
+    .lang-tab:hover:not(.active) { background: var(--cream-mid); color: var(--ink); }
+    .overlay-body { padding: 16px 18px; }
+    .preview-product { display: flex; gap: 16px; }
+    .preview-img { width: 80px; height: 80px; background: var(--cream-mid); border-radius: 6px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .preview-img i { font-size: 28px; color: var(--ink-faint); }
+    .preview-info { flex: 1; }
+    .preview-title { font-size: 14px; font-weight: 500; color: var(--ink); margin-bottom: 6px; line-height: 1.4; }
+    .preview-desc { font-size: 12px; color: var(--ink-mid); line-height: 1.6; margin-bottom: 10px; }
+    .preview-cart { background: #96BF48; color: #fff; border: none; border-radius: 5px; padding: 7px 16px; font-size: 12px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+    .preview-seo { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--cream-mid); }
+    .seo-url { font-size: 11px; color: var(--green); margin-bottom: 3px; }
+    .seo-t { font-size: 13px; color: #1a0dab; font-weight: 500; margin-bottom: 2px; }
+    .seo-d { font-size: 12px; color: var(--ink-muted); line-height: 1.5; }
+    .overlay-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--green); background: rgba(107,175,138,0.1); padding: 3px 8px; border-radius: 100px; }
     .section-title { font-size: 11px; font-weight: 600; color: var(--ink-faint); letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 12px; }
     .field-row { display: flex; align-items: flex-start; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--cream-mid); gap: 16px; }
     .field-row:last-child { border-bottom: none; padding-bottom: 0; }
@@ -64,7 +84,7 @@
 <body>
 <div class="app">
   <aside class="sb">
-    <div class="sb-logo">Getoify<span>.</span></div>
+    <div class="sb-logo"><img src="/images/logo-wordmark.png" height="28" alt="Getoify" style="display:block;"></div>
     <div class="sb-store"><div class="sb-dot"></div><div class="sb-store-name" id="sb-shop">Loading...</div></div>
     <nav class="sb-nav">
       <a class="sb-item" href="#" onclick="nav(event,'/dashboard')"><i class="ti ti-layout-dashboard"></i>Overview</a>
@@ -74,8 +94,6 @@
       <a class="sb-item" href="#" onclick="nav(event,'/glossary')"><i class="ti ti-book"></i>Glossary</a>
       <div class="sb-lbl">Automation</div>
       <a class="sb-item" href="#" onclick="nav(event,'/autosync')"><i class="ti ti-refresh"></i>Auto-Sync</a>
-      <a class="sb-item" href="#"><i class="ti ti-shield-check"></i>QA Rules</a>
-      <a class="sb-item" href="#"><i class="ti ti-search"></i>SEO Pack</a>
       <div class="sb-lbl">Account</div>
       <a class="sb-item" href="#" onclick="nav(event,'/settings')"><i class="ti ti-settings"></i>Settings</a>
     </nav>
@@ -93,6 +111,30 @@
     </div>
 
     <div class="body">
+      <div class="overlay-bar" id="overlay-bar" style="display:none;">
+        <div class="overlay-header">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="overlay-title">Store preview</span>
+            <span class="overlay-badge"><i class="ti ti-eye" style="font-size:11px;"></i> Live translations</span>
+          </div>
+          <div class="lang-tabs" id="lang-tabs"></div>
+        </div>
+        <div class="overlay-body">
+          <div class="preview-product">
+            <div class="preview-img"><i class="ti ti-package"></i></div>
+            <div class="preview-info">
+              <div class="preview-title" id="ov-title">—</div>
+              <div class="preview-desc" id="ov-desc">—</div>
+              <button class="preview-cart" id="ov-cart">Add to cart</button>
+            </div>
+          </div>
+          <div class="preview-seo">
+            <div class="seo-url" id="ov-url"></div>
+            <div class="seo-t" id="ov-meta-title">—</div>
+            <div class="seo-d" id="ov-meta-desc">—</div>
+          </div>
+        </div>
+      </div>
       <div id="content"><div class="loading">Loading translation...</div></div>
     </div>
   </div>
