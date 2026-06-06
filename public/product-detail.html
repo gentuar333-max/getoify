@@ -40,27 +40,26 @@
     .tb-title { font-size: 14px; font-weight: 500; color: var(--ink); }
     .btn-outline { background: var(--cream); color: var(--ink); border: 1px solid var(--border); border-radius: 5px; padding: 6px 12px; font-size: 12px; cursor: pointer; font-family: 'DM Sans', sans-serif; }
     .body { padding: 20px 24px; overflow-y: auto; flex: 1; max-width: 720px; }
+    .ov-bar { background: var(--cream); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 14px; overflow: hidden; }
+    .ov-head { padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+    .ov-label { font-size: 11px; font-weight: 600; color: var(--ink-faint); letter-spacing: 0.07em; text-transform: uppercase; }
+    .ov-badge { font-size: 11px; color: var(--green); background: rgba(107,175,138,0.1); padding: 2px 8px; border-radius: 100px; margin-left: 8px; }
+    .lang-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+    .ltab { padding: 4px 10px; border-radius: 4px; border: 1px solid var(--border); background: var(--cream-bg); font-size: 12px; color: var(--ink-muted); cursor: pointer; transition: all 0.15s; }
+    .ltab.active { background: #0A2F6B; color: #fff; border-color: #0A2F6B; }
+    .ltab:hover:not(.active) { background: var(--cream-mid); }
+    .ov-body { padding: 16px 18px; }
+    .ov-product { display: flex; gap: 14px; }
+    .ov-img { width: 72px; height: 72px; background: var(--cream-mid); border-radius: 6px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .ov-info { flex: 1; min-width: 0; }
+    .ov-title { font-size: 14px; font-weight: 500; color: var(--ink); margin-bottom: 5px; line-height: 1.4; }
+    .ov-desc { font-size: 12px; color: var(--ink-mid); line-height: 1.6; margin-bottom: 10px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .ov-cart { background: #96BF48; color: #fff; border: none; border-radius: 5px; padding: 6px 14px; font-size: 12px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+    .ov-seo { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--cream-mid); }
+    .ov-seo-url { font-size: 11px; color: var(--green); margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ov-seo-t { font-size: 13px; color: #1a0dab; font-weight: 500; margin-bottom: 2px; }
+    .ov-seo-d { font-size: 12px; color: var(--ink-muted); line-height: 1.5; }
     .section { background: var(--cream); border: 1px solid var(--border); border-radius: 8px; padding: 16px 18px; margin-bottom: 12px; }
-    .overlay-bar { background: var(--cream); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 12px; overflow: hidden; }
-    .overlay-header { padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
-    .overlay-title { font-size: 11px; font-weight: 600; color: var(--ink-faint); letter-spacing: 0.07em; text-transform: uppercase; }
-    .lang-tabs { display: flex; gap: 4px; }
-    .lang-tab { padding: 5px 10px; border-radius: 4px; border: 1px solid var(--border); background: var(--cream-bg); font-size: 12px; color: var(--ink-muted); cursor: pointer; transition: all 0.15s; }
-    .lang-tab.active { background: #0A2F6B; color: #fff; border-color: #0A2F6B; }
-    .lang-tab:hover:not(.active) { background: var(--cream-mid); color: var(--ink); }
-    .overlay-body { padding: 16px 18px; }
-    .preview-product { display: flex; gap: 16px; }
-    .preview-img { width: 80px; height: 80px; background: var(--cream-mid); border-radius: 6px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .preview-img i { font-size: 28px; color: var(--ink-faint); }
-    .preview-info { flex: 1; }
-    .preview-title { font-size: 14px; font-weight: 500; color: var(--ink); margin-bottom: 6px; line-height: 1.4; }
-    .preview-desc { font-size: 12px; color: var(--ink-mid); line-height: 1.6; margin-bottom: 10px; }
-    .preview-cart { background: #96BF48; color: #fff; border: none; border-radius: 5px; padding: 7px 16px; font-size: 12px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; }
-    .preview-seo { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--cream-mid); }
-    .seo-url { font-size: 11px; color: var(--green); margin-bottom: 3px; }
-    .seo-t { font-size: 13px; color: #1a0dab; font-weight: 500; margin-bottom: 2px; }
-    .seo-d { font-size: 12px; color: var(--ink-muted); line-height: 1.5; }
-    .overlay-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--green); background: rgba(107,175,138,0.1); padding: 3px 8px; border-radius: 100px; }
     .section-title { font-size: 11px; font-weight: 600; color: var(--ink-faint); letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 12px; }
     .field-row { display: flex; align-items: flex-start; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--cream-mid); gap: 16px; }
     .field-row:last-child { border-bottom: none; padding-bottom: 0; }
@@ -94,6 +93,8 @@
       <a class="sb-item" href="#" onclick="nav(event,'/glossary')"><i class="ti ti-book"></i>Glossary</a>
       <div class="sb-lbl">Automation</div>
       <a class="sb-item" href="#" onclick="nav(event,'/autosync')"><i class="ti ti-refresh"></i>Auto-Sync</a>
+      <a class="sb-item" href="#"><i class="ti ti-shield-check"></i>QA Rules</a>
+      <a class="sb-item" href="#"><i class="ti ti-search"></i>SEO Pack</a>
       <div class="sb-lbl">Account</div>
       <a class="sb-item" href="#" onclick="nav(event,'/settings')"><i class="ti ti-settings"></i>Settings</a>
     </nav>
@@ -111,27 +112,24 @@
     </div>
 
     <div class="body">
-      <div class="overlay-bar" id="overlay-bar" style="display:none;">
-        <div class="overlay-header">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span class="overlay-title">Store preview</span>
-            <span class="overlay-badge"><i class="ti ti-eye" style="font-size:11px;"></i> Live translations</span>
-          </div>
-          <div class="lang-tabs" id="lang-tabs"></div>
+      <div class="ov-bar" id="ov-bar" style="display:none;">
+        <div class="ov-head">
+          <div><span class="ov-label">Store preview</span><span class="ov-badge">Live translations</span></div>
+          <div class="lang-tabs" id="ov-tabs"></div>
         </div>
-        <div class="overlay-body">
-          <div class="preview-product">
-            <div class="preview-img"><i class="ti ti-package"></i></div>
-            <div class="preview-info">
-              <div class="preview-title" id="ov-title">—</div>
-              <div class="preview-desc" id="ov-desc">—</div>
-              <button class="preview-cart" id="ov-cart">Add to cart</button>
+        <div class="ov-body">
+          <div class="ov-product">
+            <div class="ov-img"><i class="ti ti-package" style="font-size:26px;color:var(--ink-faint);"></i></div>
+            <div class="ov-info">
+              <div class="ov-title" id="ov-title">—</div>
+              <div class="ov-desc" id="ov-desc">—</div>
+              <button class="ov-cart" id="ov-cart">Add to cart</button>
             </div>
           </div>
-          <div class="preview-seo">
-            <div class="seo-url" id="ov-url"></div>
-            <div class="seo-t" id="ov-meta-title">—</div>
-            <div class="seo-d" id="ov-meta-desc">—</div>
+          <div class="ov-seo">
+            <div class="ov-seo-url" id="ov-url"></div>
+            <div class="ov-seo-t" id="ov-mt">—</div>
+            <div class="ov-seo-d" id="ov-md">—</div>
           </div>
         </div>
       </div>
@@ -215,6 +213,7 @@
       }).join('');
 
       document.getElementById('content').innerHTML = html;
+      renderOverlay(data.translations);
     } catch(e) {
       document.getElementById('content').innerHTML = '<div class="loading">Error loading data.</div>';
     }
