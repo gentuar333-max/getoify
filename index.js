@@ -71,6 +71,7 @@ app.get('/settings', (req, res) => res.sendFile(path.join(__dirname, 'public', '
 app.get('/autosync', (req, res) => res.sendFile(path.join(__dirname, 'public', 'autosync.html')));
 app.get('/product', (req, res) => res.sendFile(path.join(__dirname, 'public', 'product-detail.html')));
 app.get('/pricing', (req, res) => res.sendFile(path.join(__dirname, 'public', 'pricing.html')));
+app.get('/google6e865cb2268111cc.html', (req, res) => res.send('google-site-verification: google6e865cb2268111cc.html'));
 app.get('/privacy', (req, res) => res.sendFile(path.join(__dirname, 'public', 'privacy.html')));
 app.get('/terms', (req, res) => res.sendFile(path.join(__dirname, 'public', 'terms.html')));
 app.get('/shopify-translation-app', (req, res) => res.sendFile(path.join(__dirname, 'public', 'shopify-translation-app.html')));
@@ -647,10 +648,9 @@ app.post('/webhook/product-create', async (req, res) => {
     }
 
     console.log('Calling process-product for:', body.title);
-    const renderUrl = process.env.RENDER_URL || APP_URL;
-    axios.post(`${renderUrl}/process-product`, {
+    axios.post(`${APP_URL}/process-product`, {
       shop, productId: normalizeProductId(body.id), productTitle: body.title
-    }, { timeout: 60000 }).catch(err => console.error('Trigger error:', err.message));
+    }, { timeout: 5000 }).catch(err => console.error('Trigger error:', err.message));
   } catch (err) {
     console.error('Webhook error:', err.message);
   }
