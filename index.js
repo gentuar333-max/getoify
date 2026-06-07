@@ -316,23 +316,85 @@ async function updateShopifyProductBodyIfEmpty(shop, token, pid, descriptionText
   return true;
 }
 
-async function generateProductCopyWithClaude(product, targetLang, glossary, cleanBody) {
+// Zgjedh modelin bazuar ne prezencen e imazhit:
+// - Sonnet 4.6: kur produkti ka imazh dhe nuk ka description (gjeneron nga imazhi)
+// - Haiku:      kur ka description (perkthim teksti) ose nuk ka fare imazh
+function selectModel(hasImage, cleanBody) {
+  if (hasImage && !cleanBody) return 'claude-sonnet-4-6';
+  return 'claude-haiku-4-5-20251001';
+}
+
+async function generateProductCopyWithClaude(product, targetLang, glossary, cleanBody, imageUrl) {
   const category = product.product_type || '';
   const tags = (product.tags || '').split(',').slice(0, 5).join(', ');
+  const hasImage = !!imageUrl;
+  const model = selectModel(hasImage, cleanBody);
 
-  const prompt = `You are a native ${targetLang} speaker and ecommerce expert.
+  console.log(`[model-select] ${model} — image:${hasImage} body:${!!cleanBody} product:"${product.title}"`);
+
+  // Nderto content array per API (tekst + imazh kur eshte Sonnet)
+  let userContent;
+
+  if (hasImage && !cleanBody) {
+    // Sonnet 4.6 — imazh + titull, gjeneron nga zero
+    const titleSection = product.title
+      ? `Product name: "${product.title}"\n${category ? `Category: ${category}\n` : ''}${tags ? `Tags: ${tags}\n` : ''}\nThe merchant has provided this title — keep it or improve it slightly for ${targetLang} if needed, but stay very close to the original meaning.`
+      : `No product name provided. Identify the product from the image and create an appropriate name in ${targetLang}.`;
+
+    const textPrompt = `You are a native ${targetLang} speaker and ecommerce expert. You are analyzing a product image.
+
+Glossary (never translate these terms, keep them exactly as written): ${glossary || 'checkout, Shopify'}
+Target language: ${targetLang}
+
+${titleSection}
+
+Look carefully at the product image. Identify: materials, colors, shape, use case, and any visible text or branding.
+
+Write a compelling 2-3 sentence product description in ${targetLang} based on what you see.
+
+RULES:
+- Describe only what is actually visible in the image — no invention
+- Use the product name naturally in the description
+- Focus on what makes this product desirable: how it looks, feels, or works
+- No bullet points, no generic adjectives like "high quality" or "premium"
+- Sound like a human who genuinely likes this product
+
+Rules for meta_title (max 60 chars):
+- Main keyword first, natural language, no keyword stuffing
+
+Rules for meta_description (max 160 chars):
+- Start with an action verb in ${targetLang}
+- One specific concrete benefit visible from the image
+- Sound like a human wrote it
+
+Respond ONLY in this exact JSON format, no extra text, no markdown backticks:
+{"title":"...","description":"...","meta_title":"...","meta_description":"..."}`;
+
+    userContent = [
+      {
+        type: 'image',
+        source: { type: 'url', url: imageUrl }
+      },
+      {
+        type: 'text',
+        text: textPrompt
+      }
+    ];
+  } else {
+    // Haiku — tekst i paster (perkthim ose gjerim nga titulli)
+    const textPrompt = `You are a native ${targetLang} speaker and ecommerce expert.
 
 Glossary (never translate these terms, keep them exactly as written): ${glossary || 'checkout, Shopify'}
 Target language: ${targetLang}
 
 ${cleanBody
-    ? `The merchant has written this product description. Translate it faithfully into ${targetLang}.
+      ? `The merchant has written this product description. Translate it faithfully into ${targetLang}.
 Do NOT rewrite, do NOT add new information, do NOT change the style.
 Just translate accurately, preserving the original meaning and tone.
 
 TITLE: ${product.title}
 DESCRIPTION: ${cleanBody}`
-    : `Product name: "${product.title}"
+      : `Product name: "${product.title}"
 ${category ? `Category: ${category}` : ''}
 ${tags ? `Tags: ${tags}` : ''}
 
@@ -346,7 +408,7 @@ RULES:
 - Also translate the title naturally into ${targetLang}
 - NEVER say the product doesn't exist — all product names are valid
 - The title may be in any language — always translate it naturally into ${targetLang}`
-  }
+    }
 
 Rules for meta_title (max 60 chars):
 - Main keyword first
@@ -360,18 +422,21 @@ Rules for meta_description (max 160 chars):
 Respond ONLY in this exact JSON format, no extra text, no markdown backticks:
 {"title":"...","description":"...","meta_title":"...","meta_description":"..."}`;
 
+    userContent = textPrompt;
+  }
+
   try {
     const claudeRes = await axios.post('https://api.anthropic.com/v1/messages', {
-      model: 'claude-haiku-4-5-20251001',
+      model,
       max_tokens: 1500,
-      messages: [{ role: 'user', content: prompt }]
+      messages: [{ role: 'user', content: userContent }]
     }, {
       headers: {
         'x-api-key': process.env.ANTHROPIC_API_KEY,
         'anthropic-version': '2023-06-01',
         'content-type': 'application/json'
       },
-      timeout: 30000
+      timeout: 45000
     });
 
     let rawText = '';
@@ -422,7 +487,15 @@ async function localizeProduct(shop, token, productId, targetLang, locale, tone,
   const cleanBody = (product.body_html || '').replace(/<[^>]*>/g, '').trim();
   const hadNoDescription = !cleanBody;
 
-  let translated = await generateProductCopyWithClaude(product, targetLang, glossary, cleanBody);
+  // Nxjerr URL-in e imazhit te pare (nese ekziston) — perdoret per Sonnet 4.6
+  const imageUrl = product.images && product.images.length > 0
+    ? product.images[0].src
+    : null;
+  if (imageUrl && !cleanBody) {
+    console.log(`[image] "${product.title}" has image + no body — routing to Sonnet 4.6`);
+  }
+
+  let translated = await generateProductCopyWithClaude(product, targetLang, glossary, cleanBody, imageUrl);
 
   if (!translated.meta_title) {
     translated.meta_title = (translated.title || product.title).substring(0, 60);
@@ -439,7 +512,7 @@ async function localizeProduct(shop, token, productId, targetLang, locale, tone,
       let bodyForShopify = translated.description;
       if (localeKey !== primaryKey) {
         const primaryLang = LOCALE_MAP[primaryKey] || primaryLocale;
-        const primaryCopy = await generateProductCopyWithClaude(product, primaryLang, glossary, '');
+        const primaryCopy = await generateProductCopyWithClaude(product, primaryLang, glossary, '', imageUrl);
         bodyForShopify = primaryCopy.description;
       }
       const bodyUpdated = await updateShopifyProductBodyIfEmpty(shop, token, pid, bodyForShopify);
