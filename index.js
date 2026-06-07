@@ -332,17 +332,124 @@ async function generateProductCopyWithClaude(product, targetLang, glossary, clea
 
   console.log(`[model-select] ${model} — image:${hasImage} body:${!!cleanBody} product:"${product.title}"`);
 
-  // CTA lokale per gjuhet kryesore
-  const CTA_MAP = {
-    French:     'Commandez maintenant',
-    German:     'Jetzt kaufen',
-    Italian:    'Acquista ora',
-    Spanish:    'Compra ahora'
+  // ─── LANGUAGE CONFIG ───────────────────────────────────────────────────────
+  // Rregulla specifike per cdo gjuhe: tone, CTA, sensory words, forbidden words
+  const LANG_CONFIG = {
+    French: {
+      tone: 'vous',
+      cta: 'Commandez maintenant',
+      sensoryWords: 'arômes, chaleur, rituel, plaisir, saveur, élégance, douceur',
+      avoidWords: 'performances, efficacité, fonctionnalité, robuste, solide, durable',
+      avoidNote: 'Never repeat "durable", "robuste", "solide" more than once — replace with "conçue pour durer", "de qualité", "artisanale"',
+      bulletOrder: '1) Specs (capacity/size/weight) → 2) Mechanism (how it works) → 3) Design/emotion (style, origin, feel) → 4) Care/warranty (dishwasher, guarantee)'
+    },
+    German: {
+      tone: 'Sie',
+      cta: 'Jetzt kaufen',
+      sensoryWords: 'Genuss, Wärme, Aroma, Qualität, Handwerk, Präzision, Erlebnis',
+      avoidWords: 'robust, solide, hochwertig, effizient, funktional',
+      avoidNote: 'Avoid repeating "robust" or "hochwertig" — use "langlebig", "verarbeitet", "gefertigt" instead',
+      bulletOrder: '1) Specs (Fassungsvermögen/Maße) → 2) Funktion (wie es arbeitet) → 3) Design/Emotion (Stil, Herkunft) → 4) Pflege/Garantie'
+    },
+    Italian: {
+      tone: 'Lei',
+      cta: 'Acquista ora',
+      sensoryWords: 'aroma, calore, piacere, sapore, eleganza, artigianalità, raffinatezza',
+      avoidWords: 'robusto, solido, durevole, efficiente, funzionale, performance',
+      avoidNote: 'Avoid repeating "robusto" or "durevole" — use "di qualità", "realizzato per durare", "artigianale"',
+      bulletOrder: '1) Specifiche (capacità/dimensioni) → 2) Meccanismo (come funziona) → 3) Design/Emozione → 4) Cura/Garanzia'
+    },
+    Spanish: {
+      tone: 'usted',
+      cta: 'Compra ahora',
+      sensoryWords: 'aroma, calidez, ritual, placer, sabor, elegancia, artesanal',
+      avoidWords: 'robusto, sólido, duradero, eficiente, funcional, rendimiento',
+      avoidNote: 'Avoid repeating "robusto" or "duradero" — use "de calidad", "diseñado para durar", "artesanal"',
+      bulletOrder: '1) Especificaciones (capacidad/tamaño) → 2) Mecanismo (cómo funciona) → 3) Diseño/Emoción → 4) Cuidado/Garantía'
+    },
+    Dutch: {
+      tone: 'u',
+      cta: null,
+      sensoryWords: 'aroma, warmte, genot, smaak, kwaliteit, vakmanschap',
+      avoidWords: 'robuust, solide, duurzaam, efficiënt, functioneel',
+      avoidNote: 'Avoid repeating "robuust" or "duurzaam" — use "kwalitatief", "gemaakt om lang mee te gaan"',
+      bulletOrder: '1) Specificaties → 2) Werking → 3) Design/Gevoel → 4) Onderhoud/Garantie'
+    },
+    Portuguese: {
+      tone: 'você',
+      cta: null,
+      sensoryWords: 'aroma, calor, ritual, prazer, sabor, elegância, artesanal',
+      avoidWords: 'robusto, sólido, durável, eficiente, funcional',
+      avoidNote: 'Avoid repeating "robusto" or "durável" — use "de qualidade", "feito para durar", "artesanal"',
+      bulletOrder: '1) Especificações → 2) Mecanismo → 3) Design/Emoção → 4) Cuidados/Garantia'
+    },
+    Polish: {
+      tone: 'Pan/Pani',
+      cta: null,
+      sensoryWords: 'aromat, ciepło, przyjemność, smak, elegancja, rzemiosło',
+      avoidWords: 'solidny, trwały, wydajny, funkcjonalny',
+      avoidNote: 'Avoid repeating "solidny" or "trwały" — use "wysokiej jakości", "wykonany z dbałością"',
+      bulletOrder: '1) Specyfikacje → 2) Mechanizm → 3) Design/Emocja → 4) Pielęgnacja/Gwarancja'
+    },
+    Swedish: {
+      tone: 'du',
+      cta: null,
+      sensoryWords: 'arom, värme, njutning, smak, kvalitet, hantverk',
+      avoidWords: 'robust, solid, hållbar, effektiv, funktionell',
+      avoidNote: 'Avoid repeating "robust" or "hållbar" — use "kvalitativ", "tillverkad för att hålla"',
+      bulletOrder: '1) Specifikationer → 2) Funktion → 3) Design/Känsla → 4) Skötsel/Garanti'
+    }
   };
-  const cta = CTA_MAP[targetLang] || null;
+
+  const langCfg = LANG_CONFIG[targetLang] || {
+    tone: 'you',
+    cta: null,
+    sensoryWords: 'quality, warmth, craftsmanship, pleasure, elegance',
+    avoidWords: 'robust, solid, durable, efficient, functional, performance',
+    avoidNote: 'Avoid repeating the same adjective more than once',
+    bulletOrder: '1) Specs (capacity/size) → 2) Mechanism (how it works) → 3) Design/Emotion → 4) Care/Warranty'
+  };
 
   // Nderto content array per API (tekst + imazh kur eshte Sonnet)
   let userContent;
+
+  // Blloku i rregullave te perbashketa per te dy promptet
+  const sharedRules = `
+TITLE RULES:
+- Translate the product name naturally into ${targetLang}
+- Add key specs (capacity, material, size) ONLY if confirmed from the product name or image — never invent
+- Format: [Translated name] [Premium if strongly justified] — [spec1] | [spec2]
+- Elegant and informative — no ALL CAPS, no exclamation marks
+- Max 70 chars
+
+DESCRIPTION RULES:
+- Write 1-2 opening sentences using sensory/emotional language
+- Preferred sensory words for ${targetLang}: ${langCfg.sensoryWords}
+- AVOID these overused words: ${langCfg.avoidWords}
+- ${langCfg.avoidNote}
+- Address the customer using "${langCfg.tone}"
+- Then write exactly 4 bullet points starting with ✓, in this order:
+  ${langCfg.bulletOrder}
+- Each bullet must be specific and concrete — never generic ("✓ high quality" is forbidden)
+- Write ONLY what is confirmed from the product name or visible in the image — no invention
+- Total description max 120 words
+
+META TITLE RULES (max 60 chars):
+- Main keyword first
+- Include one key spec if it fits
+- No punctuation at the end
+
+META DESCRIPTION RULES (exactly 140-160 chars — use the full space):
+- Start with an action verb in ${targetLang}
+- One specific concrete benefit
+${langCfg.cta ? `- End with: "${langCfg.cta}"` : '- No call to action'}
+
+REDUNDANCY CHECK before responding:
+- Scan your output — if any word appears more than once across title + description + meta, replace the duplicate with a synonym
+- The word "quality" or its translation must appear at most once total
+
+Respond ONLY in this exact JSON format, no extra text, no markdown backticks:
+{"title":"...","description":"...","meta_title":"...","meta_description":"..."}`;
 
   if (hasImage && !cleanBody) {
     // Sonnet 4.6 — imazh + titull, gjeneron nga zero
@@ -357,46 +464,14 @@ Target language: ${targetLang}
 
 ${titleSection}
 
-TITLE RULES:
-- Translate the product name naturally into ${targetLang}
-- Add key specs ONLY if clearly visible in the image (capacity, material, size)
-- Format: [Translated name] [Premium if justified] — [spec1] | [spec2]
-- Example: "Cafetière à Piston Premium — 350ml | Acier Inoxydable 18/10"
-- Keep it elegant and informative — no ALL CAPS, no exclamation marks
-- Max 70 chars
+Look carefully at the image. Identify ONLY what is clearly visible: materials, colors, shape, dimensions, text/branding, use case.
+Do NOT invent specifications that are not visible or stated.
 
-DESCRIPTION RULES:
-- Write 1-2 opening sentences that make the customer want this product
-- Use only details that are VISIBLE in the image or present in the product name — no invention
-- Then write exactly 3-4 bullet points starting with ✓
-- Each bullet: one specific feature or benefit (material, function, size, compatibility)
-- Bullets must be concrete, not generic ("✓ 350ml capacity" not "✓ high quality")
-- No adjectives like "premium", "high quality", "excellent" unless they appear in the product name
-- Total description max 120 words
-
-META TITLE RULES (max 60 chars):
-- Main keyword first
-- Include one key spec if space allows
-- No punctuation at the end
-
-META DESCRIPTION RULES (max 160 chars):
-- Start with an action verb in ${targetLang}
-- One specific concrete benefit from the product
-${cta ? `- End with: "${cta}"` : '- No call to action'}
-- Must reach at least 140 chars — use the full space
-
-Respond ONLY in this exact JSON format, no extra text, no markdown backticks:
-{"title":"...","description":"...","meta_title":"...","meta_description":"..."}`;
+${sharedRules}`;
 
     userContent = [
-      {
-        type: 'image',
-        source: { type: 'url', url: imageUrl }
-      },
-      {
-        type: 'text',
-        text: textPrompt
-      }
+      { type: 'image', source: { type: 'url', url: imageUrl } },
+      { type: 'text', text: textPrompt }
     ];
   } else {
     // Haiku — tekst i paster (perkthim ose gjerim nga titulli)
@@ -415,42 +490,20 @@ DESCRIPTION: ${cleanBody}
 
 TRANSLATION RULES:
 - Translate the title naturally into ${targetLang}
-- If the original description has bullets, keep them as bullets
-- If the original is prose, keep it as prose`
+- If the original has bullets keep bullets, if prose keep prose
+- Apply the tone "${langCfg.tone}" consistently throughout
+- Use sensory words where natural: ${langCfg.sensoryWords}
+- Avoid: ${langCfg.avoidWords}
+
+${sharedRules}`
       : `Product name: "${product.title}"
 ${category ? `Category: ${category}` : ''}
 ${tags ? `Tags: ${tags}` : ''}
 
-No description exists. Write product copy in ${targetLang} based ONLY on the product name above.
+No description exists. Write product copy in ${targetLang} based ONLY on the product name above — no invention.
 
-TITLE RULES:
-- Translate the product name naturally into ${targetLang}
-- Add "Premium" or a key qualifier ONLY if strongly implied by the name
-- Format: [Translated name] — [key qualifier if any]
-- Max 70 chars, no ALL CAPS, no exclamation marks
-
-DESCRIPTION RULES:
-- Write 1-2 opening sentences that make the customer want this product
-- Then write exactly 3 bullet points starting with ✓
-- Base ONLY on what the product name clearly implies — no invention
-- Each bullet: one specific benefit or feature
-- No generic adjectives ("high quality", "excellent", "amazing")
-- Total max 80 words`
-    }
-
-META TITLE RULES (max 60 chars):
-- Main keyword first
-- Natural language, no keyword stuffing
-- No punctuation at the end
-
-META DESCRIPTION RULES (max 160 chars):
-- Start with an action verb in ${targetLang}
-- One specific concrete benefit
-${cta ? `- End with: "${cta}"` : '- No call to action'}
-- Must reach at least 140 chars
-
-Respond ONLY in this exact JSON format, no extra text, no markdown backticks:
-{"title":"...","description":"...","meta_title":"...","meta_description":"..."}`;
+${sharedRules}`
+    }`;
 
     userContent = textPrompt;
   }
