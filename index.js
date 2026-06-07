@@ -457,16 +457,33 @@ DESCRIPTION RULES:
 - Total description max 120 words
 
 CATEGORY KNOWLEDGE RULE:
-You are an expert in ecommerce products. If the product belongs to a known category, use your knowledge to write specific, real benefits — not generic claims. Examples by category:
-- Earbuds/headphones → noise cancellation dB, battery hours, Bluetooth version, driver size
-- Skincare/serum → active ingredient %, skin type, absorption speed, dermatologist-tested
-- Coffee maker/French press → brew time, capacity ml, filter type, heat retention
-- Fitness equipment → resistance level, weight capacity, muscle groups targeted
-- Supplements/vitamins → mg dosage, key ingredient, daily serving, certification (vegan, GMP)
-- Knife/cookware → steel type (440C, Damascus), blade length, hardness (HRC), dishwasher safe
-- Phone accessories → compatibility (iPhone/Android), charging speed (W), material drop protection
-- Clothing/apparel → fabric composition %, fit type, occasion, care instructions
-If the product is NOT a known category, write ONLY what is confirmed from the name or image — no invention.
+You are an ecommerce expert with deep product knowledge. Apply this logic:
+
+STEP A — BRAND RECOGNITION:
+If the product name contains a known brand + model (Sony WF-1000XM6, Apple AirPods Pro, Samsung Galaxy Buds, JBL Tune, Dyson, Nespresso, etc.):
+→ Use your exact knowledge of that product's real specs. Write confirmed numbers only.
+
+STEP B — KNOWN CATEGORY, UNKNOWN BRAND:
+If the product is a known category but no specific brand/model is identifiable:
+→ Write typical specs for that category using "up to" or "jusqu'à" / "bis zu" / "fino a" / "hasta" to signal range, not exact claim.
+→ Use realistic mid-to-premium range values — never best-case or worst-case.
+
+Category typical specs reference (use "up to" framing):
+- Earbuds/wireless headphones → up to 8h playback, up to 30h with case, ANC up to 35dB, Bluetooth 5.3, up to 2h full charge
+- Smartwatch/fitness tracker → up to 7-day battery, heart rate + SpO2, 5ATM water resistant, up to 2h charge
+- Skincare/serum → active ingredient concentration, skin type suitability, visible results in 4-6 weeks
+- Coffee maker/French press → brew time 4 min, up to 1L capacity, 60min heat retention, stainless filter
+- Fitness equipment/resistance bands → up to 40kg resistance, targets 6 muscle groups, latex-free option
+- Supplements/vitamins → typical dosage per serving, key active ingredient, GMP certified manufacturing
+- Kitchen knife/cookware → 420-grade stainless steel typical, up to 58 HRC hardness, dishwasher safe if confirmed
+- Phone charger/cable → up to 65W fast charge, USB-C universal, up to 1.5m braided cable
+- Clothing/apparel → fabric blend typical (cotton/polyester), fit type, machine washable
+- Power bank → up to 20000mAh, up to 22.5W output, up to 2 devices simultaneously
+
+STEP C — UNKNOWN CATEGORY:
+If the product does not match any known category → write ONLY what is confirmed from the name or image.
+
+IMPORTANT: "up to" signals a typical range — never fabricate brand-specific exact numbers.
 
 META TITLE RULES (max 60 chars):
 - Main keyword first
