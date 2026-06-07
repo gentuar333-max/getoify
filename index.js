@@ -536,23 +536,26 @@ CATEGORY KNOWLEDGE RULE:
 You are an ecommerce expert with deep product knowledge across all categories. Apply this logic:
 
 STEP A — KNOWN BRAND + MODEL (MANDATORY SPECS):
-If you recognize the exact product (Samsung Galaxy S25 Ultra, Sony WF-1000XM6, Apple AirPods Pro, Dyson V15, Nespresso Vertuo, Nike Air Max 270, etc.):
-→ You MUST include at least 3 specific confirmed numbers in the bullets.
-→ Generic descriptions like "advanced processor" or "high resolution screen" are STRICTLY FORBIDDEN.
-→ Write the real spec: "Snapdragon 8 Elite", "6.9" QHD+ 120Hz", "200MP quad camera", "5000mAh / 45W charge".
-→ Each number-bearing bullet covers ONE spec only — never combine two specs in one bullet.
+If you recognize the exact product (Samsung Galaxy S25 Ultra, iPhone 16 Pro Max, Sony WF-1000XM6, Apple AirPods Pro, Dyson V15, Nespresso Vertuo, Nike Air Max 270, etc.):
 
-By product type — what numbers to prioritize:
-- Smartphone → processor name, screen size+Hz, main camera MP, battery mAh + charge W, RAM/storage
-- Earbuds/headphones → ANC dB, battery h + case h, driver mm, Bluetooth version, charge time
-- Laptop/tablet → processor, RAM, storage GB/TB, screen size+resolution, battery h
-- Smartwatch → battery days, health sensors (HR+SpO2+ECG), water resistance ATM, GPS
-- Camera → sensor MP, aperture f/, zoom range, video resolution, stabilization
-- Vacuum/appliance → suction W or Pa, capacity L, runtime min, filtration type
-- Skincare → active % concentration, skin type, clinically tested claim, texture
-- Supplement → mg per dose, key active ingredient, servings per container, certification
-- Knife/cookware → steel grade, hardness HRC, blade length cm, handle material
-- Shoe/clothing → material %, sole type, fit, colourways available
+MANDATORY:
+→ At least 3 bullets must contain a specific confirmed number or spec name.
+→ Generic phrases are STRICTLY FORBIDDEN: "advanced processor", "high resolution", "long battery life", "exigeantes et créatives", "tâches complexes". These are not specs.
+→ Write the REAL name: "Snapdragon 8 Elite" not "advanced chip". "A18 Pro 3nm" not "powerful processor".
+→ ONE spec per bullet — never combine. WRONG: "✓ A18 Pro gère les tâches exigeantes et créatives". RIGHT: "✓ Puce A18 Pro 3nm — Neural Engine 16 cœurs".
+→ If you know 2 numbers for the same spec (e.g. battery + charge speed), they count as ONE bullet: "✓ 5000mAh — charge 45W filaire en 70 min".
+
+Priority specs by product type — use these exact data points:
+- Smartphone → 1) processor name + nm node  2) screen: inches + Hz + tech  3) main camera MP + aperture  4) battery mAh + charge W
+- Earbuds → 1) ANC dB level  2) battery h per bud + case h  3) Bluetooth version + codec  4) driver size mm or charge time
+- Laptop/tablet → 1) processor + cores  2) RAM GB + storage TB/GB  3) screen inches + resolution  4) battery hours
+- Smartwatch → 1) battery days  2) sensors: HR + SpO2 + ECG if available  3) water resistance ATM  4) GPS type
+- Camera → 1) sensor MP + size  2) aperture f/  3) zoom range  4) video max resolution + fps
+- Vacuum/appliance → 1) suction power W or Pa  2) capacity L or dust bin  3) runtime min  4) filtration HEPA or not
+- Skincare → 1) active ingredient + %  2) skin type target  3) clinically tested claim  4) texture/finish
+- Supplement → 1) mg per dose  2) key active ingredient  3) servings per container  4) certification (vegan, GMP)
+- Knife/cookware → 1) steel grade  2) hardness HRC  3) blade length cm  4) handle material
+- Running shoe → 1) midsole foam type  2) drop mm  3) weight g  4) outsole rubber type
 
 STEP B — KNOWN CATEGORY, UNKNOWN BRAND:
 If you recognize the category but NOT the specific model:
