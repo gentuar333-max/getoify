@@ -345,9 +345,11 @@ const KNOWN_BRANDS = [
   // Audio
   'sony', 'apple', 'airpods', 'samsung', 'jbl', 'bose', 'sennheiser',
   'jabra', 'beats', 'anker', 'soundcore', 'earfun', 'nothing',
-  // Tech
+  // Tech / Smartphones
   'logitech', 'razer', 'corsair', 'microsoft', 'google', 'huawei',
   'xiaomi', 'oneplus', 'oppo', 'lg', 'panasonic', 'philips',
+  'honor', 'realme', 'motorola', 'nokia', 'asus', 'lenovo',
+  'acer', 'dell', 'hp', 'surface', 'iphone', 'ipad', 'macbook',
   // Home/Kitchen
   'dyson', 'nespresso', 'delonghi', 'kitchenaid', 'tefal', 'bosch',
   'siemens', 'braun', 'russell hobbs', 'ninja', 'instant pot',
