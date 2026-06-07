@@ -454,8 +454,19 @@ DESCRIPTION RULES:
 - Then write exactly 4 bullet points starting with ✓, in this order:
   ${langCfg.bulletOrder}
 - Each bullet must be specific and concrete — never generic ("✓ high quality" is forbidden)
-- Write ONLY what is confirmed from the product name or visible in the image — no invention
 - Total description max 120 words
+
+CATEGORY KNOWLEDGE RULE:
+You are an expert in ecommerce products. If the product belongs to a known category, use your knowledge to write specific, real benefits — not generic claims. Examples by category:
+- Earbuds/headphones → noise cancellation dB, battery hours, Bluetooth version, driver size
+- Skincare/serum → active ingredient %, skin type, absorption speed, dermatologist-tested
+- Coffee maker/French press → brew time, capacity ml, filter type, heat retention
+- Fitness equipment → resistance level, weight capacity, muscle groups targeted
+- Supplements/vitamins → mg dosage, key ingredient, daily serving, certification (vegan, GMP)
+- Knife/cookware → steel type (440C, Damascus), blade length, hardness (HRC), dishwasher safe
+- Phone accessories → compatibility (iPhone/Android), charging speed (W), material drop protection
+- Clothing/apparel → fabric composition %, fit type, occasion, care instructions
+If the product is NOT a known category, write ONLY what is confirmed from the name or image — no invention.
 
 META TITLE RULES (max 60 chars):
 - Main keyword first
