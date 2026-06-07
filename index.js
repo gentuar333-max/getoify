@@ -197,6 +197,55 @@ app.get('/register-webhooks', async (req, res) => {
   }
 });
 
+// Fshi te gjitha webhooks dhe regjistro sersish me URL te sakte
+// https://getoify.com/reset-webhooks?shop=xxx.myshopify.com
+app.get('/reset-webhooks', async (req, res) => {
+  const { shop } = req.query;
+  if (!shop) return res.status(400).json({ error: 'Missing shop' });
+  try {
+    const { data: store } = await supabase.from('stores').select('access_token').eq('shop', shop).single();
+    if (!store?.access_token) return res.status(404).json({ error: 'Store not found or no token' });
+    const token = store.access_token;
+
+    // Merr te gjitha webhooks ekzistuese
+    const listRes = await axios.get(
+      `https://${shop}/admin/api/2024-01/webhooks.json`,
+      { headers: { 'X-Shopify-Access-Token': token } }
+    );
+    const existing = listRes.data.webhooks || [];
+
+    // Fshi te gjitha
+    const deleted = [];
+    for (const wh of existing) {
+      await axios.delete(
+        `https://${shop}/admin/api/2024-01/webhooks/${wh.id}.json`,
+        { headers: { 'X-Shopify-Access-Token': token } }
+      );
+      deleted.push({ id: wh.id, topic: wh.topic, address: wh.address });
+    }
+
+    // Regjistro sersish me URL te sakte
+    const webhookTopics = [
+      { topic: 'products/create', address: `${APP_URL}/webhook/product-create` },
+      { topic: 'products/update', address: `${APP_URL}/webhook/product-create` },
+      { topic: 'products/delete', address: `${APP_URL}/webhook/product-delete` }
+    ];
+    const registered = [];
+    for (const wh of webhookTopics) {
+      const r = await axios.post(
+        `https://${shop}/admin/api/2024-01/webhooks.json`,
+        { webhook: { topic: wh.topic, address: wh.address, format: 'json' } },
+        { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
+      );
+      registered.push({ topic: wh.topic, address: wh.address, id: r.data.webhook?.id });
+    }
+
+    res.json({ shop, deleted, registered });
+  } catch (err) {
+    res.status(500).json({ error: err.response?.data || err.message });
+  }
+});
+
 // API routes
 app.get('/locales', async (req, res) => {
   const { shop, token } = req.query;
