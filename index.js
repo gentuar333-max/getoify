@@ -339,11 +339,40 @@ async function updateShopifyProductBodyIfEmpty(shop, token, pid, descriptionText
   return true;
 }
 
-// Zgjedh modelin bazuar ne prezencen e imazhit:
-// - Sonnet 4.6: kur produkti ka imazh dhe nuk ka description (gjeneron nga imazhi)
-// - Haiku:      kur ka description (perkthim teksti) ose nuk ka fare imazh
-function selectModel(hasImage, cleanBody) {
-  if (hasImage && !cleanBody) return 'claude-sonnet-4-6';
+// Brands te njohura — kur titulli permban keto, Haiku e di gjithcka nga njohurite
+// Sonnet nuk nevojitet pasi CATEGORY KNOWLEDGE + Step A e mbulon
+const KNOWN_BRANDS = [
+  // Audio
+  'sony', 'apple', 'airpods', 'samsung', 'jbl', 'bose', 'sennheiser',
+  'jabra', 'beats', 'anker', 'soundcore', 'earfun', 'nothing',
+  // Tech
+  'logitech', 'razer', 'corsair', 'microsoft', 'google', 'huawei',
+  'xiaomi', 'oneplus', 'oppo', 'lg', 'panasonic', 'philips',
+  // Home/Kitchen
+  'dyson', 'nespresso', 'delonghi', 'kitchenaid', 'tefal', 'bosch',
+  'siemens', 'braun', 'russell hobbs', 'ninja', 'instant pot',
+  // Beauty/Health
+  'cerave', 'the ordinary', 'la roche-posay', 'neutrogena', 'garnier',
+  'loreal', 'nivea', 'dove', 'olay',
+  // Sport/Outdoor
+  'nike', 'adidas', 'under armour', 'puma', 'reebok', 'new balance',
+  'fitbit', 'garmin', 'polar',
+  // Other major
+  'ikea', 'lego', 'stanley', 'yeti', 'hydroflask'
+];
+
+function titleHasKnownBrand(title) {
+  const t = (title || '').toLowerCase();
+  return KNOWN_BRANDS.some(brand => t.includes(brand));
+}
+
+// Zgjedh modelin me logjike te optimizuar per kosto + cilesie:
+// - Sonnet 4.6: imazh + pa description + brand I PANJOHUR (imazhi shton vlere)
+// - Haiku:      gjdo rast tjeter (brand i njohur, ka description, pa imazh)
+function selectModel(hasImage, cleanBody, productTitle) {
+  if (hasImage && !cleanBody && !titleHasKnownBrand(productTitle)) {
+    return 'claude-sonnet-4-6';
+  }
   return 'claude-haiku-4-5-20251001';
 }
 
@@ -351,7 +380,7 @@ async function generateProductCopyWithClaude(product, targetLang, glossary, clea
   const category = product.product_type || '';
   const tags = (product.tags || '').split(',').slice(0, 5).join(', ');
   const hasImage = !!imageUrl;
-  const model = selectModel(hasImage, cleanBody);
+  const model = selectModel(hasImage, cleanBody, product.title);
 
   console.log(`[model-select] ${model} — image:${hasImage} body:${!!cleanBody} product:"${product.title}"`);
 
