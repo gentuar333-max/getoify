@@ -444,9 +444,31 @@ META DESCRIPTION RULES (exactly 140-160 chars — use the full space):
 - One specific concrete benefit
 ${langCfg.cta ? `- End with: "${langCfg.cta}"` : '- No call to action'}
 
-REDUNDANCY CHECK before responding:
-- Scan your output — if any word appears more than once across title + description + meta, replace the duplicate with a synonym
-- The word "quality" or its translation must appear at most once total
+SELF-CHECK — do this mentally before writing any JSON:
+
+Step 1 — SPECS CHECK:
+- Bullet ✓1 must contain a number or measurement (ml, cm, kg, pieces, hours...)
+- If no measurement is known from the name or image, replace bullet ✓1 with a confirmed functional detail instead
+- NEVER write vague bullets like "✓ Generous capacity" or "✓ Quality construction"
+
+Step 2 — REDUNDANCY CHECK:
+- List every key noun and adjective you plan to use
+- If any word repeats across title + prose + bullets + meta → replace the duplicate with a synonym
+- "acier inoxydable", "stainless steel", or any material name: max 1 occurrence total
+- "quality" / "qualité" / "Qualität" (or translation): max 1 occurrence total
+- "design": max 1 occurrence total
+
+Step 3 — BULLET CHECK:
+- Bullet ✓1: spec with number/measurement — if unknown, use confirmed functional detail
+- Bullet ✓2: how the mechanism works (one concrete action)
+- Bullet ✓3: design or emotional appeal (style, origin, feel) — no repeated adjectives from prose
+- Bullet ✓4: care or warranty — ONLY write "Compatible lave-vaisselle / dishwasher safe / lavastoviglie" if it is confirmed; otherwise write warranty, storage, or another confirmed care detail
+- Each bullet max 12 words
+
+Step 4 — TONE CHECK:
+- Every verb addressed to the customer must use "${langCfg.tone}" consistently — no mixing of formal/informal
+
+Only after passing all 4 steps, write the JSON.
 
 Respond ONLY in this exact JSON format, no extra text, no markdown backticks:
 {"title":"...","description":"...","meta_title":"...","meta_description":"..."}`;
