@@ -111,6 +111,10 @@
       "dest": "/index.js"
     },
     {
+      "src": "/register-webhooks",
+      "dest": "/index.js"
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.js"
     }

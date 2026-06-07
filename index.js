@@ -152,6 +152,51 @@ app.get('/auth/callback', async (req, res) => {
   }
 });
 
+// Endpoint per te regjistruar webhooks per stores ekzistuese
+// Thirre nje here: https://getoify.com/register-webhooks?shop=xxx.myshopify.com
+app.get('/register-webhooks', async (req, res) => {
+  const { shop } = req.query;
+  if (!shop) return res.status(400).json({ error: 'Missing shop' });
+  try {
+    const { data: store } = await supabase
+      .from('stores')
+      .select('access_token')
+      .eq('shop', shop)
+      .single();
+    if (!store?.access_token) return res.status(404).json({ error: 'Store not found or no token' });
+
+    const token = store.access_token;
+    const webhookTopics = [
+      { topic: 'products/create', address: `${APP_URL}/webhook/product-create` },
+      { topic: 'products/update', address: `${APP_URL}/webhook/product-create` },
+      { topic: 'products/delete', address: `${APP_URL}/webhook/product-delete` }
+    ];
+
+    const results = [];
+    for (const wh of webhookTopics) {
+      try {
+        await axios.post(
+          `https://${shop}/admin/api/2024-01/webhooks.json`,
+          { webhook: { topic: wh.topic, address: wh.address, format: 'json' } },
+          { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
+        );
+        results.push({ topic: wh.topic, status: 'registered' });
+        console.log(`[register-webhooks] Registered: ${wh.topic} for ${shop}`);
+      } catch (whErr) {
+        const status = whErr.response?.status;
+        if (status === 422) {
+          results.push({ topic: wh.topic, status: 'already exists' });
+        } else {
+          results.push({ topic: wh.topic, status: 'error', error: whErr.response?.data || whErr.message });
+        }
+      }
+    }
+    res.json({ shop, webhooks: results });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // API routes
 app.get('/locales', async (req, res) => {
   const { shop, token } = req.query;
