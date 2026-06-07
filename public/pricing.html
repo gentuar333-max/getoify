@@ -306,7 +306,7 @@
   }
 
   function startCheckout(plan) {
-    const billing = isAnnual ? 'annual' : 'monthly';
+    const billing = isAnnual ? 'yearly' : 'monthly';
     const urlParams = new URLSearchParams(window.location.search);
     const shop = urlParams.get('shop') || localStorage.getItem('getoify_shop') || '';
     if (!shop) {
