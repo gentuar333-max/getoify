@@ -533,33 +533,51 @@ DESCRIPTION RULES:
 - Total description max 120 words
 
 CATEGORY KNOWLEDGE RULE:
-You are an ecommerce expert with deep product knowledge. Apply this logic:
+You are an ecommerce expert with deep product knowledge across all categories. Apply this logic:
 
-STEP A — BRAND RECOGNITION:
-If the product name contains a known brand + model (Sony WF-1000XM6, Apple AirPods Pro, Samsung Galaxy Buds, JBL Tune, Dyson, Nespresso, etc.):
-→ Use your exact knowledge of that product's real specs. Write confirmed numbers only.
+STEP A — KNOWN BRAND + MODEL (MANDATORY SPECS):
+If you recognize the exact product (Samsung Galaxy S25 Ultra, Sony WF-1000XM6, Apple AirPods Pro, Dyson V15, Nespresso Vertuo, Nike Air Max 270, etc.):
+→ You MUST include at least 3 specific confirmed numbers in the bullets.
+→ Generic descriptions like "advanced processor" or "high resolution screen" are STRICTLY FORBIDDEN.
+→ Write the real spec: "Snapdragon 8 Elite", "6.9" QHD+ 120Hz", "200MP quad camera", "5000mAh / 45W charge".
+→ Each number-bearing bullet covers ONE spec only — never combine two specs in one bullet.
+
+By product type — what numbers to prioritize:
+- Smartphone → processor name, screen size+Hz, main camera MP, battery mAh + charge W, RAM/storage
+- Earbuds/headphones → ANC dB, battery h + case h, driver mm, Bluetooth version, charge time
+- Laptop/tablet → processor, RAM, storage GB/TB, screen size+resolution, battery h
+- Smartwatch → battery days, health sensors (HR+SpO2+ECG), water resistance ATM, GPS
+- Camera → sensor MP, aperture f/, zoom range, video resolution, stabilization
+- Vacuum/appliance → suction W or Pa, capacity L, runtime min, filtration type
+- Skincare → active % concentration, skin type, clinically tested claim, texture
+- Supplement → mg per dose, key active ingredient, servings per container, certification
+- Knife/cookware → steel grade, hardness HRC, blade length cm, handle material
+- Shoe/clothing → material %, sole type, fit, colourways available
 
 STEP B — KNOWN CATEGORY, UNKNOWN BRAND:
-If the product is a known category but no specific brand/model is identifiable:
-→ Write typical specs for that category using "up to" or "jusqu'à" / "bis zu" / "fino a" / "hasta" to signal range, not exact claim.
-→ Use realistic mid-to-premium range values — never best-case or worst-case.
+If you recognize the category but NOT the specific model:
+→ Use "up to" / "jusqu'à" / "bis zu" / "fino a" / "hasta" for all numbers — signals typical range, not exact.
+→ Use realistic mid-to-premium values.
 
-Category typical specs reference (use "up to" framing):
-- Earbuds/wireless headphones → up to 8h playback, up to 30h with case, ANC up to 35dB, Bluetooth 5.3, up to 2h full charge
-- Smartwatch/fitness tracker → up to 7-day battery, heart rate + SpO2, 5ATM water resistant, up to 2h charge
-- Skincare/serum → active ingredient concentration, skin type suitability, visible results in 4-6 weeks
-- Coffee maker/French press → brew time 4 min, up to 1L capacity, 60min heat retention, stainless filter
-- Fitness equipment/resistance bands → up to 40kg resistance, targets 6 muscle groups, latex-free option
-- Supplements/vitamins → typical dosage per serving, key active ingredient, GMP certified manufacturing
-- Kitchen knife/cookware → 420-grade stainless steel typical, up to 58 HRC hardness, dishwasher safe if confirmed
-- Phone charger/cable → up to 65W fast charge, USB-C universal, up to 1.5m braided cable
-- Clothing/apparel → fabric blend typical (cotton/polyester), fit type, machine washable
-- Power bank → up to 20000mAh, up to 22.5W output, up to 2 devices simultaneously
+Category typical ranges (use "up to" framing):
+- Earbuds → up to 8h + 30h case, ANC up to 35dB, BT 5.3, charge in 2h
+- Smartphone → up to 6.7" AMOLED 120Hz, up to 108MP, up to 5000mAh, up to 67W charge
+- Smartwatch → up to 7-day battery, HR + SpO2, 5ATM, GPS, up to 2h charge
+- Laptop → up to 16GB RAM, up to 1TB SSD, up to 15h battery, up to 2K display
+- Coffee maker → brew in 4 min, up to 1L, 60min heat retention, stainless filter
+- French press → up to 1L, stainless plunger, heat-safe borosilicate glass
+- Fitness/resistance → up to 40kg resistance, 6 muscle groups, latex-free option
+- Supplement → typical dose per serving, GMP certified, key active ingredient
+- Knife/cookware → 420-grade steel, up to 58 HRC, up to 20cm blade
+- Phone charger → up to 65W, USB-C, up to 1.5m braided cable
+- Power bank → up to 20000mAh, up to 22.5W, up to 2 ports
+- Running shoe → EVA midsole, breathable mesh upper, rubber outsole, drop 8-10mm
+- Skincare/serum → active concentration, skin type, visible results 4-6 weeks
 
 STEP C — UNKNOWN CATEGORY:
-If the product does not match any known category → write ONLY what is confirmed from the name or image.
+Does not match any known category → write ONLY what is confirmed from the name or image.
 
-IMPORTANT: "up to" signals a typical range — never fabricate brand-specific exact numbers.
+RULE: "up to" = typical range (Step B). Real confirmed numbers = Step A only. Never mix.
 
 META TITLE RULES (max 60 chars):
 - Main keyword first
