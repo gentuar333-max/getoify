@@ -332,40 +332,58 @@ async function generateProductCopyWithClaude(product, targetLang, glossary, clea
 
   console.log(`[model-select] ${model} — image:${hasImage} body:${!!cleanBody} product:"${product.title}"`);
 
+  // CTA lokale per gjuhet kryesore
+  const CTA_MAP = {
+    French:     'Commandez maintenant',
+    German:     'Jetzt kaufen',
+    Italian:    'Acquista ora',
+    Spanish:    'Compra ahora'
+  };
+  const cta = CTA_MAP[targetLang] || null;
+
   // Nderto content array per API (tekst + imazh kur eshte Sonnet)
   let userContent;
 
   if (hasImage && !cleanBody) {
     // Sonnet 4.6 — imazh + titull, gjeneron nga zero
     const titleSection = product.title
-      ? `Product name: "${product.title}"\n${category ? `Category: ${category}\n` : ''}${tags ? `Tags: ${tags}\n` : ''}\nThe merchant has provided this title — keep it or improve it slightly for ${targetLang} if needed, but stay very close to the original meaning.`
-      : `No product name provided. Identify the product from the image and create an appropriate name in ${targetLang}.`;
+      ? `Product name: "${product.title}"\n${category ? `Category: ${category}\n` : ''}${tags ? `Tags: ${tags}\n` : ''}`
+      : `No product name provided. Identify the product from the image and write an appropriate name in ${targetLang}.`;
 
-    const textPrompt = `You are a native ${targetLang} speaker and ecommerce expert. You are analyzing a product image.
+    const textPrompt = `You are a native ${targetLang} speaker and professional ecommerce copywriter. Analyze the product image carefully.
 
-Glossary (never translate these terms, keep them exactly as written): ${glossary || 'checkout, Shopify'}
+Glossary (keep these terms exactly as written, never translate): ${glossary || 'checkout, Shopify'}
 Target language: ${targetLang}
 
 ${titleSection}
 
-Look carefully at the product image. Identify: materials, colors, shape, use case, and any visible text or branding.
+TITLE RULES:
+- Translate the product name naturally into ${targetLang}
+- Add key specs ONLY if clearly visible in the image (capacity, material, size)
+- Format: [Translated name] [Premium if justified] — [spec1] | [spec2]
+- Example: "Cafetière à Piston Premium — 350ml | Acier Inoxydable 18/10"
+- Keep it elegant and informative — no ALL CAPS, no exclamation marks
+- Max 70 chars
 
-Write a compelling 2-3 sentence product description in ${targetLang} based on what you see.
+DESCRIPTION RULES:
+- Write 1-2 opening sentences that make the customer want this product
+- Use only details that are VISIBLE in the image or present in the product name — no invention
+- Then write exactly 3-4 bullet points starting with ✓
+- Each bullet: one specific feature or benefit (material, function, size, compatibility)
+- Bullets must be concrete, not generic ("✓ 350ml capacity" not "✓ high quality")
+- No adjectives like "premium", "high quality", "excellent" unless they appear in the product name
+- Total description max 120 words
 
-RULES:
-- Describe only what is actually visible in the image — no invention
-- Use the product name naturally in the description
-- Focus on what makes this product desirable: how it looks, feels, or works
-- No bullet points, no generic adjectives like "high quality" or "premium"
-- Sound like a human who genuinely likes this product
+META TITLE RULES (max 60 chars):
+- Main keyword first
+- Include one key spec if space allows
+- No punctuation at the end
 
-Rules for meta_title (max 60 chars):
-- Main keyword first, natural language, no keyword stuffing
-
-Rules for meta_description (max 160 chars):
+META DESCRIPTION RULES (max 160 chars):
 - Start with an action verb in ${targetLang}
-- One specific concrete benefit visible from the image
-- Sound like a human wrote it
+- One specific concrete benefit from the product
+${cta ? `- End with: "${cta}"` : '- No call to action'}
+- Must reach at least 140 chars — use the full space
 
 Respond ONLY in this exact JSON format, no extra text, no markdown backticks:
 {"title":"...","description":"...","meta_title":"...","meta_description":"..."}`;
@@ -382,42 +400,54 @@ Respond ONLY in this exact JSON format, no extra text, no markdown backticks:
     ];
   } else {
     // Haiku — tekst i paster (perkthim ose gjerim nga titulli)
-    const textPrompt = `You are a native ${targetLang} speaker and ecommerce expert.
+    const textPrompt = `You are a native ${targetLang} speaker and professional ecommerce copywriter.
 
-Glossary (never translate these terms, keep them exactly as written): ${glossary || 'checkout, Shopify'}
+Glossary (keep these terms exactly as written, never translate): ${glossary || 'checkout, Shopify'}
 Target language: ${targetLang}
 
 ${cleanBody
       ? `The merchant has written this product description. Translate it faithfully into ${targetLang}.
-Do NOT rewrite, do NOT add new information, do NOT change the style.
-Just translate accurately, preserving the original meaning and tone.
+Do NOT rewrite, do NOT add information, do NOT change the structure or style.
+Preserve bullet points, formatting, and tone exactly.
 
 TITLE: ${product.title}
-DESCRIPTION: ${cleanBody}`
+DESCRIPTION: ${cleanBody}
+
+TRANSLATION RULES:
+- Translate the title naturally into ${targetLang}
+- If the original description has bullets, keep them as bullets
+- If the original is prose, keep it as prose`
       : `Product name: "${product.title}"
 ${category ? `Category: ${category}` : ''}
 ${tags ? `Tags: ${tags}` : ''}
 
-This product has no description. Based ONLY on the product name above, write a 2-sentence description in ${targetLang}.
+No description exists. Write product copy in ${targetLang} based ONLY on the product name above.
 
-RULES:
-- Use the actual product name — do NOT use placeholder phrases like "ce produit" or "this product"
-- Write as if describing this specific product to a friend
-- Focus on what it does, how it feels, or why someone would want it
-- Max 40 words, no bullet points, no generic adjectives
-- Also translate the title naturally into ${targetLang}
-- NEVER say the product doesn't exist — all product names are valid
-- The title may be in any language — always translate it naturally into ${targetLang}`
+TITLE RULES:
+- Translate the product name naturally into ${targetLang}
+- Add "Premium" or a key qualifier ONLY if strongly implied by the name
+- Format: [Translated name] — [key qualifier if any]
+- Max 70 chars, no ALL CAPS, no exclamation marks
+
+DESCRIPTION RULES:
+- Write 1-2 opening sentences that make the customer want this product
+- Then write exactly 3 bullet points starting with ✓
+- Base ONLY on what the product name clearly implies — no invention
+- Each bullet: one specific benefit or feature
+- No generic adjectives ("high quality", "excellent", "amazing")
+- Total max 80 words`
     }
 
-Rules for meta_title (max 60 chars):
+META TITLE RULES (max 60 chars):
 - Main keyword first
 - Natural language, no keyword stuffing
+- No punctuation at the end
 
-Rules for meta_description (max 160 chars):
-- Start with action verb in ${targetLang}
+META DESCRIPTION RULES (max 160 chars):
+- Start with an action verb in ${targetLang}
 - One specific concrete benefit
-- Sound like a human wrote it
+${cta ? `- End with: "${cta}"` : '- No call to action'}
+- Must reach at least 140 chars
 
 Respond ONLY in this exact JSON format, no extra text, no markdown backticks:
 {"title":"...","description":"...","meta_title":"...","meta_description":"..."}`;
