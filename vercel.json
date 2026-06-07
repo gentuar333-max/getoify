@@ -118,7 +118,7 @@
   "crons": [
     {
       "path": "/poll",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 * * * *"
     }
   ]
 }
