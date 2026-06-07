@@ -122,6 +122,29 @@ app.get('/auth/callback', async (req, res) => {
     const accessToken = response.data.access_token;
     await supabase.from('stores').upsert({ shop, access_token: accessToken, token_invalid: false }, { onConflict: 'shop' });
     console.log('Store connected:', shop);
+
+    // Regjistro webhooks automatikisht pas OAuth
+    const webhookTopics = [
+      { topic: 'products/create', address: `${APP_URL}/webhook/product-create` },
+      { topic: 'products/update', address: `${APP_URL}/webhook/product-create` },
+      { topic: 'products/delete', address: `${APP_URL}/webhook/product-delete` }
+    ];
+    for (const wh of webhookTopics) {
+      try {
+        await axios.post(
+          `https://${shop}/admin/api/2024-01/webhooks.json`,
+          { webhook: { topic: wh.topic, address: wh.address, format: 'json' } },
+          { headers: { 'X-Shopify-Access-Token': accessToken, 'Content-Type': 'application/json' } }
+        );
+        console.log(`Webhook registered: ${wh.topic}`);
+      } catch (whErr) {
+        // 422 = webhook already exists — i sigurt, vazhdo
+        if (whErr.response?.status !== 422) {
+          console.warn(`Webhook register failed (${wh.topic}):`, whErr.response?.data || whErr.message);
+        }
+      }
+    }
+
     res.redirect('/dashboard?shop=' + shop + '&token=' + accessToken + '&autorun=1');
   } catch (error) {
     console.error('OAuth callback error:', error.message);
@@ -803,7 +826,7 @@ app.post('/webhook/product-create', async (req, res) => {
       }
     }
 
-    // Kontrollo nëse titulli OSE description ka ndryshuar
+    // Kontrollo nëse produkti ekziston tashmë në translations
     const { data: existing } = await supabase
       .from('translations')
       .select('original_title, original_description')
@@ -811,15 +834,24 @@ app.post('/webhook/product-create', async (req, res) => {
       .eq('product_id', String(body.id))
       .limit(1);
 
-    const currentDesc = (body.body_html || '').replace(/<[^>]*>/g, '').trim();
-    const savedDesc = (existing?.[0]?.original_description || '').replace(/<[^>]*>/g, '').trim();
-    const titleChanged = existing && existing.length > 0 &&
-      existing[0].original_title?.toLowerCase() !== body.title.toLowerCase();
-    const descChanged = existing && existing.length > 0 &&
-      currentDesc.length > 0 && savedDesc !== currentDesc;
+    const isNewProduct = !existing || existing.length === 0;
 
-    if (titleChanged || descChanged) {
-      console.log(`Product changed for ${body.title} — title:${titleChanged} desc:${descChanged} — relocalizing...`);
+    if (isNewProduct) {
+      // Produkt i ri — lokalizon direkt pa asnjë kontroll
+      console.log(`New product detected: "${body.title}" — triggering localization`);
+    } else {
+      // Produkt ekzistues — lokalizon vetëm nëse titulli OSE description ka ndryshuar
+      const currentDesc = (body.body_html || '').replace(/<[^>]*>/g, '').trim();
+      const savedDesc = (existing[0]?.original_description || '').replace(/<[^>]*>/g, '').trim();
+      const titleChanged = existing[0]?.original_title?.toLowerCase() !== body.title.toLowerCase();
+      const descChanged = currentDesc.length > 0 && savedDesc !== currentDesc;
+
+      if (!titleChanged && !descChanged) {
+        console.log(`Product unchanged: "${body.title}" — skipping`);
+        return;
+      }
+
+      console.log(`Product changed: "${body.title}" — title:${titleChanged} desc:${descChanged} — relocalizing`);
       await supabase.from('translations').delete()
         .eq('shop', shop)
         .eq('product_id', String(body.id));
