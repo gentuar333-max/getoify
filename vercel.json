@@ -114,11 +114,5 @@
       "src": "/(.*)",
       "dest": "/index.js"
     }
-  ],
-  "crons": [
-    {
-      "path": "/poll",
-      "schedule": "0 * * * *"
-    }
   ]
 }
