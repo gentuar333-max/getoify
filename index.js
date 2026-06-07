@@ -436,28 +436,64 @@ async function generateProductCopyWithClaude(product, targetLang, glossary, clea
   // Nderto content array per API (tekst + imazh kur eshte Sonnet)
   let userContent;
 
-  // Rregullat e perbashketa — te shkurtra dhe te forta
+  // Blloku i rregullave te perbashketa per te dy promptet
   const sharedRules = `
-TITLE: Translate naturally into ${targetLang}. Add specs (capacity, material) ONLY if confirmed — never invent. Format: [Name] — [spec1] | [spec2]. Max 70 chars, no ALL CAPS.
+TITLE RULES:
+- Translate the product name naturally into ${targetLang}
+- Add key specs (capacity, material, size) ONLY if confirmed from the product name or image — never invent
+- Format: [Translated name] [Premium if strongly justified] — [spec1] | [spec2]
+- Elegant and informative — no ALL CAPS, no exclamation marks
+- Max 70 chars
 
-DESCRIPTION: Write in ${targetLang} using "${langCfg.tone}".
-Line 1-2: sensory/emotional prose. Use: ${langCfg.sensoryWords}. Never use: ${langCfg.avoidWords}.
-Then exactly 4 bullets starting with ✓:
-✓1 MUST have a number or measurement (ml, g, cm, pieces) — if unknown, write the most specific functional fact you can confirm
-✓2 How the mechanism works — one concrete action verb
-✓3 Design or emotional appeal — must differ from prose adjectives
-✓4 Care or warranty — CONFIRMED facts only. If dishwasher-safe is NOT confirmed, write a warranty or storage fact instead. NEVER invent.
-Each bullet: max 10 words. No vague bullets ("✓ high quality", "✓ generous capacity" = FORBIDDEN).
+DESCRIPTION RULES:
+- Write 1-2 opening sentences using sensory/emotional language
+- Preferred sensory words for ${targetLang}: ${langCfg.sensoryWords}
+- AVOID these overused words: ${langCfg.avoidWords}
+- ${langCfg.avoidNote}
+- Address the customer using "${langCfg.tone}"
+- Then write exactly 4 bullet points starting with ✓, in this order:
+  ${langCfg.bulletOrder}
+- Each bullet must be specific and concrete — never generic ("✓ high quality" is forbidden)
+- Write ONLY what is confirmed from the product name or visible in the image — no invention
+- Total description max 120 words
 
-HARD RULES — violations make the output unusable:
-1. Each material name (e.g. "${langCfg.avoidWords.split(',')[0].trim()}") appears MAX ONCE across title + description + meta combined. Use a synonym the second time.
-2. No word repeats more than once across the full output. Scan before writing.
-3. Bullet ✓4 must be a CONFIRMED fact. If unsure → write "Garantie fabricant incluse" or equivalent, never invent care instructions.
+META TITLE RULES (max 60 chars):
+- Main keyword first
+- Include one key spec if it fits
+- No punctuation at the end
 
-META TITLE: max 60 chars, main keyword first, no punctuation at end.
-META DESCRIPTION: 140-160 chars, action verb first, one concrete benefit${langCfg.cta ? `, end with "${langCfg.cta}"` : ''}.
+META DESCRIPTION RULES (exactly 140-160 chars — use the full space):
+- Start with an action verb in ${targetLang}
+- One specific concrete benefit
+${langCfg.cta ? `- End with: "${langCfg.cta}"` : '- No call to action'}
 
-Respond ONLY in this exact JSON, no markdown:
+SELF-CHECK — do this mentally before writing any JSON:
+
+Step 1 — SPECS CHECK:
+- Bullet ✓1 must contain a number or measurement (ml, cm, kg, pieces, hours...)
+- If no measurement is known from the name or image, replace bullet ✓1 with a confirmed functional detail instead
+- NEVER write vague bullets like "✓ Generous capacity" or "✓ Quality construction"
+
+Step 2 — REDUNDANCY CHECK:
+- List every key noun and adjective you plan to use
+- If any word repeats across title + prose + bullets + meta → replace the duplicate with a synonym
+- Any material name: max 1 occurrence total across the entire output
+- "quality" or its translation in ${targetLang}: max 1 occurrence total
+- "design": max 1 occurrence total
+
+Step 3 — BULLET CHECK:
+- Bullet ✓1: spec with number/measurement — if unknown, use the most specific confirmed functional detail
+- Bullet ✓2: how the mechanism works (one concrete action)
+- Bullet ✓3: design or emotional appeal (style, origin, feel) — no repeated adjectives from prose
+- Bullet ✓4: care or warranty — write in ${targetLang} only. If dishwasher-safe is NOT confirmed, write a storage or warranty fact instead. NEVER invent care instructions.
+- Each bullet max 12 words
+
+Step 4 — TONE CHECK:
+- Every verb addressed to the customer must use "${langCfg.tone}" consistently — no mixing of formal/informal
+
+Only after passing all 4 steps, write the JSON.
+
+Respond ONLY in this exact JSON format, no extra text, no markdown backticks:
 {"title":"...","description":"...","meta_title":"...","meta_description":"..."}`;
 
   if (hasImage && !cleanBody) {
