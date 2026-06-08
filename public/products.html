@@ -129,7 +129,7 @@
       </div>
       <div class="tb-right">
         <button class="btn-outline"><i class="ti ti-refresh"></i>Sync from Shopify</button>
-        <button class="btn-dark" onclick="runTranslate()"><i class="ti ti-player-play"></i>Run translate</button>
+        <button class="btn-dark" id="translate-missing-btn" onclick="runTranslate()"><i class="ti ti-player-play"></i>Translate Missing</button>
       </div>
     </div>
 
@@ -364,15 +364,24 @@
 
   async function runTranslate() {
     if (!token) { alert('Please reconnect your store first.'); return; }
-    if (!confirm('Run bulk translate for all products?')) return;
+    const pending = allProducts.filter(p => getStatus(p) === 'none').length;
+    if (pending === 0) { alert('All products are already translated.'); return; }
+    if (!confirm(`Translate ${pending} untranslated product${pending > 1 ? 's' : ''}?`)) return;
+    const btn = document.getElementById('translate-missing-btn');
+    btn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;display:inline-block"></span>Translating...</span>';
+    btn.disabled = true;
     try {
       await fetch('/bulk-localize-all', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ shop, token, tone: 'professional and elegant', glossary: 'checkout, Shopify' })
       });
-      loadData();
+      await loadData();
     } catch(e) { alert('Error. Please try again.'); }
+    finally {
+      btn.innerHTML = '<i class="ti ti-player-play"></i>Translate Missing';
+      btn.disabled = false;
+    }
   }
 
   function openSidebar() {
