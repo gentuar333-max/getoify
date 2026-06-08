@@ -462,13 +462,8 @@ function titleHasKnownBrand(title) {
   return KNOWN_BRANDS.some(brand => t.includes(brand));
 }
 
-// Zgjedh modelin me logjike te optimizuar per kosto + cilesie:
-// - Sonnet 4.6: imazh + pa description + brand I PANJOHUR (imazhi shton vlere)
-// - Haiku:      gjdo rast tjeter (brand i njohur, ka description, pa imazh)
+// Haiku per gjithcka — me i lire, CATEGORY KNOWLEDGE e mbulon te gjitha rastet
 function selectModel(hasImage, cleanBody, productTitle) {
-  if (hasImage && !cleanBody && !titleHasKnownBrand(productTitle)) {
-    return 'claude-sonnet-4-6';
-  }
   return 'claude-haiku-4-5-20251001';
 }
 
@@ -589,7 +584,7 @@ If you recognize the exact product (Samsung Galaxy S25 Ultra, iPhone 16 Pro Max,
 
 MANDATORY:
 → At least 3 bullets must contain a specific confirmed number or spec name.
-→ Generic phrases are STRICTLY FORBIDDEN — these are marketing words, not specs: "advanced processor", "powerful chip", "high resolution", "long battery life", "imagerie IA avancée", "traitement avancé", "exigeantes et créatives", "tâches complexes", "intelligent features", "stunning display", "incredible camera", "next-generation". If you catch yourself writing any of these, replace with the real number or spec name.
+→ Generic phrases are STRICTLY FORBIDDEN — these are marketing words, not specs: "advanced processor", "powerful chip", "high resolution", "long battery life", "imagerie IA avancée", "traitement avancé", "exigeantes et créatives", "tâches complexes", "performances optimisées", "s'adapte à votre", "s'ajuste à votre", "compiti impegnativi", "intelligent features", "stunning display", "incredible camera", "next-generation", "optimisées pour". If you catch yourself writing any of these, replace with the real number or spec name.
 → Write the REAL name: "Snapdragon 8 Elite" not "advanced chip". "A18 Pro 3nm" not "powerful processor".
 → ONE spec per bullet — never combine. WRONG: "✓ A18 Pro gère les tâches exigeantes et créatives". RIGHT: "✓ Puce A18 Pro 3nm — Neural Engine 16 cœurs".
 → If you know 2 numbers for the same spec (e.g. battery + charge speed), they count as ONE bullet: "✓ 5000mAh — charge 45W filaire en 70 min".
