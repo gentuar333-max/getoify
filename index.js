@@ -839,6 +839,17 @@ FITNESS EQUIPMENT (dumbbells, kettlebells, resistance bands):
 - Bullet ✓3: muscle groups targeted
 - Bullet ✓4: dimensions + storage
 
+PROFESSIONAL GYM EQUIPMENT (Concept2, Rogue, Eleiko, Technogym, Life Fitness):
+- Bullet ✓1: resistance mechanism + technology name (e.g. "Volant d'inertie air — résistance auto-régulée")
+- Bullet ✓2: monitor/screen name + connectivity (e.g. "Performance Monitor PM5 — Bluetooth/ANT+, WiFi, Zwift")
+- Bullet ✓3: capacity + adjustability (e.g. "Capacité 227kg — course ajustable 38-48" pour 140-210cm")
+- Bullet ✓4: storage + warranty (e.g. "Démontable 2 parties <30 sec — garantie 5 ans cadre, 2 ans pièces")
+- ALWAYS mention: exact component names (PM5, J-cups, etc.), max capacity, warranty terms
+- SOCIAL PROOF: if used at CrossFit Games, Olympics, or pro clubs — mention it: "utilisé aux CrossFit Games et clubs professionnels"
+- NEVER write "professionnel" without proof — write the actual proof instead
+- REBRANDING: if product was renamed, mention: "Anciennement [Old Name] — même mécanisme, rebrand [year]"
+- COMPATIBLE APPS: always list if known (Zwift, Garmin Connect, Polar, ErgData, Concept2 Logbook)
+
 SPORTS WEARABLES (Garmin, Polar, Whoop, Oura):
 - Bullet ✓1: battery life with mode specified (smartwatch / GPS / expedition)
 - Bullet ✓2: display type CONFIRMED for this variant + resolution
