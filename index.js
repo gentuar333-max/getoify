@@ -735,10 +735,17 @@ BAGS & ACCESSORIES:
 - Bullet ✓4: care + warranty
 
 FORBIDDEN for Fashion & Apparel:
+- "intemporel", "authentique", "iconique" alone — always follow with a concrete spec: WRONG: "coupe intemporelle" / RIGHT: "coupe droite depuis 1873"
 - "style intemporel" without describing the actual style
 - "confort optimal" — write the material or technology that creates comfort
 - "coloris polyvalents" alone — always add the actual colorway name if known
+- "traverse les générations", "savoir-faire légendaire" — empty heritage claims without facts
 - Never write "taille fidèle" without confirming it — write "vérifier le guide des tailles" if unsure
+
+FIT LANGUAGE — always use precise fit terms, never vague descriptions:
+- RIGHT: "Coupe Regular — taille naturelle, jambe droite" / "Slim fit — taille mi-haute, effilé à la cheville"
+- WRONG: "silhouette épurée", "coupe flatteuse", "style moderne"
+- For jeans specifically: always mention waist rise (taille naturelle/mi-haute/basse) + leg cut (droit/slim/bootcut)
 
 TONE: aspirational but grounded — mix lifestyle language with concrete specs.
 ` : ''}
