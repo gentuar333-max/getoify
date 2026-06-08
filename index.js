@@ -719,6 +719,30 @@ FOR ACTIVE SERUMS (niacinamide, retinol, acids, peptides, vitamin C):
 - Use clinical tone — The Ordinary brand language is transparent, ingredient-focused, no marketing fluff
 - For The Ordinary specifically: always mention "Développé sans parfum, sans alcool, sans silicone"
 - NEVER use "précision intentionnelle", "double action", "à double action" — these are meaningless
+
+FOR ALL DERMATOLOGICAL & PHARMACEUTICAL BRANDS (La Roche-Posay, Avène, Bioderma, Eucerin, Vichy, Neutrogena, CeraVe, Uriage, Nuxe, A-Derma, Caudalie, and any brand positioned as dermatologist-tested or pharmacy brand):
+
+MANDATORY rules — apply to every product from these brands:
+1. HERO INGREDIENT — always mention the brand's signature asset if known:
+   - La Roche-Posay → "Eau Thermale de La Roche-Posay" (in every product)
+   - Avène → "Eau Thermale d'Avène"
+   - Uriage → "Eau Thermale d'Uriage"
+   - CeraVe → "3 Céramides essentiels + Technologie MVE"
+   - Other brands → identify their hero ingredient from your knowledge
+2. PATENTED TECHNOLOGY — mention if known:
+   - LRP sunscreen → "Mexoryl SX + XL" or "UVMune 400"
+   - CeraVe → "Technologie MVE — libération sur 24h"
+   - Other brands → use confirmed technology name only
+3. PRACTICAL INFO by product type:
+   - SPF/sunscreen → "photostable", "résistant à l'eau", "réappliquer toutes les 2h"
+   - Moisturizer → "hydratation 24h" or "48h" if confirmed
+   - Cleanser → "sans savon", "pH physiologique" if confirmed
+   - Eye cream → "zone contour des yeux testée ophtalmologiquement" if confirmed
+4. TONE — always clinical and trustworthy, NEVER glamour or aspirational:
+   - RIGHT: "Spécialement formulé pour peaux sensibles et réactives"
+   - WRONG: "Découvrez l'élégance d'un soin qui transforme votre peau"
+5. NEVER use "formule avancée" for dermatological brands — always replace with the real technology name
+6. SKIN TYPE — always specify: "peaux sensibles", "peaux grasses", "peaux sèches à très sèches", "tous types de peau"
 ` : ''}
 
 META TITLE RULES (max 60 chars):
