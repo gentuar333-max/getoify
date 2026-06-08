@@ -93,6 +93,7 @@
     .mob-menu-btn { display: none; align-items: center; justify-content: center; width: 32px; height: 32px; border: 1px solid var(--border); border-radius: 5px; background: var(--cream); cursor: pointer; }
     .mob-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 199; }
     .mob-overlay.open { display: block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
@@ -323,12 +324,11 @@
         : '<div class="st"><div class="st-dot d-gy"></div>Not started</div>';
       const pillsHtml = locales.length
         ? (() => {
-            const first = locales[0];
-            const rest = locales.length - 1;
-            const flag = langFlags[first] || first.toUpperCase();
-            const label = rest > 0
-              ? `${flag}<span style="color:var(--ink-faint);font-weight:500;margin-left:2px">+${rest}</span>`
-              : `${flag}`;
+            const MAX = 3;
+            const shown = locales.slice(0, MAX);
+            const rest = locales.length - MAX;
+            const flags = shown.map(l => langFlags[l] || l.toUpperCase()).join(' ');
+            const label = rest > 0 ? `${flags} <span style="color:var(--ink-faint);font-weight:500">+${rest}</span>` : flags;
             return `<span class="lpill lp-done">${label}</span>`;
           })()
         : '<span class="lpill lp-none">No translations</span>';
@@ -403,7 +403,7 @@
     }
     if (!activeToken) { alert('Please reconnect your store first.'); return; }
     const productTitle = decodeURIComponent(btn.dataset.title || '');
-    btn.textContent = 'Translating...';
+    btn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border:2px solid #E0DDD6;border-top-color:#8B7355;border-radius:50%;animation:spin 0.7s linear infinite;display:inline-block"></span>Translating</span>';
     btn.disabled = true;
     try {
       const res = await fetch('/process-product', {
