@@ -197,6 +197,55 @@ app.get('/register-webhooks', async (req, res) => {
   }
 });
 
+// Fshi te gjitha webhooks dhe regjistro sersish me URL te sakte
+// https://getoify.com/reset-webhooks?shop=xxx.myshopify.com
+app.get('/reset-webhooks', async (req, res) => {
+  const { shop } = req.query;
+  if (!shop) return res.status(400).json({ error: 'Missing shop' });
+  try {
+    const { data: store } = await supabase.from('stores').select('access_token').eq('shop', shop).single();
+    if (!store?.access_token) return res.status(404).json({ error: 'Store not found or no token' });
+    const token = store.access_token;
+
+    // Merr te gjitha webhooks ekzistuese
+    const listRes = await axios.get(
+      `https://${shop}/admin/api/2024-01/webhooks.json`,
+      { headers: { 'X-Shopify-Access-Token': token } }
+    );
+    const existing = listRes.data.webhooks || [];
+
+    // Fshi te gjitha
+    const deleted = [];
+    for (const wh of existing) {
+      await axios.delete(
+        `https://${shop}/admin/api/2024-01/webhooks/${wh.id}.json`,
+        { headers: { 'X-Shopify-Access-Token': token } }
+      );
+      deleted.push({ id: wh.id, topic: wh.topic, address: wh.address });
+    }
+
+    // Regjistro sersish me URL te sakte
+    const webhookTopics = [
+      { topic: 'products/create', address: `${APP_URL}/webhook/product-create` },
+      { topic: 'products/update', address: `${APP_URL}/webhook/product-create` },
+      { topic: 'products/delete', address: `${APP_URL}/webhook/product-delete` }
+    ];
+    const registered = [];
+    for (const wh of webhookTopics) {
+      const r = await axios.post(
+        `https://${shop}/admin/api/2024-01/webhooks.json`,
+        { webhook: { topic: wh.topic, address: wh.address, format: 'json' } },
+        { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
+      );
+      registered.push({ topic: wh.topic, address: wh.address, id: r.data.webhook?.id });
+    }
+
+    res.json({ shop, deleted, registered });
+  } catch (err) {
+    res.status(500).json({ error: err.response?.data || err.message });
+  }
+});
+
 // API routes
 app.get('/locales', async (req, res) => {
   const { shop, token } = req.query;
@@ -413,14 +462,53 @@ function titleHasKnownBrand(title) {
   return KNOWN_BRANDS.some(brand => t.includes(brand));
 }
 
-// Zgjedh modelin me logjike te optimizuar per kosto + cilesie:
-// - Sonnet 4.6: imazh + pa description + brand I PANJOHUR (imazhi shton vlere)
-// - Haiku:      gjdo rast tjeter (brand i njohur, ka description, pa imazh)
+// Haiku per gjithcka — me i lire, CATEGORY KNOWLEDGE e mbulon te gjitha rastet
 function selectModel(hasImage, cleanBody, productTitle) {
-  if (hasImage && !cleanBody && !titleHasKnownBrand(productTitle)) {
-    return 'claude-sonnet-4-6';
-  }
   return 'claude-haiku-4-5-20251001';
+}
+
+// Beauty & Health keywords — per detektim nga titulli
+const BEAUTY_HEALTH_TYPES = [
+  'skincare', 'beauty', 'health', 'wellness', 'supplement', 'vitamin',
+  'cosmetic', 'personal care', 'face care', 'body care', 'hair care'
+];
+const BEAUTY_HEALTH_TITLE_KEYWORDS = [
+  'serum', 'moisturizer', 'moisturising', 'cleanser', 'toner', 'spf',
+  'sunscreen', 'retinol', 'vitamin c', 'niacinamide', 'hyaluronic',
+  'ceramide', 'cerave', 'the ordinary', 'la roche-posay', 'neutrogena',
+  'garnier', 'loreal', 'nivea', 'olay', 'dove', 'bioderma', 'avene',
+  'vichy', 'eucerin', 'aveeno', 'clinique', 'estee lauder', 'shiseido',
+  'supplement', 'vitamin', 'collagen', 'omega', 'probiotic', 'magnesium',
+  'zinc', 'protein powder', 'whey', 'creatine', 'melatonin',
+  'face wash', 'face cream', 'eye cream', 'lip balm', 'body lotion',
+  'body wash', 'shampoo', 'conditioner', 'hair mask', 'hair oil'
+];
+
+function isBeautyHealthProduct(product) {
+  const type = (product.product_type || '').toLowerCase();
+  const title = (product.title || '').toLowerCase();
+  if (BEAUTY_HEALTH_TYPES.some(t => type.includes(t))) return true;
+  return BEAUTY_HEALTH_TITLE_KEYWORDS.some(k => title.includes(k));
+}
+
+// Home & Kitchen keywords — per detektim nga titulli kur product_type mungon
+const HOME_KITCHEN_TYPES = [
+  'kitchen', 'home', 'cooking', 'baking', 'appliance', 'cookware'
+];
+const HOME_KITCHEN_TITLE_KEYWORDS = [
+  'mixer', 'blender', 'coffee', 'espresso', 'nespresso', 'french press',
+  'kettle', 'toaster', 'air fryer', 'instant pot', 'knife', 'knives',
+  'pan', 'pot', 'wok', 'skillet', 'cookware', 'bakeware', 'stand mixer',
+  'food processor', 'juicer', 'grinder', 'rice cooker', 'slow cooker',
+  'waffle', 'crepe', 'vacuum', 'dyson', 'kitchenaid', 'delonghi',
+  'nespresso', 'tefal', 'bosch', 'siemens', 'braun'
+];
+
+function isHomeKitchenProduct(product) {
+  const type = (product.product_type || '').toLowerCase();
+  const title = (product.title || '').toLowerCase();
+  if (HOME_KITCHEN_TYPES.some(t => type.includes(t))) return true;
+  return HOME_KITCHEN_TITLE_KEYWORDS.some(k => title.includes(k));
 }
 
 async function generateProductCopyWithClaude(product, targetLang, glossary, cleanBody, imageUrl) {
@@ -428,6 +516,10 @@ async function generateProductCopyWithClaude(product, targetLang, glossary, clea
   const tags = (product.tags || '').split(',').slice(0, 5).join(', ');
   const hasImage = !!imageUrl;
   const model = selectModel(hasImage, cleanBody, product.title);
+  const homeKitchen = isHomeKitchenProduct(product);
+  const beautyHealth = !homeKitchen && isBeautyHealthProduct(product);
+
+  console.log(`[category] homeKitchen:${homeKitchen} beautyHealth:${beautyHealth} product:"${product.title}"`);
 
   console.log(`[model-select] ${model} — image:${hasImage} body:${!!cleanBody} product:"${product.title}"`);
 
@@ -437,7 +529,7 @@ async function generateProductCopyWithClaude(product, targetLang, glossary, clea
     French: {
       tone: 'vous',
       cta: 'Commandez maintenant',
-      sensoryWords: 'arômes, chaleur, rituel, plaisir, saveur, élégance, douceur',
+      sensoryWords: 'arômes, rituel, plaisir, saveur, élégance, douceur, art, savoir-faire',
       avoidWords: 'performances, efficacité, fonctionnalité, robuste, solide, durable',
       avoidNote: 'Never repeat "durable", "robuste", "solide" more than once — replace with "conçue pour durer", "de qualité", "artisanale"',
       bulletOrder: '1) Specs (capacity/size/weight) → 2) Mechanism (how it works) → 3) Design/emotion (style, origin, feel) → 4) Care/warranty (dishwasher, guarantee)'
@@ -540,7 +632,7 @@ If you recognize the exact product (Samsung Galaxy S25 Ultra, iPhone 16 Pro Max,
 
 MANDATORY:
 → At least 3 bullets must contain a specific confirmed number or spec name.
-→ Generic phrases are STRICTLY FORBIDDEN — these are marketing words, not specs: "advanced processor", "powerful chip", "high resolution", "long battery life", "imagerie IA avancée", "traitement avancé", "exigeantes et créatives", "tâches complexes", "intelligent features", "stunning display", "incredible camera", "next-generation". If you catch yourself writing any of these, replace with the real number or spec name.
+→ Generic phrases are STRICTLY FORBIDDEN — these are marketing words, not specs: "advanced processor", "powerful chip", "high resolution", "long battery life", "imagerie IA avancée", "traitement avancé", "exigeantes et créatives", "tâches complexes", "performances optimisées", "s'adapte à votre", "s'ajuste à votre", "compiti impegnativi", "intelligent features", "stunning display", "incredible camera", "next-generation", "optimisées pour", "précision intentionnelle", "double action", "à double action", "formule innovante", "technologie avancée", "soin intensif". If you catch yourself writing any of these, replace with the real ingredient, number, or spec name.
 → Write the REAL name: "Snapdragon 8 Elite" not "advanced chip". "A18 Pro 3nm" not "powerful processor".
 → ONE spec per bullet — never combine. WRONG: "✓ A18 Pro gère les tâches exigeantes et créatives". RIGHT: "✓ Puce A18 Pro 3nm — Neural Engine 16 cœurs".
 → If you know 2 numbers for the same spec (e.g. battery + charge speed), they count as ONE bullet: "✓ 5000mAh — charge 45W filaire en 70 min".
@@ -582,6 +674,52 @@ STEP C — UNKNOWN CATEGORY:
 Does not match any known category → write ONLY what is confirmed from the name or image.
 
 RULE: "up to" = typical range (Step B). Real confirmed numbers = Step A only. Never mix.
+
+${homeKitchen ? `
+HOME & KITCHEN SPECIFIC RULES:
+This is a kitchen/home appliance product. Apply these additional rules:
+- PRIORITY SPECS: motor power (W), capacity (L or ml), speed settings (number), included accessories
+- If brand+model is known (KitchenAid 5KSM175PS, Dyson V15, Nespresso Vertuo): list ALL confirmed specs — W, L, speeds, accessories
+- Bullet ✓1: capacity + material (e.g. "Bol inox 4,8 L — compatible lave-vaisselle")
+- Bullet ✓2: motor/mechanism with W and speed (e.g. "Moteur 300W — 10 vitesses, mélange planétaire")
+- Bullet ✓3: accessories included (e.g. "Fouet, batteur plat et crochet pétrin inclus")
+- Bullet ✓4: care + warranty confirmed facts only
+- PROSE: use "plaisir", "savoir-faire", "art", "précision" — NEVER "chaleur" for appliances (chaleur = physical heat, wrong context)
+- Do NOT use "chaleur" for mixers, blenders, or any appliance that does not produce heat
+` : ''}
+
+${beautyHealth ? `
+BEAUTY & HEALTH SPECIFIC RULES:
+This is a skincare, beauty, or supplement product. Max description length: 150 words.
+
+PRIORITY — write these first if confirmed:
+1. Brand technology name (MVE Technology, Vitamin C stable form, Retinol 0.1%)
+2. Key active ingredients with % if known (3 Ceramides essentiels, Acide hyaluronique, Niacinamide 10%)
+3. Skin type target (peaux sensibles, peaux grasses, tous types de peau)
+4. Dermatologist / clinically tested claim if true for this brand
+5. Format value — never "plusieurs semaines": use "jusqu'à 3 mois" for 473ml+, "jusqu'à 6 semaines" for smaller
+
+BULLET ORDER for Beauty & Health:
+- Bullet ✓1: format + usage duration (e.g. "Flacon 473ml — jusqu'à 3 mois d'utilisation quotidienne")
+- Bullet ✓2: key active ingredients + technology (e.g. "3 Céramides essentiels + Technologie MVE — hydratation 24h")
+- Bullet ✓3: skin type + dermatologist claim (e.g. "Testé dermatologiquement — peaux sensibles et normales")
+- Bullet ✓4: texture/format + confirmed care (e.g. "Formule sans parfum, non-comédogène — sans rinçage")
+
+STRICTLY FORBIDDEN for Beauty & Health:
+- "aucune condition de stockage spéciale" — never mention storage unless required
+- "plusieurs semaines" — always use specific duration
+- "revitalisé", "apaisé" without a confirmed active ingredient backing it
+- "précision intentionnelle", "double action", "formule innovante" — AI nonsense, never use
+- Generic claims without ingredient: "hydrate deeply" → write "Acide hyaluronique — hydratation en profondeur"
+
+FOR ACTIVE SERUMS (niacinamide, retinol, acids, peptides, vitamin C):
+- Write pH if known for the brand (The Ordinary Niacinamide: pH 5.5-7.0)
+- Write confirmed free-from claims: "sans parfum, sans alcool, sans silicone" if true for this brand
+- Write chemical compatibility if known: "Compatible avec Retinol et Peptides — éviter avec Vitamine C pure"
+- Use clinical tone — The Ordinary brand language is transparent, ingredient-focused, no marketing fluff
+- For The Ordinary specifically: always mention "Développé sans parfum, sans alcool, sans silicone"
+- NEVER use "précision intentionnelle", "double action", "à double action" — these are meaningless
+` : ''}
 
 META TITLE RULES (max 60 chars):
 - Main keyword first
