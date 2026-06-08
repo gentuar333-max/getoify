@@ -467,6 +467,30 @@ function selectModel(hasImage, cleanBody, productTitle) {
   return 'claude-haiku-4-5-20251001';
 }
 
+// Beauty & Health keywords — per detektim nga titulli
+const BEAUTY_HEALTH_TYPES = [
+  'skincare', 'beauty', 'health', 'wellness', 'supplement', 'vitamin',
+  'cosmetic', 'personal care', 'face care', 'body care', 'hair care'
+];
+const BEAUTY_HEALTH_TITLE_KEYWORDS = [
+  'serum', 'moisturizer', 'moisturising', 'cleanser', 'toner', 'spf',
+  'sunscreen', 'retinol', 'vitamin c', 'niacinamide', 'hyaluronic',
+  'ceramide', 'cerave', 'the ordinary', 'la roche-posay', 'neutrogena',
+  'garnier', 'loreal', 'nivea', 'olay', 'dove', 'bioderma', 'avene',
+  'vichy', 'eucerin', 'aveeno', 'clinique', 'estee lauder', 'shiseido',
+  'supplement', 'vitamin', 'collagen', 'omega', 'probiotic', 'magnesium',
+  'zinc', 'protein powder', 'whey', 'creatine', 'melatonin',
+  'face wash', 'face cream', 'eye cream', 'lip balm', 'body lotion',
+  'body wash', 'shampoo', 'conditioner', 'hair mask', 'hair oil'
+];
+
+function isBeautyHealthProduct(product) {
+  const type = (product.product_type || '').toLowerCase();
+  const title = (product.title || '').toLowerCase();
+  if (BEAUTY_HEALTH_TYPES.some(t => type.includes(t))) return true;
+  return BEAUTY_HEALTH_TITLE_KEYWORDS.some(k => title.includes(k));
+}
+
 // Home & Kitchen keywords — per detektim nga titulli kur product_type mungon
 const HOME_KITCHEN_TYPES = [
   'kitchen', 'home', 'cooking', 'baking', 'appliance', 'cookware'
@@ -493,6 +517,9 @@ async function generateProductCopyWithClaude(product, targetLang, glossary, clea
   const hasImage = !!imageUrl;
   const model = selectModel(hasImage, cleanBody, product.title);
   const homeKitchen = isHomeKitchenProduct(product);
+  const beautyHealth = !homeKitchen && isBeautyHealthProduct(product);
+
+  console.log(`[category] homeKitchen:${homeKitchen} beautyHealth:${beautyHealth} product:"${product.title}"`);
 
   console.log(`[model-select] ${model} — image:${hasImage} body:${!!cleanBody} product:"${product.title}"`);
 
@@ -659,6 +686,30 @@ This is a kitchen/home appliance product. Apply these additional rules:
 - Bullet ✓4: care + warranty confirmed facts only
 - PROSE: use "plaisir", "savoir-faire", "art", "précision" — NEVER "chaleur" for appliances (chaleur = physical heat, wrong context)
 - Do NOT use "chaleur" for mixers, blenders, or any appliance that does not produce heat
+` : ''}
+
+${beautyHealth ? `
+BEAUTY & HEALTH SPECIFIC RULES:
+This is a skincare, beauty, or supplement product. Max description length: 150 words.
+
+PRIORITY — write these first if confirmed:
+1. Brand technology name (MVE Technology, Vitamin C stable form, Retinol 0.1%)
+2. Key active ingredients with % if known (3 Ceramides essentiels, Acide hyaluronique, Niacinamide 10%)
+3. Skin type target (peaux sensibles, peaux grasses, tous types de peau)
+4. Dermatologist / clinically tested claim if true for this brand
+5. Format value — never "plusieurs semaines": use "jusqu'à 3 mois" for 473ml+, "jusqu'à 6 semaines" for smaller
+
+BULLET ORDER for Beauty & Health:
+- Bullet ✓1: format + usage duration (e.g. "Flacon 473ml — jusqu'à 3 mois d'utilisation quotidienne")
+- Bullet ✓2: key active ingredients + technology (e.g. "3 Céramides essentiels + Technologie MVE — hydratation 24h")
+- Bullet ✓3: skin type + dermatologist claim (e.g. "Testé dermatologiquement — peaux sensibles et normales")
+- Bullet ✓4: texture/format + confirmed care (e.g. "Formule sans parfum, non-comédogène — sans rinçage")
+
+STRICTLY FORBIDDEN for Beauty & Health:
+- "aucune condition de stockage spéciale" — never mention storage unless required
+- "plusieurs semaines" — always use specific duration
+- "revitalisé", "apaisé" without a confirmed active ingredient backing it
+- Generic claims without ingredient: "hydrate deeply" → write "Acide hyaluronique — hydratation en profondeur"
 ` : ''}
 
 META TITLE RULES (max 60 chars):
