@@ -839,6 +839,25 @@ SPORTS NUTRITION:
 - Bullet ✓3: additional blend
 - Bullet ✓4: certification if confirmed
 
+SUBSCRIPTION & BUSINESS MODEL TRANSPARENCY:
+If the product requires a subscription (Whoop, Peloton, Oura, etc.):
+- MANDATORY: mention subscription requirement in description — never hide it
+- Format: "Abonnement requis : €X/mois ou €Y/an" or equivalent in target language
+- If bracelet/device is free with subscription → mention: "Bracelet inclus avec engagement 12 mois"
+- French buyers hate surprise pricing — transparency builds trust and reduces refunds
+
+SCREENLESS DEVICES:
+If the product has no screen (Whoop, Oura Ring, smart rings):
+- Frame "no screen" as a BENEFIT: "Aucun écran — conception minimaliste, autonomie maximale"
+- Explain where data is accessed: "Toutes vos données sur l'app Whoop (iOS/Android)"
+- Never write "synchronise" when data only exists in the app — write "affichage exclusif sur app"
+
+SENSOR ACCURACY — never write "24/7" without verifying:
+- If continuous monitoring: "surveillance continue 24/7 — FC, HRV, température"
+- If sleep-only: "surveillance nocturne — SpO2 et FC pendant le sommeil"
+- If spot check only: "mesure ponctuelle — SpO2 sur demande"
+- Mixing continuous with spot check = misleading — always separate them
+
 TONE: performance-driven, factual, direct — no poetry, no vague lifestyle claims.
 ` : ''}
 
