@@ -467,11 +467,32 @@ function selectModel(hasImage, cleanBody, productTitle) {
   return 'claude-haiku-4-5-20251001';
 }
 
+// Home & Kitchen keywords — per detektim nga titulli kur product_type mungon
+const HOME_KITCHEN_TYPES = [
+  'kitchen', 'home', 'cooking', 'baking', 'appliance', 'cookware'
+];
+const HOME_KITCHEN_TITLE_KEYWORDS = [
+  'mixer', 'blender', 'coffee', 'espresso', 'nespresso', 'french press',
+  'kettle', 'toaster', 'air fryer', 'instant pot', 'knife', 'knives',
+  'pan', 'pot', 'wok', 'skillet', 'cookware', 'bakeware', 'stand mixer',
+  'food processor', 'juicer', 'grinder', 'rice cooker', 'slow cooker',
+  'waffle', 'crepe', 'vacuum', 'dyson', 'kitchenaid', 'delonghi',
+  'nespresso', 'tefal', 'bosch', 'siemens', 'braun'
+];
+
+function isHomeKitchenProduct(product) {
+  const type = (product.product_type || '').toLowerCase();
+  const title = (product.title || '').toLowerCase();
+  if (HOME_KITCHEN_TYPES.some(t => type.includes(t))) return true;
+  return HOME_KITCHEN_TITLE_KEYWORDS.some(k => title.includes(k));
+}
+
 async function generateProductCopyWithClaude(product, targetLang, glossary, cleanBody, imageUrl) {
   const category = product.product_type || '';
   const tags = (product.tags || '').split(',').slice(0, 5).join(', ');
   const hasImage = !!imageUrl;
   const model = selectModel(hasImage, cleanBody, product.title);
+  const homeKitchen = isHomeKitchenProduct(product);
 
   console.log(`[model-select] ${model} — image:${hasImage} body:${!!cleanBody} product:"${product.title}"`);
 
@@ -481,7 +502,7 @@ async function generateProductCopyWithClaude(product, targetLang, glossary, clea
     French: {
       tone: 'vous',
       cta: 'Commandez maintenant',
-      sensoryWords: 'arômes, chaleur, rituel, plaisir, saveur, élégance, douceur',
+      sensoryWords: 'arômes, rituel, plaisir, saveur, élégance, douceur, art, savoir-faire',
       avoidWords: 'performances, efficacité, fonctionnalité, robuste, solide, durable',
       avoidNote: 'Never repeat "durable", "robuste", "solide" more than once — replace with "conçue pour durer", "de qualité", "artisanale"',
       bulletOrder: '1) Specs (capacity/size/weight) → 2) Mechanism (how it works) → 3) Design/emotion (style, origin, feel) → 4) Care/warranty (dishwasher, guarantee)'
@@ -626,6 +647,19 @@ STEP C — UNKNOWN CATEGORY:
 Does not match any known category → write ONLY what is confirmed from the name or image.
 
 RULE: "up to" = typical range (Step B). Real confirmed numbers = Step A only. Never mix.
+
+${homeKitchen ? `
+HOME & KITCHEN SPECIFIC RULES:
+This is a kitchen/home appliance product. Apply these additional rules:
+- PRIORITY SPECS: motor power (W), capacity (L or ml), speed settings (number), included accessories
+- If brand+model is known (KitchenAid 5KSM175PS, Dyson V15, Nespresso Vertuo): list ALL confirmed specs — W, L, speeds, accessories
+- Bullet ✓1: capacity + material (e.g. "Bol inox 4,8 L — compatible lave-vaisselle")
+- Bullet ✓2: motor/mechanism with W and speed (e.g. "Moteur 300W — 10 vitesses, mélange planétaire")
+- Bullet ✓3: accessories included (e.g. "Fouet, batteur plat et crochet pétrin inclus")
+- Bullet ✓4: care + warranty confirmed facts only
+- PROSE: use "plaisir", "savoir-faire", "art", "précision" — NEVER "chaleur" for appliances (chaleur = physical heat, wrong context)
+- Do NOT use "chaleur" for mixers, blenders, or any appliance that does not produce heat
+` : ''}
 
 META TITLE RULES (max 60 chars):
 - Main keyword first
