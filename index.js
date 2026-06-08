@@ -614,14 +614,16 @@ TITLE RULES:
 - Max 70 chars
 
 DESCRIPTION RULES:
-- Write 1-2 opening sentences using sensory/emotional language
-- Preferred sensory words for ${targetLang}: ${langCfg.sensoryWords}
-- AVOID these overused words: ${langCfg.avoidWords}
+- Write 1-2 opening sentences MAX — keep them SHORT and grounded. Lead with the product's main benefit or key spec, not with poetry.
+- Sensory/emotional words are allowed ONLY if they add real meaning. FORBIDDEN: "nuage", "honore", "incontournable", "rituel", "magie", "transforme" — these are empty metaphors.
+- Preferred words for ${targetLang}: ${langCfg.sensoryWords}
+- AVOID: ${langCfg.avoidWords}
 - ${langCfg.avoidNote}
 - Address the customer using "${langCfg.tone}"
 - Then write exactly 4 bullet points starting with ✓, in this order:
   ${langCfg.bulletOrder}
-- Each bullet must be specific and concrete — never generic ("✓ high quality" is forbidden)
+- Each bullet MUST contain a number, measurement, or confirmed technical fact. Poetry bullets are FORBIDDEN.
+- RATIO: 80% technical facts, 20% tone. Not the reverse.
 - Total description max 120 words
 
 CATEGORY KNOWLEDGE RULE:
@@ -719,6 +721,14 @@ FOR ACTIVE SERUMS (niacinamide, retinol, acids, peptides, vitamin C):
 - Use clinical tone — The Ordinary brand language is transparent, ingredient-focused, no marketing fluff
 - For The Ordinary specifically: always mention "Développé sans parfum, sans alcool, sans silicone"
 - NEVER use "précision intentionnelle", "double action", "à double action" — these are meaningless
+
+FOR EAU THERMALE PRODUCTS (Avène, Vichy, Uriage, La Roche-Posay Thermal Water):
+- ALWAYS mention silica/oligo-éléments content if known (Avène: 36mg/L silice — anti-irritante)
+- ALWAYS mention "sans conservateur, sans parfum" if confirmed
+- ADD secondary uses if confirmed: fixateur de maquillage, après-soleil, soulage piqûres d'insectes
+- ADD "adapté aux bébés et femmes enceintes" if confirmed for the brand
+- NEVER use metaphors: "nuage", "honore", "source magique" — use clinical descriptors instead
+- Tone: pure, transparent, scientific — not poetic
 
 FOR ALL DERMATOLOGICAL & PHARMACEUTICAL BRANDS (La Roche-Posay, Avène, Bioderma, Eucerin, Vichy, Neutrogena, CeraVe, Uriage, Nuxe, A-Derma, Caudalie, and any brand positioned as dermatologist-tested or pharmacy brand):
 
