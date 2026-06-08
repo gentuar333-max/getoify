@@ -927,6 +927,24 @@ This is a kitchen/home appliance product. Apply these additional rules:
 - Bullet ✓4: care + warranty confirmed facts only
 - PROSE: use "plaisir", "savoir-faire", "art", "précision" — NEVER "chaleur" for appliances (chaleur = physical heat, wrong context)
 - Do NOT use "chaleur" for mixers, blenders, or any appliance that does not produce heat
+
+CLOSED ECOSYSTEM RULE — applies to ALL products with proprietary consumables or subscriptions:
+Products: Nespresso, Keurig, Dolce Gusto, Peloton, NordicTrack, Apple, Philips Hue, Ring, etc.
+
+MANDATORY for closed ecosystem products:
+1. SPECIFY the ecosystem in title and description — never write generic "capsules" or "subscription":
+   - Nespresso Vertuo → "Capsules Nespresso Vertuo exclusives" (NOT "capsules Nespresso")
+   - Nespresso Original → "Capsules Nespresso Original" (NOT "capsules Nespresso")
+   - These two systems are INCOMPATIBLE — never write "capsules Nespresso" without specifying the line
+2. SPECIFY incompatibilities explicitly — this prevents returns and negative reviews:
+   - "Capsules Vertuo exclusives — non compatibles avec capsules Original Line"
+   - "Abonnement requis — non compatible avec Zwift ou apps tierces"
+3. SPECIFY all formats the machine supports — never limit to one:
+   - Nespresso Vertuo Pop → NOT "machine à espresso" → "machine multi-formats : espresso (40ml) à mug (230ml)"
+   - Keurig → "compatible K-Cup pods uniquement"
+4. USE correct technical terms:
+   - Nespresso crema → "crema" (Italian technical term) NOT "crème riche"
+   - Centrifusion → always mention the RPM if known (7 000 tr/min)
 ` : ''}
 
 ${beautyHealth ? `
