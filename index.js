@@ -494,6 +494,12 @@ function isBeautyHealthProduct(product) {
   return BEAUTY_HEALTH_TITLE_KEYWORDS.some(k => title.includes(k));
 }
 
+// Generic/Unknown fallback — produktet qe nuk hyjne ne asnje grup tjeter
+// Nuk ka nevoj per keywords — eshte fallback i fundit
+function isGenericProduct(product) {
+  return true; // gjithcka qe nuk eshte detektuar si grup tjeter
+}
+
 // Sport & Fitness keywords
 const SPORT_FITNESS_TYPES = [
   'sport', 'fitness', 'gym', 'workout', 'training', 'recovery', 'yoga', 'running', 'cycling'
@@ -574,6 +580,7 @@ async function generateProductCopyWithClaude(product, targetLang, glossary, clea
   const beautyHealth = !homeKitchen && isBeautyHealthProduct(product);
   const sportFitness = !homeKitchen && !beautyHealth && isSportFitnessProduct(product);
   const fashionApparel = !homeKitchen && !beautyHealth && !sportFitness && isFashionApparelProduct(product);
+  const isGeneric = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel;
 
   console.log(`[category] homeKitchen:${homeKitchen} beautyHealth:${beautyHealth} sportFitness:${sportFitness} fashionApparel:${fashionApparel} product:"${product.title}"`);
 
@@ -668,21 +675,6 @@ TITLE RULES:
 - Format: [Translated name] [Premium if strongly justified] — [spec1] | [spec2]
 - Elegant and informative — no ALL CAPS, no exclamation marks
 - Max 70 chars
-
-UNIT CONVERSION — apply automatically for all non-English languages:
-When specs contain imperial units, convert to metric for FR/DE/IT/ES/NL/PT/PL/SV:
-- sq in → cm² (× 6.45): "310 sq in → 2 000 cm²"
-- sq ft → m² (× 0.093): "10 sq ft → 0,93 m²"
-- oz (fluid) → ml (× 29.6): "12 fl oz → 355 ml"
-- oz (weight) → g (× 28.3): "16 oz → 450 g"
-- lbs → kg (× 0.453): "10 lbs → 4,5 kg"
-- °F → °C ((F-32) × 5/9): "500°F → 260°C"
-- BTU → kW (× 0.000293): "30 000 BTU → 8,8 kW"
-- miles → km (× 1.609)
-- inches → cm (× 2.54)
-Format: write metric first, imperial in parentheses if useful: "2 000 cm² (310 sq in)"
-For French: use comma as decimal separator: "4,5 kg" not "4.5 kg"
-NEVER write "po²", "sq in", "lbs", "°F" alone in FR/DE/IT/ES outputs — always convert.
 
 MERCHANT SPEC OVERRIDE — HIGHEST PRIORITY:
 If the product title contains specs separated by | or — (e.g. "Nike Pegasus 41 — ReactX | 10mm | 280g | Daily Trainer"):
@@ -929,6 +921,48 @@ WEARABLE MATERIALS & SIZING:
 - Material differentiates premium from budget — never omit confirmed material
 
 TONE: performance-driven, factual, direct — no poetry, no vague lifestyle claims.
+` : ''}
+
+${isGeneric ? `
+GENERIC & UNKNOWN PRODUCT RULES:
+This product does not match a specific category. Apply maximum caution.
+
+ZERO HALLUCINATION RULE:
+- Write ONLY what is confirmed in the product name, title, or image
+- If you recognize the exact product (LEGO set number, specific book, named toy) → use your knowledge
+- If you do NOT recognize it → write only what the title states, nothing more
+- NEVER invent dimensions, weights, ages, piece counts, or features not in the title
+
+LEGO SETS — if product name contains a set number:
+- Bullet ✓1: piece count + set name (e.g. "806 pièces — Lamborghini Huracán Tecnica")
+- Bullet ✓2: key mechanism or feature (e.g. "Moteur V10 fonctionnel, timon et spoiler actifs")
+- Bullet ✓3: recommended age + difficulty (e.g. "Âge recommandé 10+ — niveau avancé")
+- Bullet ✓4: dimensions assembled if known (e.g. "Modèle fini : 29 × 14 × 8 cm")
+- ALWAYS mention: exact set name, piece count, age recommendation
+
+TOYS & GAMES:
+- Always mention: age range, number of players, play time, difficulty
+- For board games: "2-4 joueurs, 45-90 min, âge 8+"
+- For educational toys: mention skill developed
+
+CANDLES & HOME FRAGRANCE:
+- Bullet ✓1: size/weight + burn time (e.g. "623g — jusqu'à 150 heures de combustion")
+- Bullet ✓2: fragrance notes (e.g. "Notes de vanille et bois de santal")
+- Bullet ✓3: wax type if known (e.g. "Cire de soja naturelle" or "Paraffine")
+- Bullet ✓4: vessel/format (e.g. "Pot en verre réutilisable avec couvercle")
+
+STATIONERY & NOTEBOOKS (Moleskine, Leuchtturm):
+- Bullet ✓1: format + pages (e.g. "A5 — 240 pages, papier 70g/m²")
+- Bullet ✓2: ruling type (e.g. "Pages lignées / quadrillées / pointillées")
+- Bullet ✓3: cover + closure (e.g. "Couverture rigide noire — élastique de fermeture")
+- Bullet ✓4: extras (e.g. "Marque-page, pochette arrière, 3 feuillets détachables")
+
+HANDMADE / ARTISAN PRODUCTS:
+- NEVER invent dimensions or materials not stated
+- Mention "fait main" or "artisanal" if confirmed in title
+- Write country/region of origin if confirmed
+
+TONE: honest, simple, informative — no lifestyle poetry, no invented features.
 ` : ''}
 
 ${homeKitchen ? `
@@ -1624,59 +1658,7 @@ if (process.env.NODE_ENV !== 'production') {
   setTimeout(pollNewProducts, 15000);
 }
 
-async function autoResetWebhooks() {
-  try {
-    const { data: stores } = await supabase.from('stores').select('shop, access_token');
-    if (!stores || !stores.length) return;
-    const webhookTopics = [
-      { topic: 'products/create', address: `${APP_URL}/webhook/product-create` },
-      { topic: 'products/update', address: `${APP_URL}/webhook/product-create` },
-      { topic: 'products/delete', address: `${APP_URL}/webhook/product-delete` }
-    ];
-    for (const store of stores) {
-      if (!store.access_token || store.access_token.startsWith('shpua_')) continue;
-      try {
-        // Merr webhooks ekzistuese
-        const listRes = await axios.get(
-          `https://${store.shop}/admin/api/2024-01/webhooks.json`,
-          { headers: { 'X-Shopify-Access-Token': store.access_token }, timeout: 10000 }
-        );
-        const existing = listRes.data.webhooks || [];
-        // Kontrollo nese URL-et jane sakte
-        const allCorrect = webhookTopics.every(wh =>
-          existing.some(e => e.topic === wh.topic && e.address === wh.address)
-        );
-        if (allCorrect) {
-          console.log(`[auto-webhooks] OK: ${store.shop}`);
-          continue;
-        }
-        // Fshi te gjitha dhe regjistro sersish
-        for (const wh of existing) {
-          await axios.delete(
-            `https://${store.shop}/admin/api/2024-01/webhooks/${wh.id}.json`,
-            { headers: { 'X-Shopify-Access-Token': store.access_token }, timeout: 10000 }
-          );
-        }
-        for (const wh of webhookTopics) {
-          await axios.post(
-            `https://${store.shop}/admin/api/2024-01/webhooks.json`,
-            { webhook: { topic: wh.topic, address: wh.address, format: 'json' } },
-            { headers: { 'X-Shopify-Access-Token': store.access_token, 'Content-Type': 'application/json' }, timeout: 10000 }
-          );
-        }
-        console.log(`[auto-webhooks] Reset OK: ${store.shop}`);
-      } catch(e) {
-        console.warn(`[auto-webhooks] Failed for ${store.shop}:`, e.message);
-      }
-    }
-  } catch(e) {
-    console.error('[auto-webhooks] Error:', e.message);
-  }
-}
-
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, async () => {
+app.listen(PORT, () => {
   console.log(`Getoify server running on port ${PORT}`);
-  // Auto-reset webhooks pas cdo deploy — sigurohet qe URLs jane te sakta
-  setTimeout(autoResetWebhooks, 5000);
 });
