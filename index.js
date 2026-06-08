@@ -1609,7 +1609,59 @@ if (process.env.NODE_ENV !== 'production') {
   setTimeout(pollNewProducts, 15000);
 }
 
+async function autoResetWebhooks() {
+  try {
+    const { data: stores } = await supabase.from('stores').select('shop, access_token');
+    if (!stores || !stores.length) return;
+    const webhookTopics = [
+      { topic: 'products/create', address: `${APP_URL}/webhook/product-create` },
+      { topic: 'products/update', address: `${APP_URL}/webhook/product-create` },
+      { topic: 'products/delete', address: `${APP_URL}/webhook/product-delete` }
+    ];
+    for (const store of stores) {
+      if (!store.access_token || store.access_token.startsWith('shpua_')) continue;
+      try {
+        // Merr webhooks ekzistuese
+        const listRes = await axios.get(
+          `https://${store.shop}/admin/api/2024-01/webhooks.json`,
+          { headers: { 'X-Shopify-Access-Token': store.access_token }, timeout: 10000 }
+        );
+        const existing = listRes.data.webhooks || [];
+        // Kontrollo nese URL-et jane sakte
+        const allCorrect = webhookTopics.every(wh =>
+          existing.some(e => e.topic === wh.topic && e.address === wh.address)
+        );
+        if (allCorrect) {
+          console.log(`[auto-webhooks] OK: ${store.shop}`);
+          continue;
+        }
+        // Fshi te gjitha dhe regjistro sersish
+        for (const wh of existing) {
+          await axios.delete(
+            `https://${store.shop}/admin/api/2024-01/webhooks/${wh.id}.json`,
+            { headers: { 'X-Shopify-Access-Token': store.access_token }, timeout: 10000 }
+          );
+        }
+        for (const wh of webhookTopics) {
+          await axios.post(
+            `https://${store.shop}/admin/api/2024-01/webhooks.json`,
+            { webhook: { topic: wh.topic, address: wh.address, format: 'json' } },
+            { headers: { 'X-Shopify-Access-Token': store.access_token, 'Content-Type': 'application/json' }, timeout: 10000 }
+          );
+        }
+        console.log(`[auto-webhooks] Reset OK: ${store.shop}`);
+      } catch(e) {
+        console.warn(`[auto-webhooks] Failed for ${store.shop}:`, e.message);
+      }
+    }
+  } catch(e) {
+    console.error('[auto-webhooks] Error:', e.message);
+  }
+}
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Getoify server running on port ${PORT}`);
+  // Auto-reset webhooks pas cdo deploy — sigurohet qe URLs jane te sakta
+  setTimeout(autoResetWebhooks, 5000);
 });
