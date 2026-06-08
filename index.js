@@ -1157,13 +1157,28 @@ app.post('/bulk-localize-all', async (req, res) => {
       products = products.slice(0, productLimit);
     }
 
+    // Skip produktet qe jane perkthyer tashme per ate gjuhe — kursen kosto API
+    const { data: existingRows } = await supabase
+      .from('translations')
+      .select('product_id, locale')
+      .eq('shop', shop);
+    const translatedSet = new Set((existingRows || []).map(r => `${String(r.product_id)}:${r.locale}`));
+
+    const toTranslate = [];
+    for (const product of products) {
+      const pid = String(normalizeProductId(product.id));
+      const missingLocales = locales.filter(l => !translatedSet.has(`${pid}:${l.locale}`));
+      if (missingLocales.length > 0) toTranslate.push({ product, missingLocales });
+    }
+    console.log(`[bulk] ${products.length} total — ${toTranslate.length} need translation — ${products.length - toTranslate.length} skipped`);
+
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.write('{"results":[');
     let first = true;
 
-    for (const product of products) {
+    for (const { product, missingLocales } of toTranslate) {
       const bulkPid = normalizeProductId(product.id);
-      for (const lang of locales) {
+      for (const lang of missingLocales) {
         try {
           const result = await localizeProduct(shop, token, bulkPid, lang.targetLang, lang.locale, tone, glossary);
           if (!first) res.write(',');
