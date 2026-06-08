@@ -453,6 +453,9 @@ const KNOWN_BRANDS = [
   // Sport/Outdoor
   'nike', 'adidas', 'under armour', 'puma', 'reebok', 'new balance',
   'fitbit', 'garmin', 'polar',
+  // Sport & Fitness recovery
+  'theragun', 'therabody', 'hyperice', 'hypervolt', 'achedaway',
+  'peloton', 'bowflex', 'concept2', 'technogym', 'whoop', 'oura',
   // Other major
   'ikea', 'lego', 'stanley', 'yeti', 'hydroflask'
 ];
@@ -489,6 +492,28 @@ function isBeautyHealthProduct(product) {
   const title = (product.title || '').toLowerCase();
   if (BEAUTY_HEALTH_TYPES.some(t => type.includes(t))) return true;
   return BEAUTY_HEALTH_TITLE_KEYWORDS.some(k => title.includes(k));
+}
+
+// Sport & Fitness keywords
+const SPORT_FITNESS_TYPES = [
+  'sport', 'fitness', 'gym', 'workout', 'training', 'recovery', 'yoga', 'running', 'cycling'
+];
+const SPORT_FITNESS_TITLE_KEYWORDS = [
+  'theragun', 'massage gun', 'foam roller', 'percussion', 'therabody',
+  'hyperice', 'hypervolt', 'achedaway',
+  'dumbbell', 'barbell', 'kettlebell', 'resistance band', 'pull-up bar',
+  'yoga mat', 'jump rope', 'battle rope', 'rowing machine', 'treadmill',
+  'stationary bike', 'peloton', 'concept2', 'bowflex',
+  'whoop', 'oura ring', 'sports watch',
+  'whey protein', 'creatine', 'pre-workout', 'bcaa', 'protein bar',
+  'energy gel', 'electrolyte', 'sports nutrition',
+  'compression sleeve', 'swim goggle', 'swim cap', 'wetsuit'
+];
+function isSportFitnessProduct(product) {
+  const type = (product.product_type || '').toLowerCase();
+  const title = (product.title || '').toLowerCase();
+  if (SPORT_FITNESS_TYPES.some(t => type.includes(t))) return true;
+  return SPORT_FITNESS_TITLE_KEYWORDS.some(k => title.includes(k));
 }
 
 // Fashion & Apparel keywords
@@ -547,9 +572,10 @@ async function generateProductCopyWithClaude(product, targetLang, glossary, clea
   const model = selectModel(hasImage, cleanBody, product.title);
   const homeKitchen = isHomeKitchenProduct(product);
   const beautyHealth = !homeKitchen && isBeautyHealthProduct(product);
-  const fashionApparel = !homeKitchen && !beautyHealth && isFashionApparelProduct(product);
+  const sportFitness = !homeKitchen && !beautyHealth && isSportFitnessProduct(product);
+  const fashionApparel = !homeKitchen && !beautyHealth && !sportFitness && isFashionApparelProduct(product);
 
-  console.log(`[category] homeKitchen:${homeKitchen} beautyHealth:${beautyHealth} fashionApparel:${fashionApparel} product:"${product.title}"`);
+  console.log(`[category] homeKitchen:${homeKitchen} beautyHealth:${beautyHealth} sportFitness:${sportFitness} fashionApparel:${fashionApparel} product:"${product.title}"`);
 
   console.log(`[model-select] ${model} — image:${hasImage} body:${!!cleanBody} product:"${product.title}"`);
 
@@ -748,6 +774,46 @@ FIT LANGUAGE — always use precise fit terms, never vague descriptions:
 - For jeans specifically: always mention waist rise (taille naturelle/mi-haute/basse) + leg cut (droit/slim/bootcut)
 
 TONE: aspirational but grounded — mix lifestyle language with concrete specs.
+` : ''}
+
+${sportFitness ? `
+SPORT & FITNESS SPECIFIC RULES:
+This is a sport, fitness, or recovery product.
+
+GENERAL RULES:
+- NEVER write "portatif" unless weight is confirmed < 0.8 kg — for Pro/Elite models always specify exact weight
+- NEVER combine "athlètes sérieux" with "bien-être" — choose ONE:
+  Serious athletes → recovery, performance, force output, pro use
+  Casual users → comfort, ease of use, everyday wellness
+- ALWAYS mention the key differentiator vs cheaper models in the same line
+
+MASSAGE GUN / PERCUSSION THERAPY (Theragun, Hyperice, Hypervolt, Achedaway):
+- Bullet ✓1: PPM + amplitude mm (e.g. "2 400 percussions/min — amplitude 16mm")
+- Bullet ✓2: batteries x autonomy total (e.g. "2 batteries interchangeables — 150 min chacune = 5h total")
+- Bullet ✓3: PRO differentiators — OLED forcemètre, Bluetooth Therabody app, guided routines
+- Bullet ✓4: attachments + weight in kg (e.g. "5 têtes incluses — 1,2 kg, usage professionnel")
+- FORBIDDEN: "portatif" for any Theragun Pro, Elite, Prime (all >0.8 kg)
+- MANDATORY for Pro Plus: OLED screen, forcemètre, 2 batteries, Therabody app
+
+FITNESS EQUIPMENT (dumbbells, kettlebells, resistance bands, rowing machines):
+- Bullet ✓1: weight/resistance range + increments
+- Bullet ✓2: material + grip (e.g. "Fonte recouverte néoprène — poignée antidérapante")
+- Bullet ✓3: muscle groups targeted
+- Bullet ✓4: dimensions + storage info
+
+SPORTS WEARABLES (Garmin, Polar, Whoop, Oura):
+- Bullet ✓1: battery days + GPS type
+- Bullet ✓2: health sensors (HR, SpO2, HRV, stress, sleep stages)
+- Bullet ✓3: sport profiles + app ecosystem
+- Bullet ✓4: water resistance ATM + weight g
+
+SPORTS NUTRITION:
+- Bullet ✓1: key active ingredient + g per serving
+- Bullet ✓2: total servings per container + flavor
+- Bullet ✓3: additional ingredients or blend
+- Bullet ✓4: certification (Informed Sport, NSF, Cologne List) if confirmed
+
+TONE: performance-driven, factual, direct — no poetry, no vague lifestyle claims.
 ` : ''}
 
 ${homeKitchen ? `
