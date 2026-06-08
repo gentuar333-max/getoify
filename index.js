@@ -669,6 +669,21 @@ TITLE RULES:
 - Elegant and informative — no ALL CAPS, no exclamation marks
 - Max 70 chars
 
+UNIT CONVERSION — apply automatically for all non-English languages:
+When specs contain imperial units, convert to metric for FR/DE/IT/ES/NL/PT/PL/SV:
+- sq in → cm² (× 6.45): "310 sq in → 2 000 cm²"
+- sq ft → m² (× 0.093): "10 sq ft → 0,93 m²"
+- oz (fluid) → ml (× 29.6): "12 fl oz → 355 ml"
+- oz (weight) → g (× 28.3): "16 oz → 450 g"
+- lbs → kg (× 0.453): "10 lbs → 4,5 kg"
+- °F → °C ((F-32) × 5/9): "500°F → 260°C"
+- BTU → kW (× 0.000293): "30 000 BTU → 8,8 kW"
+- miles → km (× 1.609)
+- inches → cm (× 2.54)
+Format: write metric first, imperial in parentheses if useful: "2 000 cm² (310 sq in)"
+For French: use comma as decimal separator: "4,5 kg" not "4.5 kg"
+NEVER write "po²", "sq in", "lbs", "°F" alone in FR/DE/IT/ES outputs — always convert.
+
 MERCHANT SPEC OVERRIDE — HIGHEST PRIORITY:
 If the product title contains specs separated by | or — (e.g. "Nike Pegasus 41 — ReactX | 10mm | 280g | Daily Trainer"):
 - Extract ALL specs from the title: foam type, drop, weight, use case, ATM, battery, etc.
