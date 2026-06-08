@@ -753,6 +753,22 @@ MANDATORY rules — apply to every product from these brands:
    - WRONG: "Découvrez l'élégance d'un soin qui transforme votre peau"
 5. NEVER use "formule avancée" for dermatological brands — always replace with the real technology name
 6. SKIN TYPE — always specify: "peaux sensibles", "peaux grasses", "peaux sèches à très sèches", "tous types de peau"
+
+BRAND HERITAGE & AUTHORITY — if the brand has a founding claim, invention, or official positioning, mention it in prose or bullet:
+- Bioderma → "Inventeur de la micellaire depuis 1995" / "Inventore della micellare dal 1995"
+- La Roche-Posay → "N°1 en dermatologie recommandée par les dermatologues"
+- CeraVe → "Développé avec des dermatologues"
+- Avène → "Source thermale depuis 1736"
+- Vichy → "Recommandé par les professionnels de santé"
+- Eucerin → "Plus de 100 ans d'expertise dermatologique"
+- Neutrogena → "Recommandé par les dermatologues"
+- Other brands → use ONLY confirmed official claims — never invent a heritage claim
+
+PRIORITY SPECS for micellar water / eau micellaire:
+- pH value if known (Bioderma Sensibio: pH 5.5)
+- "sans rinçage" — mandatory if confirmed
+- Makeup removal scope: "removes waterproof makeup" if confirmed
+- Duration from format: 500ml → "jusqu'à 6 semaines", 250ml → "jusqu'à 3 semaines"
 ` : ''}
 
 META TITLE RULES (max 60 chars):
