@@ -669,6 +669,18 @@ TITLE RULES:
 - Elegant and informative — no ALL CAPS, no exclamation marks
 - Max 70 chars
 
+MERCHANT SPEC OVERRIDE — HIGHEST PRIORITY:
+If the product title contains specs separated by | or — (e.g. "Nike Pegasus 41 — ReactX | 10mm | 280g | Daily Trainer"):
+- Extract ALL specs from the title: foam type, drop, weight, use case, ATM, battery, etc.
+- Use these specs DIRECTLY in the bullets — they are merchant-confirmed, never override them
+- Do NOT invent additional specs beyond what is in the title
+- Format recognition: anything after — or between | characters = confirmed spec
+- Examples:
+  "Garmin Fenix 8 Solar — MIP | 10 ATM | 48j Smartwatch" → use MIP (not AMOLED), 10 ATM, 48j smartwatch mode
+  "Theragun Pro Plus — 16mm | 60lbs | 1.2kg" → use exactly these numbers, do not add others
+  "Oura Ring Gen 4 — Titane | 4-5j | 10 ATM" → use titanium, 4-5 days (not 7), 10 ATM
+This rule overrides Step A, Step B, and all category knowledge — merchant specs are ground truth.
+
 DESCRIPTION RULES:
 - Write 1-2 opening sentences MAX — keep them SHORT and grounded. Lead with the product's main benefit or key spec, not with poetry.
 - Sensory/emotional words are allowed ONLY if they add real meaning. FORBIDDEN: "nuage", "honore", "incontournable", "rituel", "magie", "transforme" — these are empty metaphors.
