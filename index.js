@@ -781,37 +781,63 @@ SPORT & FITNESS SPECIFIC RULES:
 This is a sport, fitness, or recovery product.
 
 GENERAL RULES:
-- NEVER write "portatif" unless weight is confirmed < 0.8 kg — for Pro/Elite models always specify exact weight
-- NEVER combine "athlètes sérieux" with "bien-être" — choose ONE:
-  Serious athletes → recovery, performance, force output, pro use
-  Casual users → comfort, ease of use, everyday wellness
+- NEVER write "portatif" unless weight is confirmed < 0.8 kg
+- NEVER combine "athlètes sérieux" with "bien-être" — choose ONE audience
 - ALWAYS mention the key differentiator vs cheaper models in the same line
 
-MASSAGE GUN / PERCUSSION THERAPY (Theragun, Hyperice, Hypervolt, Achedaway):
-- Bullet ✓1: PPM + amplitude mm (e.g. "2 400 percussions/min — amplitude 16mm")
-- Bullet ✓2: batteries x autonomy total (e.g. "2 batteries interchangeables — 150 min chacune = 5h total")
-- Bullet ✓3: PRO differentiators — OLED forcemètre, Bluetooth Therabody app, guided routines
-- Bullet ✓4: attachments + weight in kg (e.g. "5 têtes incluses — 1,2 kg, usage professionnel")
-- FORBIDDEN: "portatif" for any Theragun Pro, Elite, Prime (all >0.8 kg)
-- MANDATORY for Pro Plus: OLED screen, forcemètre, 2 batteries, Therabody app
+VARIANT UNCERTAINTY RULE — CRITICAL:
+When the product name contains a variant identifier (Solar, AMOLED, Pro, Plus, Ultra, Max, Elite, SE):
+- These identifiers change specs fundamentally between variants
+- VERIFY before writing: does this variant have this spec?
+- Specs that DIFFER by variant → write "selon version" or use "up to" framing
+- Specs UNIVERSAL to all variants → write as confirmed
+- NEVER mix specs from different variants of the same product line
+- Examples of dangerous mix-ups:
+  Garmin Fenix 8 Solar = MIP display / Fenix 8 AMOLED = AMOLED display — MUTUALLY EXCLUSIVE
+  Theragun Pro Plus = 2 batteries / Theragun Pro = 1 battery — different models
+  Apple Watch Ultra = 10 ATM / Apple Watch SE = 50m — different resistance
+- RULE: if you know the variant suffix but are not 100% certain of that variant's spec → write "up to" or omit
 
-FITNESS EQUIPMENT (dumbbells, kettlebells, resistance bands, rowing machines):
+WATER RESISTANCE — verify before writing:
+- 5 ATM = rain, splashes, hand washing only
+- 10 ATM = swimming, snorkeling, surface water sports
+- 20 ATM = scuba diving
+- Never write 5 ATM for a product confirmed at 10 ATM — this undersells and misleads
+
+DISPLAY TYPE — verify before writing:
+- Solar models typically use MIP/transflective (better in sunlight, lower power)
+- AMOLED models use AMOLED (vivid colors, higher power draw)
+- Never write AMOLED for a Solar variant — they are physically incompatible
+
+BATTERY LIFE — always specify mode:
+- Never write "X jours" without specifying the mode
+- Format: "48 jours smartwatch / 145h GPS / 550 jours expedition (avec solaire)"
+
+MASSAGE GUN / PERCUSSION THERAPY (Theragun, Hyperice, Hypervolt, Achedaway):
+- Bullet ✓1: PPM + amplitude mm confirmed for this exact model
+- Bullet ✓2: batteries × autonomy = total hours (e.g. "2 batteries × 150 min = 5h total")
+- Bullet ✓3: PRO differentiators — OLED forcemètre, Bluetooth app, guided routines if Pro/Plus
+- Bullet ✓4: attachments count + weight kg
+- FORBIDDEN: "portatif" for Theragun Pro, Pro Plus, Elite (all >0.8 kg)
+- FORBIDDEN: "bien-être" for Pro/Elite models — write "usage professionnel et récupération athlétique"
+
+FITNESS EQUIPMENT (dumbbells, kettlebells, resistance bands):
 - Bullet ✓1: weight/resistance range + increments
-- Bullet ✓2: material + grip (e.g. "Fonte recouverte néoprène — poignée antidérapante")
+- Bullet ✓2: material + grip type
 - Bullet ✓3: muscle groups targeted
-- Bullet ✓4: dimensions + storage info
+- Bullet ✓4: dimensions + storage
 
 SPORTS WEARABLES (Garmin, Polar, Whoop, Oura):
-- Bullet ✓1: battery days + GPS type
-- Bullet ✓2: health sensors (HR, SpO2, HRV, stress, sleep stages)
-- Bullet ✓3: sport profiles + app ecosystem
-- Bullet ✓4: water resistance ATM + weight g
+- Bullet ✓1: battery life with mode specified (smartwatch / GPS / expedition)
+- Bullet ✓2: display type CONFIRMED for this variant + resolution
+- Bullet ✓3: key sensors (HR, SpO2, HRV) + differentiating features (TOPO maps, ClimbPro, PacePro)
+- Bullet ✓4: water resistance ATM CONFIRMED + weight g
 
 SPORTS NUTRITION:
-- Bullet ✓1: key active ingredient + g per serving
-- Bullet ✓2: total servings per container + flavor
-- Bullet ✓3: additional ingredients or blend
-- Bullet ✓4: certification (Informed Sport, NSF, Cologne List) if confirmed
+- Bullet ✓1: key active + g per serving
+- Bullet ✓2: servings per container + flavor
+- Bullet ✓3: additional blend
+- Bullet ✓4: certification if confirmed
 
 TONE: performance-driven, factual, direct — no poetry, no vague lifestyle claims.
 ` : ''}
