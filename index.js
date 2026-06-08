@@ -491,6 +491,35 @@ function isBeautyHealthProduct(product) {
   return BEAUTY_HEALTH_TITLE_KEYWORDS.some(k => title.includes(k));
 }
 
+// Fashion & Apparel keywords
+const FASHION_APPAREL_TYPES = [
+  'clothing', 'apparel', 'fashion', 'shoes', 'footwear', 'accessories',
+  'bags', 'jewelry', 'watches', 'sportswear', 'activewear', 'outerwear'
+];
+const FASHION_APPAREL_TITLE_KEYWORDS = [
+  // Shoes
+  'sneaker', 'shoe', 'boot', 'sandal', 'loafer', 'trainer', 'running',
+  'air max', 'ultraboost', 'stan smith', 'chuck taylor', 'vans', 'converse',
+  // Clothing
+  't-shirt', 'tshirt', 'shirt', 'hoodie', 'jacket', 'coat', 'dress',
+  'jeans', 'pants', 'trousers', 'shorts', 'leggings', 'sweater', 'cardigan',
+  'blazer', 'suit', 'skirt', 'blouse', 'polo', 'vest', 'parka', 'anorak',
+  // Accessories
+  'bag', 'handbag', 'backpack', 'wallet', 'belt', 'scarf', 'hat', 'cap',
+  'watch', 'sunglasses', 'jewelry', 'bracelet', 'necklace', 'ring',
+  // Brands
+  'nike', 'adidas', 'puma', 'reebok', 'new balance', 'under armour',
+  'levi', 'zara', 'h&m', 'uniqlo', 'ralph lauren', 'tommy hilfiger',
+  'north face', 'columbia', 'patagonia', 'arc teryx', 'parka', 'anorak', 'windbreaker', 'tracksuit', 'sweatshirt', 'overcoat'
+];
+
+function isFashionApparelProduct(product) {
+  const type = (product.product_type || '').toLowerCase();
+  const title = (product.title || '').toLowerCase();
+  if (FASHION_APPAREL_TYPES.some(t => type.includes(t))) return true;
+  return FASHION_APPAREL_TITLE_KEYWORDS.some(k => title.includes(k));
+}
+
 // Home & Kitchen keywords — per detektim nga titulli kur product_type mungon
 const HOME_KITCHEN_TYPES = [
   'kitchen', 'home', 'cooking', 'baking', 'appliance', 'cookware'
@@ -518,8 +547,9 @@ async function generateProductCopyWithClaude(product, targetLang, glossary, clea
   const model = selectModel(hasImage, cleanBody, product.title);
   const homeKitchen = isHomeKitchenProduct(product);
   const beautyHealth = !homeKitchen && isBeautyHealthProduct(product);
+  const fashionApparel = !homeKitchen && !beautyHealth && isFashionApparelProduct(product);
 
-  console.log(`[category] homeKitchen:${homeKitchen} beautyHealth:${beautyHealth} product:"${product.title}"`);
+  console.log(`[category] homeKitchen:${homeKitchen} beautyHealth:${beautyHealth} fashionApparel:${fashionApparel} product:"${product.title}"`);
 
   console.log(`[model-select] ${model} — image:${hasImage} body:${!!cleanBody} product:"${product.title}"`);
 
@@ -676,6 +706,42 @@ STEP C — UNKNOWN CATEGORY:
 Does not match any known category → write ONLY what is confirmed from the name or image.
 
 RULE: "up to" = typical range (Step B). Real confirmed numbers = Step A only. Never mix.
+
+${fashionApparel ? `
+FASHION & APPAREL SPECIFIC RULES:
+This is a clothing, footwear, or accessory product. Apply these rules:
+
+PRIORITY SPECS by product type:
+
+FOOTWEAR (sneakers, running shoes, boots):
+- Bullet ✓1: sole technology + material (e.g. "Semelle React + unité Air Max 270° — amorti réactif")
+- Bullet ✓2: upper material + construction (e.g. "Empeigne mesh respirant + renforts synthétiques")
+- Bullet ✓3: fit + sizing info (e.g. "Pointure fidèle — convient pour usage lifestyle quotidien")
+- Bullet ✓4: care instructions (e.g. "Nettoyage à la main recommandé — semelle caoutchouc durable")
+- ALWAYS mention: sole type, upper material, occasion (running/lifestyle/training)
+- IF KNOWN: weight (g), drop (mm), "true to size" or "size up"
+
+CLOTHING (t-shirts, hoodies, jackets, dresses):
+- Bullet ✓1: fabric composition % (e.g. "100% coton biologique — doux et respirant")
+- Bullet ✓2: fit type + cut (e.g. "Coupe regular — taille fidèle, longueur standard")
+- Bullet ✓3: key feature or design (e.g. "Poche kangourou — cordon de serrage ajustable")
+- Bullet ✓4: care instructions (e.g. "Lavage machine 30°C — ne pas sécher au sèche-linge")
+- ALWAYS mention: material %, fit type, wash care
+
+BAGS & ACCESSORIES:
+- Bullet ✓1: material + dimensions if known (e.g. "Cuir grainé — 30×20×10cm, 0,8kg")
+- Bullet ✓2: capacity + compartments (e.g. "15L — compartiment principal + 2 poches zippées")
+- Bullet ✓3: closure + strap type (e.g. "Fermeture éclair YKK — bandoulière réglable incluse")
+- Bullet ✓4: care + warranty
+
+FORBIDDEN for Fashion & Apparel:
+- "style intemporel" without describing the actual style
+- "confort optimal" — write the material or technology that creates comfort
+- "coloris polyvalents" alone — always add the actual colorway name if known
+- Never write "taille fidèle" without confirming it — write "vérifier le guide des tailles" if unsure
+
+TONE: aspirational but grounded — mix lifestyle language with concrete specs.
+` : ''}
 
 ${homeKitchen ? `
 HOME & KITCHEN SPECIFIC RULES:
