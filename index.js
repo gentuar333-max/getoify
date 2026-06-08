@@ -850,6 +850,19 @@ PROFESSIONAL GYM EQUIPMENT (Concept2, Rogue, Eleiko, Technogym, Life Fitness):
 - REBRANDING: if product was renamed, mention: "Anciennement [Old Name] — même mécanisme, rebrand [year]"
 - COMPATIBLE APPS: always list if known (Zwift, Garmin Connect, Polar, ErgData, Concept2 Logbook)
 
+CONNECTED FITNESS BIKES & CARDIO (Peloton, NordicTrack, Ergatta, iFit, Echelon):
+- Bullet ✓1: KEY DIFFERENTIATOR vs base model (e.g. "Auto-Follow — résistance auto-ajustée selon le cours")
+- Bullet ✓2: screen size + rotation + class types (e.g. "Écran tactile rotatif 23,8" — classes live et on-demand")
+- Bullet ✓3: connectivity + ecosystem (e.g. "Apple GymKit, WiFi, Bluetooth 5.0 — compatible Apple Watch instantané")
+- Bullet ✓4: warranty PER COMPONENT — never write single warranty:
+  Format: "X ans cadre, Y mois pièces, Z mois main-d'œuvre"
+  Peloton Bike+: 5 ans cadre, 12 mois pièces/électronique, 12 mois main-d'œuvre
+  Never write "12 mois" alone for Peloton — undersells vs NordicTrack 10 ans
+- ALWAYS mention: pedal system (Look Delta, SPD, toe cages) + if shoes included or sold separately
+- ALWAYS mention: key differentiator that justifies premium over base model
+- SUBSCRIPTION: never write specific price — "Abonnement requis — voir tarifs sur peloton.com"
+- INCOMPATIBILITIES: if not compatible with Zwift or other apps → mention "non compatible apps tierces"
+
 SPORTS WEARABLES (Garmin, Polar, Whoop, Oura):
 - Bullet ✓1: battery life with mode specified (smartwatch / GPS / expedition)
 - Bullet ✓2: display type CONFIRMED for this variant + resolution
