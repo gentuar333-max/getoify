@@ -107,7 +107,10 @@ app.get('/auth', (req, res) => {
   const shop = req.query.shop;
   if (!shop) return res.status(400).send('Missing shop parameter');
   const redirectUri = `${APP_URL}/auth/callback`;
+  console.log('[auth] APP_URL:', APP_URL);
+  console.log('[auth] redirectUri:', redirectUri);
   const installUrl = `https://${shop}/admin/oauth/authorize?client_id=${SHOPIFY_API_KEY}&scope=${SHOPIFY_SCOPES}&redirect_uri=${redirectUri}`;
+  console.log('[auth] installUrl:', installUrl);
   res.redirect(installUrl);
 });
 
@@ -495,7 +498,6 @@ function isBeautyHealthProduct(product) {
 }
 
 // Generic/Unknown fallback — produktet qe nuk hyjne ne asnje grup tjeter
-// Nuk ka nevoj per keywords — eshte fallback i fundit
 function isGenericProduct(product) {
   return true; // gjithcka qe nuk eshte detektuar si grup tjeter
 }
@@ -675,6 +677,21 @@ TITLE RULES:
 - Format: [Translated name] [Premium if strongly justified] — [spec1] | [spec2]
 - Elegant and informative — no ALL CAPS, no exclamation marks
 - Max 70 chars
+
+UNIT CONVERSION — apply automatically for all non-English languages:
+When specs contain imperial units, convert to metric for FR/DE/IT/ES/NL/PT/PL/SV:
+- sq in → cm² (× 6.45): "310 sq in → 2 000 cm²"
+- sq ft → m² (× 0.093): "10 sq ft → 0,93 m²"
+- oz (fluid) → ml (× 29.6): "12 fl oz → 355 ml"
+- oz (weight) → g (× 28.3): "16 oz → 450 g"
+- lbs → kg (× 0.453): "10 lbs → 4,5 kg"
+- °F → °C ((F-32) × 5/9): "500°F → 260°C"
+- BTU → kW (× 0.000293): "30 000 BTU → 8,8 kW"
+- miles → km (× 1.609)
+- inches → cm (× 2.54)
+Format: write metric first, imperial in parentheses if useful: "2 000 cm² (310 sq in)"
+For French: use comma as decimal separator: "4,5 kg" not "4.5 kg"
+NEVER write "po²", "sq in", "lbs", "°F" alone in FR/DE/IT/ES outputs — always convert.
 
 MERCHANT SPEC OVERRIDE — HIGHEST PRIORITY:
 If the product title contains specs separated by | or — (e.g. "Nike Pegasus 41 — ReactX | 10mm | 280g | Daily Trainer"):
@@ -1658,7 +1675,48 @@ if (process.env.NODE_ENV !== 'production') {
   setTimeout(pollNewProducts, 15000);
 }
 
+async function autoResetWebhooks() {
+  try {
+    const { data: stores } = await supabase.from('stores').select('shop, access_token');
+    if (!stores || !stores.length) return;
+    const webhookTopics = [
+      { topic: 'products/create', address: `${APP_URL}/webhook/product-create` },
+      { topic: 'products/update', address: `${APP_URL}/webhook/product-create` },
+      { topic: 'products/delete', address: `${APP_URL}/webhook/product-delete` }
+    ];
+    for (const store of stores) {
+      if (!store.access_token || store.access_token.startsWith('shpua_')) continue;
+      try {
+        const listRes = await axios.get(
+          `https://${store.shop}/admin/api/2024-01/webhooks.json`,
+          { headers: { 'X-Shopify-Access-Token': store.access_token }, timeout: 10000 }
+        );
+        const existing = listRes.data.webhooks || [];
+        const allCorrect = webhookTopics.every(wh =>
+          existing.some(e => e.topic === wh.topic && e.address === wh.address)
+        );
+        if (allCorrect) { console.log(`[auto-webhooks] OK: ${store.shop}`); continue; }
+        for (const wh of existing) {
+          await axios.delete(
+            `https://${store.shop}/admin/api/2024-01/webhooks/${wh.id}.json`,
+            { headers: { 'X-Shopify-Access-Token': store.access_token }, timeout: 10000 }
+          );
+        }
+        for (const wh of webhookTopics) {
+          await axios.post(
+            `https://${store.shop}/admin/api/2024-01/webhooks.json`,
+            { webhook: { topic: wh.topic, address: wh.address, format: 'json' } },
+            { headers: { 'X-Shopify-Access-Token': store.access_token, 'Content-Type': 'application/json' }, timeout: 10000 }
+          );
+        }
+        console.log(`[auto-webhooks] Reset OK: ${store.shop}`);
+      } catch(e) { console.warn(`[auto-webhooks] Failed for ${store.shop}:`, e.message); }
+    }
+  } catch(e) { console.error('[auto-webhooks] Error:', e.message); }
+}
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Getoify server running on port ${PORT}`);
+  setTimeout(autoResetWebhooks, 5000);
 });
