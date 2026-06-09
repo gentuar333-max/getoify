@@ -197,6 +197,55 @@ app.get('/register-webhooks', async (req, res) => {
   }
 });
 
+// Fshi te gjitha webhooks dhe regjistro sersish me URL te sakte
+// https://getoify.com/reset-webhooks?shop=xxx.myshopify.com
+app.get('/reset-webhooks', async (req, res) => {
+  const { shop } = req.query;
+  if (!shop) return res.status(400).json({ error: 'Missing shop' });
+  try {
+    const { data: store } = await supabase.from('stores').select('access_token').eq('shop', shop).single();
+    if (!store?.access_token) return res.status(404).json({ error: 'Store not found or no token' });
+    const token = store.access_token;
+
+    // Merr te gjitha webhooks ekzistuese
+    const listRes = await axios.get(
+      `https://${shop}/admin/api/2024-01/webhooks.json`,
+      { headers: { 'X-Shopify-Access-Token': token } }
+    );
+    const existing = listRes.data.webhooks || [];
+
+    // Fshi te gjitha
+    const deleted = [];
+    for (const wh of existing) {
+      await axios.delete(
+        `https://${shop}/admin/api/2024-01/webhooks/${wh.id}.json`,
+        { headers: { 'X-Shopify-Access-Token': token } }
+      );
+      deleted.push({ id: wh.id, topic: wh.topic, address: wh.address });
+    }
+
+    // Regjistro sersish me URL te sakte
+    const webhookTopics = [
+      { topic: 'products/create', address: `${APP_URL}/webhook/product-create` },
+      { topic: 'products/update', address: `${APP_URL}/webhook/product-create` },
+      { topic: 'products/delete', address: `${APP_URL}/webhook/product-delete` }
+    ];
+    const registered = [];
+    for (const wh of webhookTopics) {
+      const r = await axios.post(
+        `https://${shop}/admin/api/2024-01/webhooks.json`,
+        { webhook: { topic: wh.topic, address: wh.address, format: 'json' } },
+        { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
+      );
+      registered.push({ topic: wh.topic, address: wh.address, id: r.data.webhook?.id });
+    }
+
+    res.json({ shop, deleted, registered });
+  } catch (err) {
+    res.status(500).json({ error: err.response?.data || err.message });
+  }
+});
+
 // API routes
 app.get('/locales', async (req, res) => {
   const { shop, token } = req.query;
@@ -404,6 +453,9 @@ const KNOWN_BRANDS = [
   // Sport/Outdoor
   'nike', 'adidas', 'under armour', 'puma', 'reebok', 'new balance',
   'fitbit', 'garmin', 'polar',
+  // Sport & Fitness recovery
+  'theragun', 'therabody', 'hyperice', 'hypervolt', 'achedaway',
+  'peloton', 'bowflex', 'concept2', 'technogym', 'whoop', 'oura',
   // Other major
   'ikea', 'lego', 'stanley', 'yeti', 'hydroflask'
 ];
@@ -413,14 +465,109 @@ function titleHasKnownBrand(title) {
   return KNOWN_BRANDS.some(brand => t.includes(brand));
 }
 
-// Zgjedh modelin me logjike te optimizuar per kosto + cilesie:
-// - Sonnet 4.6: imazh + pa description + brand I PANJOHUR (imazhi shton vlere)
-// - Haiku:      gjdo rast tjeter (brand i njohur, ka description, pa imazh)
+// Haiku per gjithcka — me i lire, CATEGORY KNOWLEDGE e mbulon te gjitha rastet
 function selectModel(hasImage, cleanBody, productTitle) {
-  if (hasImage && !cleanBody && !titleHasKnownBrand(productTitle)) {
-    return 'claude-sonnet-4-6';
-  }
   return 'claude-haiku-4-5-20251001';
+}
+
+// Beauty & Health keywords — per detektim nga titulli
+const BEAUTY_HEALTH_TYPES = [
+  'skincare', 'beauty', 'health', 'wellness', 'supplement', 'vitamin',
+  'cosmetic', 'personal care', 'face care', 'body care', 'hair care'
+];
+const BEAUTY_HEALTH_TITLE_KEYWORDS = [
+  'serum', 'moisturizer', 'moisturising', 'cleanser', 'toner', 'spf',
+  'sunscreen', 'retinol', 'vitamin c', 'niacinamide', 'hyaluronic',
+  'ceramide', 'cerave', 'the ordinary', 'la roche-posay', 'neutrogena',
+  'garnier', 'loreal', 'nivea', 'olay', 'dove', 'bioderma', 'avene',
+  'vichy', 'eucerin', 'aveeno', 'clinique', 'estee lauder', 'shiseido',
+  'supplement', 'vitamin', 'collagen', 'omega', 'probiotic', 'magnesium',
+  'zinc', 'protein powder', 'whey', 'creatine', 'melatonin',
+  'face wash', 'face cream', 'eye cream', 'lip balm', 'body lotion',
+  'body wash', 'shampoo', 'conditioner', 'hair mask', 'hair oil'
+];
+
+function isBeautyHealthProduct(product) {
+  const type = (product.product_type || '').toLowerCase();
+  const title = (product.title || '').toLowerCase();
+  if (BEAUTY_HEALTH_TYPES.some(t => type.includes(t))) return true;
+  return BEAUTY_HEALTH_TITLE_KEYWORDS.some(k => title.includes(k));
+}
+
+// Generic/Unknown fallback
+function isGenericProduct(product) {
+  return true;
+}
+
+// Sport & Fitness keywords
+const SPORT_FITNESS_TYPES = [
+  'sport', 'fitness', 'gym', 'workout', 'training', 'recovery', 'yoga', 'running', 'cycling'
+];
+const SPORT_FITNESS_TITLE_KEYWORDS = [
+  'theragun', 'massage gun', 'foam roller', 'percussion', 'therabody',
+  'hyperice', 'hypervolt', 'achedaway',
+  'dumbbell', 'barbell', 'kettlebell', 'resistance band', 'pull-up bar',
+  'yoga mat', 'jump rope', 'battle rope', 'rowing machine', 'treadmill',
+  'stationary bike', 'peloton', 'concept2', 'bowflex',
+  'whoop', 'oura ring', 'sports watch',
+  'whey protein', 'creatine', 'pre-workout', 'bcaa', 'protein bar',
+  'energy gel', 'electrolyte', 'sports nutrition',
+  'compression sleeve', 'swim goggle', 'swim cap', 'wetsuit'
+];
+function isSportFitnessProduct(product) {
+  const type = (product.product_type || '').toLowerCase();
+  const title = (product.title || '').toLowerCase();
+  if (SPORT_FITNESS_TYPES.some(t => type.includes(t))) return true;
+  return SPORT_FITNESS_TITLE_KEYWORDS.some(k => title.includes(k));
+}
+
+// Fashion & Apparel keywords
+const FASHION_APPAREL_TYPES = [
+  'clothing', 'apparel', 'fashion', 'shoes', 'footwear', 'accessories',
+  'bags', 'jewelry', 'watches', 'sportswear', 'activewear', 'outerwear'
+];
+const FASHION_APPAREL_TITLE_KEYWORDS = [
+  // Shoes
+  'sneaker', 'shoe', 'boot', 'sandal', 'loafer', 'trainer', 'running',
+  'air max', 'ultraboost', 'stan smith', 'chuck taylor', 'vans', 'converse',
+  // Clothing
+  't-shirt', 'tshirt', 'shirt', 'hoodie', 'jacket', 'coat', 'dress',
+  'jeans', 'pants', 'trousers', 'shorts', 'leggings', 'sweater', 'cardigan',
+  'blazer', 'suit', 'skirt', 'blouse', 'polo', 'vest', 'parka', 'anorak',
+  // Accessories
+  'bag', 'handbag', 'backpack', 'wallet', 'belt', 'scarf', 'hat', 'cap',
+  'watch', 'sunglasses', 'jewelry', 'bracelet', 'necklace', 'ring',
+  // Brands
+  'nike', 'adidas', 'puma', 'reebok', 'new balance', 'under armour',
+  'levi', 'zara', 'h&m', 'uniqlo', 'ralph lauren', 'tommy hilfiger',
+  'north face', 'columbia', 'patagonia', 'arc teryx', 'parka', 'anorak', 'windbreaker', 'tracksuit', 'sweatshirt', 'overcoat'
+];
+
+function isFashionApparelProduct(product) {
+  const type = (product.product_type || '').toLowerCase();
+  const title = (product.title || '').toLowerCase();
+  if (FASHION_APPAREL_TYPES.some(t => type.includes(t))) return true;
+  return FASHION_APPAREL_TITLE_KEYWORDS.some(k => title.includes(k));
+}
+
+// Home & Kitchen keywords — per detektim nga titulli kur product_type mungon
+const HOME_KITCHEN_TYPES = [
+  'kitchen', 'home', 'cooking', 'baking', 'appliance', 'cookware'
+];
+const HOME_KITCHEN_TITLE_KEYWORDS = [
+  'mixer', 'blender', 'coffee', 'espresso', 'nespresso', 'french press',
+  'kettle', 'toaster', 'air fryer', 'instant pot', 'knife', 'knives',
+  'pan', 'pot', 'wok', 'skillet', 'cookware', 'bakeware', 'stand mixer',
+  'food processor', 'juicer', 'grinder', 'rice cooker', 'slow cooker',
+  'waffle', 'crepe', 'vacuum', 'dyson', 'kitchenaid', 'delonghi',
+  'nespresso', 'tefal', 'bosch', 'siemens', 'braun'
+];
+
+function isHomeKitchenProduct(product) {
+  const type = (product.product_type || '').toLowerCase();
+  const title = (product.title || '').toLowerCase();
+  if (HOME_KITCHEN_TYPES.some(t => type.includes(t))) return true;
+  return HOME_KITCHEN_TITLE_KEYWORDS.some(k => title.includes(k));
 }
 
 async function generateProductCopyWithClaude(product, targetLang, glossary, cleanBody, imageUrl) {
@@ -428,6 +575,13 @@ async function generateProductCopyWithClaude(product, targetLang, glossary, clea
   const tags = (product.tags || '').split(',').slice(0, 5).join(', ');
   const hasImage = !!imageUrl;
   const model = selectModel(hasImage, cleanBody, product.title);
+  const homeKitchen = isHomeKitchenProduct(product);
+  const beautyHealth = !homeKitchen && isBeautyHealthProduct(product);
+  const sportFitness = !homeKitchen && !beautyHealth && isSportFitnessProduct(product);
+  const fashionApparel = !homeKitchen && !beautyHealth && !sportFitness && isFashionApparelProduct(product);
+  const isGeneric = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel;
+
+  console.log(`[category] homeKitchen:${homeKitchen} beautyHealth:${beautyHealth} sportFitness:${sportFitness} fashionApparel:${fashionApparel} product:"${product.title}"`);
 
   console.log(`[model-select] ${model} — image:${hasImage} body:${!!cleanBody} product:"${product.title}"`);
 
@@ -437,7 +591,7 @@ async function generateProductCopyWithClaude(product, targetLang, glossary, clea
     French: {
       tone: 'vous',
       cta: 'Commandez maintenant',
-      sensoryWords: 'arômes, chaleur, rituel, plaisir, saveur, élégance, douceur',
+      sensoryWords: 'arômes, rituel, plaisir, saveur, élégance, douceur, art, savoir-faire',
       avoidWords: 'performances, efficacité, fonctionnalité, robuste, solide, durable',
       avoidNote: 'Never repeat "durable", "robuste", "solide" more than once — replace with "conçue pour durer", "de qualité", "artisanale"',
       bulletOrder: '1) Specs (capacity/size/weight) → 2) Mechanism (how it works) → 3) Design/emotion (style, origin, feel) → 4) Care/warranty (dishwasher, guarantee)'
@@ -521,15 +675,44 @@ TITLE RULES:
 - Elegant and informative — no ALL CAPS, no exclamation marks
 - Max 70 chars
 
+UNIT CONVERSION — apply automatically for all non-English languages:
+When specs contain imperial units, convert to metric for FR/DE/IT/ES/NL/PT/PL/SV:
+- sq in → cm² (× 6.45): "310 sq in → 2 000 cm²"
+- sq ft → m² (× 0.093): "10 sq ft → 0,93 m²"
+- oz (fluid) → ml (× 29.6): "12 fl oz → 355 ml"
+- oz (weight) → g (× 28.3): "16 oz → 450 g"
+- lbs → kg (× 0.453): "10 lbs → 4,5 kg"
+- °F → °C ((F-32) × 5/9): "500°F → 260°C"
+- BTU → kW (× 0.000293): "30 000 BTU → 8,8 kW"
+- miles → km (× 1.609)
+- inches → cm (× 2.54)
+Format: write metric first, imperial in parentheses if useful: "2 000 cm² (310 sq in)"
+For French: use comma as decimal separator: "4,5 kg" not "4.5 kg"
+NEVER write "po²", "sq in", "lbs", "°F" alone in FR/DE/IT/ES outputs — always convert.
+
+MERCHANT SPEC OVERRIDE — HIGHEST PRIORITY:
+If the product title contains specs separated by | or — (e.g. "Nike Pegasus 41 — ReactX | 10mm | 280g | Daily Trainer"):
+- Extract ALL specs from the title: foam type, drop, weight, use case, ATM, battery, etc.
+- Use these specs DIRECTLY in the bullets — they are merchant-confirmed, never override them
+- Do NOT invent additional specs beyond what is in the title
+- Format recognition: anything after — or between | characters = confirmed spec
+- Examples:
+  "Garmin Fenix 8 Solar — MIP | 10 ATM | 48j Smartwatch" → use MIP (not AMOLED), 10 ATM, 48j smartwatch mode
+  "Theragun Pro Plus — 16mm | 60lbs | 1.2kg" → use exactly these numbers, do not add others
+  "Oura Ring Gen 4 — Titane | 4-5j | 10 ATM" → use titanium, 4-5 days (not 7), 10 ATM
+This rule overrides Step A, Step B, and all category knowledge — merchant specs are ground truth.
+
 DESCRIPTION RULES:
-- Write 1-2 opening sentences using sensory/emotional language
-- Preferred sensory words for ${targetLang}: ${langCfg.sensoryWords}
-- AVOID these overused words: ${langCfg.avoidWords}
+- Write 1-2 opening sentences MAX — keep them SHORT and grounded. Lead with the product's main benefit or key spec, not with poetry.
+- Sensory/emotional words are allowed ONLY if they add real meaning. FORBIDDEN: "nuage", "honore", "incontournable", "rituel", "magie", "transforme" — these are empty metaphors.
+- Preferred words for ${targetLang}: ${langCfg.sensoryWords}
+- AVOID: ${langCfg.avoidWords}
 - ${langCfg.avoidNote}
 - Address the customer using "${langCfg.tone}"
 - Then write exactly 4 bullet points starting with ✓, in this order:
   ${langCfg.bulletOrder}
-- Each bullet must be specific and concrete — never generic ("✓ high quality" is forbidden)
+- Each bullet MUST contain a number, measurement, or confirmed technical fact. Poetry bullets are FORBIDDEN.
+- RATIO: 80% technical facts, 20% tone. Not the reverse.
 - Total description max 120 words
 
 CATEGORY KNOWLEDGE RULE:
@@ -540,7 +723,7 @@ If you recognize the exact product (Samsung Galaxy S25 Ultra, iPhone 16 Pro Max,
 
 MANDATORY:
 → At least 3 bullets must contain a specific confirmed number or spec name.
-→ Generic phrases are STRICTLY FORBIDDEN — these are marketing words, not specs: "advanced processor", "powerful chip", "high resolution", "long battery life", "imagerie IA avancée", "traitement avancé", "exigeantes et créatives", "tâches complexes", "intelligent features", "stunning display", "incredible camera", "next-generation". If you catch yourself writing any of these, replace with the real number or spec name.
+→ Generic phrases are STRICTLY FORBIDDEN — these are marketing words, not specs: "advanced processor", "powerful chip", "high resolution", "long battery life", "imagerie IA avancée", "traitement avancé", "exigeantes et créatives", "tâches complexes", "performances optimisées", "s'adapte à votre", "s'ajuste à votre", "compiti impegnativi", "intelligent features", "stunning display", "incredible camera", "next-generation", "optimisées pour", "précision intentionnelle", "double action", "à double action", "formule innovante", "technologie avancée", "soin intensif". If you catch yourself writing any of these, replace with the real ingredient, number, or spec name.
 → Write the REAL name: "Snapdragon 8 Elite" not "advanced chip". "A18 Pro 3nm" not "powerful processor".
 → ONE spec per bullet — never combine. WRONG: "✓ A18 Pro gère les tâches exigeantes et créatives". RIGHT: "✓ Puce A18 Pro 3nm — Neural Engine 16 cœurs".
 → If you know 2 numbers for the same spec (e.g. battery + charge speed), they count as ONE bullet: "✓ 5000mAh — charge 45W filaire en 70 min".
@@ -582,6 +765,343 @@ STEP C — UNKNOWN CATEGORY:
 Does not match any known category → write ONLY what is confirmed from the name or image.
 
 RULE: "up to" = typical range (Step B). Real confirmed numbers = Step A only. Never mix.
+
+${fashionApparel ? `
+FASHION & APPAREL SPECIFIC RULES:
+This is a clothing, footwear, or accessory product. Apply these rules:
+
+PRIORITY SPECS by product type:
+
+FOOTWEAR (sneakers, running shoes, boots):
+- Bullet ✓1: sole technology + material (e.g. "Semelle React + unité Air Max 270° — amorti réactif")
+- Bullet ✓2: upper material + construction (e.g. "Empeigne mesh respirant + renforts synthétiques")
+- Bullet ✓3: fit + sizing info (e.g. "Pointure fidèle — convient pour usage lifestyle quotidien")
+- Bullet ✓4: care instructions (e.g. "Nettoyage à la main recommandé — semelle caoutchouc durable")
+- ALWAYS mention: sole type, upper material, occasion (running/lifestyle/training)
+- IF KNOWN: weight (g), drop (mm), "true to size" or "size up"
+
+CLOTHING (t-shirts, hoodies, jackets, dresses):
+- Bullet ✓1: fabric composition % (e.g. "100% coton biologique — doux et respirant")
+- Bullet ✓2: fit type + cut (e.g. "Coupe regular — taille fidèle, longueur standard")
+- Bullet ✓3: key feature or design (e.g. "Poche kangourou — cordon de serrage ajustable")
+- Bullet ✓4: care instructions (e.g. "Lavage machine 30°C — ne pas sécher au sèche-linge")
+- ALWAYS mention: material %, fit type, wash care
+
+BAGS & ACCESSORIES:
+- Bullet ✓1: material + dimensions if known (e.g. "Cuir grainé — 30×20×10cm, 0,8kg")
+- Bullet ✓2: capacity + compartments (e.g. "15L — compartiment principal + 2 poches zippées")
+- Bullet ✓3: closure + strap type (e.g. "Fermeture éclair YKK — bandoulière réglable incluse")
+- Bullet ✓4: care + warranty
+
+FORBIDDEN for Fashion & Apparel:
+- "intemporel", "authentique", "iconique" alone — always follow with a concrete spec: WRONG: "coupe intemporelle" / RIGHT: "coupe droite depuis 1873"
+- "style intemporel" without describing the actual style
+- "confort optimal" — write the material or technology that creates comfort
+- "coloris polyvalents" alone — always add the actual colorway name if known
+- "traverse les générations", "savoir-faire légendaire" — empty heritage claims without facts
+- Never write "taille fidèle" without confirming it — write "vérifier le guide des tailles" if unsure
+
+FIT LANGUAGE — always use precise fit terms, never vague descriptions:
+- RIGHT: "Coupe Regular — taille naturelle, jambe droite" / "Slim fit — taille mi-haute, effilé à la cheville"
+- WRONG: "silhouette épurée", "coupe flatteuse", "style moderne"
+- For jeans specifically: always mention waist rise (taille naturelle/mi-haute/basse) + leg cut (droit/slim/bootcut)
+
+TONE: aspirational but grounded — mix lifestyle language with concrete specs.
+` : ''}
+
+${sportFitness ? `
+SPORT & FITNESS SPECIFIC RULES:
+This is a sport, fitness, or recovery product.
+
+GENERAL RULES:
+- NEVER write "portatif" unless weight is confirmed < 0.8 kg
+- NEVER combine "athlètes sérieux" with "bien-être" — choose ONE audience
+- ALWAYS mention the key differentiator vs cheaper models in the same line
+
+VARIANT UNCERTAINTY RULE — CRITICAL:
+When the product name contains a variant identifier (Solar, AMOLED, Pro, Plus, Ultra, Max, Elite, SE):
+- These identifiers change specs fundamentally between variants
+- VERIFY before writing: does this variant have this spec?
+- Specs that DIFFER by variant → write "selon version" or use "up to" framing
+- Specs UNIVERSAL to all variants → write as confirmed
+- NEVER mix specs from different variants of the same product line
+- Examples of dangerous mix-ups:
+  Garmin Fenix 8 Solar = MIP display / Fenix 8 AMOLED = AMOLED display — MUTUALLY EXCLUSIVE
+  Theragun Pro Plus = 2 batteries / Theragun Pro = 1 battery — different models
+  Apple Watch Ultra = 10 ATM / Apple Watch SE = 50m — different resistance
+- RULE: if you know the variant suffix but are not 100% certain of that variant's spec → write "up to" or omit
+
+WATER RESISTANCE — verify before writing:
+- 5 ATM = rain, splashes, hand washing only
+- 10 ATM = swimming, snorkeling, surface water sports
+- 20 ATM = scuba diving
+- Never write 5 ATM for a product confirmed at 10 ATM — this undersells and misleads
+
+DISPLAY TYPE — verify before writing:
+- Solar models typically use MIP/transflective (better in sunlight, lower power)
+- AMOLED models use AMOLED (vivid colors, higher power draw)
+- Never write AMOLED for a Solar variant — they are physically incompatible
+
+BATTERY LIFE — always specify mode:
+- Never write "X jours" without specifying the mode
+- Format: "48 jours smartwatch / 145h GPS / 550 jours expedition (avec solaire)"
+
+MASSAGE GUN / PERCUSSION THERAPY (Theragun, Hyperice, Hypervolt, Achedaway):
+- Bullet ✓1: PPM + amplitude mm confirmed for this exact model
+- Bullet ✓2: batteries × autonomy = total hours (e.g. "2 batteries × 150 min = 5h total")
+- Bullet ✓3: PRO differentiators — OLED forcemètre, Bluetooth app, guided routines if Pro/Plus
+- Bullet ✓4: attachments count + weight kg
+- FORBIDDEN: "portatif" for Theragun Pro, Pro Plus, Elite (all >0.8 kg)
+- FORBIDDEN: "bien-être" for Pro/Elite models — write "usage professionnel et récupération athlétique"
+
+FITNESS EQUIPMENT (dumbbells, kettlebells, resistance bands):
+- Bullet ✓1: weight/resistance range + increments
+- Bullet ✓2: material + grip type
+- Bullet ✓3: muscle groups targeted
+- Bullet ✓4: dimensions + storage
+
+PROFESSIONAL GYM EQUIPMENT (Concept2, Rogue, Eleiko, Technogym, Life Fitness):
+- Bullet ✓1: resistance mechanism + technology name (e.g. "Volant d'inertie air — résistance auto-régulée")
+- Bullet ✓2: monitor/screen name + connectivity (e.g. "Performance Monitor PM5 — Bluetooth/ANT+, WiFi, Zwift")
+- Bullet ✓3: capacity + adjustability (e.g. "Capacité 227kg — course ajustable 38-48" pour 140-210cm")
+- Bullet ✓4: storage + warranty (e.g. "Démontable 2 parties <30 sec — garantie 5 ans cadre, 2 ans pièces")
+- ALWAYS mention: exact component names (PM5, J-cups, etc.), max capacity, warranty terms
+- SOCIAL PROOF: if used at CrossFit Games, Olympics, or pro clubs — mention it: "utilisé aux CrossFit Games et clubs professionnels"
+- NEVER write "professionnel" without proof — write the actual proof instead
+- REBRANDING: if product was renamed, mention: "Anciennement [Old Name] — même mécanisme, rebrand [year]"
+- COMPATIBLE APPS: always list if known (Zwift, Garmin Connect, Polar, ErgData, Concept2 Logbook)
+
+CONNECTED FITNESS BIKES & CARDIO (Peloton, NordicTrack, Ergatta, iFit, Echelon):
+- Bullet ✓1: KEY DIFFERENTIATOR vs base model (e.g. "Auto-Follow — résistance auto-ajustée selon le cours")
+- Bullet ✓2: screen size + rotation + class types (e.g. "Écran tactile rotatif 23,8" — classes live et on-demand")
+- Bullet ✓3: connectivity + ecosystem (e.g. "Apple GymKit, WiFi, Bluetooth 5.0 — compatible Apple Watch instantané")
+- Bullet ✓4: warranty PER COMPONENT — never write single warranty:
+  Format: "X ans cadre, Y mois pièces, Z mois main-d'œuvre"
+  Peloton Bike+: 5 ans cadre, 12 mois pièces/électronique, 12 mois main-d'œuvre
+  Never write "12 mois" alone for Peloton — undersells vs NordicTrack 10 ans
+- ALWAYS mention: pedal system (Look Delta, SPD, toe cages) + if shoes included or sold separately
+- ALWAYS mention: key differentiator that justifies premium over base model
+- SUBSCRIPTION: never write specific price — "Abonnement requis — voir tarifs sur peloton.com"
+- INCOMPATIBILITIES: if not compatible with Zwift or other apps → mention "non compatible apps tierces"
+
+SPORTS WEARABLES (Garmin, Polar, Whoop, Oura):
+- Bullet ✓1: battery life with mode specified (smartwatch / GPS / expedition)
+- Bullet ✓2: display type CONFIRMED for this variant + resolution
+- Bullet ✓3: key sensors (HR, SpO2, HRV) + differentiating features (TOPO maps, ClimbPro, PacePro)
+- Bullet ✓4: water resistance ATM CONFIRMED + weight g
+
+SPORTS NUTRITION:
+- Bullet ✓1: key active + g per serving
+- Bullet ✓2: servings per container + flavor
+- Bullet ✓3: additional blend
+- Bullet ✓4: certification if confirmed
+
+SUBSCRIPTION & BUSINESS MODEL TRANSPARENCY:
+If the product requires a subscription (Whoop, Peloton, Oura, etc.):
+- MANDATORY: mention subscription requirement — never hide it
+- NEVER write a specific price for subscriptions — prices change and vary by region
+- Format: "Abonnement requis — voir tarifs sur [brand].com" or "Abonnement mensuel ou annuel requis"
+- If device is free with subscription → mention: "Appareil inclus avec abonnement"
+- French buyers hate surprise pricing — transparency without wrong numbers builds trust
+
+BATTERY LIFE — never write maximum theoretical:
+- Always write realistic range based on typical use: "4-5 jours (jusqu'à 7 jours mode économie)"
+- NEVER write "jusqu'à X jours" alone — always add "selon utilisation" or specify the mode
+- Format: "[realistic range] jours / [max] jours en mode économie"
+
+SCREENLESS DEVICES:
+If the product has no screen (Whoop, Oura Ring, smart rings):
+- Frame "no screen" as a BENEFIT: "Aucun écran — conception minimaliste, autonomie maximale"
+- Explain where data is accessed: "Toutes vos données sur l'app [brand] (iOS/Android)"
+- Never write "synchronise" when data only exists in the app — write "affichage exclusif sur app"
+
+SENSOR ACCURACY — never write "24/7" without verifying each sensor individually:
+- HR (fréquence cardiaque) → typically continuous 24/7 — write "surveillance continue FC"
+- HRV → typically continuous or nightly — verify before writing "continue"
+- SpO2 → most wearables = nocturne + spot check ONLY — NEVER write "SpO2 continue" unless confirmed
+- Température cutanée → typically continuous — write "surveillance continue température"
+- Format: "Surveillance continue : FC, HRV, température. SpO2 nocturne et spot check."
+
+WATER RESISTANCE — always specify real-world limitations:
+- 5 ATM = pluie, douche légère, éclaboussures — NOT swimming
+- 10 ATM = douche, natation en piscine, eau calme — NOT diving or high-velocity water sports
+- 20 ATM+ = plongée
+- Always add limitation: "10 ATM — douche, natation piscine. Non destiné à la plongée ou surf."
+- NEVER write "sports aquatiques" for 10 ATM without specifying the limitation
+
+WEARABLE MATERIALS & SIZING:
+- If titanium confirmed → always mention: "Titane — [weight]g, légèreté et résistance"
+- If sizing kit required (Oura Ring) → always mention: "Kit d'essayage gratuit disponible avant commande"
+- Material differentiates premium from budget — never omit confirmed material
+
+PROSE OPENING RULES — MANDATORY for Sport & Fitness:
+The opening 1-2 sentences must NEVER contain:
+- "Découvrez", "Explorez", "Plongez", "Embarquez" — adventure verbs without specs
+- "élégance de l'aventure", "vers les sommets", "explorateurs" — lifestyle poetry
+- "libère des contraintes", "vous accompagne" — vague emotional language
+- "conçue pour les", "façonnée pour" alone without a spec following immediately
+
+CORRECT opening format for Sport & Fitness:
+- Lead with the KEY DIFFERENTIATOR + ONE SPEC: "Montre GPS multisport avec écran MIP transflectif — autonomie 21 jours en mode smartwatch."
+- Or lead with USE CASE + SPEC: "Vélo connecté avec résistance Auto-Follow — 100 niveaux magnétiques silencieux."
+- Never open with poetry. Open with function.
+
+TONE: performance-driven, factual, direct — no poetry, no vague lifestyle claims.
+` : ''}
+
+${isGeneric ? `
+GENERIC & UNKNOWN PRODUCT RULES:
+This product does not match a specific category. Apply maximum caution.
+
+ZERO HALLUCINATION RULE:
+- Write ONLY what is confirmed in the product name, title, or image
+- If you recognize the exact product (LEGO set number, specific book, named toy) → use your knowledge
+- If you do NOT recognize it → write only what the title states, nothing more
+- NEVER invent dimensions, weights, ages, piece counts, or features not in the title
+
+LEGO SETS — if product name contains a set number:
+- Bullet ✓1: piece count + set name (e.g. "806 pièces — Lamborghini Huracán Tecnica")
+- Bullet ✓2: key mechanism or feature (e.g. "Moteur V10 fonctionnel, timon et spoiler actifs")
+- Bullet ✓3: recommended age + difficulty (e.g. "Âge recommandé 10+ — niveau avancé")
+- Bullet ✓4: dimensions assembled if known (e.g. "Modèle fini : 29 × 14 × 8 cm")
+- ALWAYS mention: exact set name, piece count, age recommendation
+
+TOYS & GAMES:
+- Always mention: age range, number of players, play time, difficulty
+- For board games: "2-4 joueurs, 45-90 min, âge 8+"
+- For educational toys: mention skill developed
+
+CANDLES & HOME FRAGRANCE:
+- Bullet ✓1: size/weight + burn time (e.g. "623g — jusqu'à 150 heures de combustion")
+- Bullet ✓2: fragrance notes (e.g. "Notes de vanille et bois de santal")
+- Bullet ✓3: wax type if known (e.g. "Cire de soja naturelle" or "Paraffine")
+- Bullet ✓4: vessel/format (e.g. "Pot en verre réutilisable avec couvercle")
+
+STATIONERY & NOTEBOOKS (Moleskine, Leuchtturm):
+- Bullet ✓1: format + pages (e.g. "A5 — 240 pages, papier 70g/m²")
+- Bullet ✓2: ruling type (e.g. "Pages lignées / quadrillées / pointillées")
+- Bullet ✓3: cover + closure (e.g. "Couverture rigide noire — élastique de fermeture")
+- Bullet ✓4: extras (e.g. "Marque-page, pochette arrière, 3 feuillets détachables")
+
+HANDMADE / ARTISAN PRODUCTS:
+- NEVER invent dimensions or materials not stated
+- Mention "fait main" or "artisanal" if confirmed in title
+- Write country/region of origin if confirmed
+
+TONE: honest, simple, informative — no lifestyle poetry, no invented features.
+` : ''}
+
+${homeKitchen ? `
+HOME & KITCHEN SPECIFIC RULES:
+This is a kitchen/home appliance product. Apply these additional rules:
+- PRIORITY SPECS: motor power (W), capacity (L or ml), speed settings (number), included accessories
+- If brand+model is known (KitchenAid 5KSM175PS, Dyson V15, Nespresso Vertuo): list ALL confirmed specs — W, L, speeds, accessories
+- Bullet ✓1: capacity + material (e.g. "Bol inox 4,8 L — compatible lave-vaisselle")
+- Bullet ✓2: motor/mechanism with W and speed (e.g. "Moteur 300W — 10 vitesses, mélange planétaire")
+- Bullet ✓3: accessories included (e.g. "Fouet, batteur plat et crochet pétrin inclus")
+- Bullet ✓4: care + warranty confirmed facts only
+- PROSE: use "plaisir", "savoir-faire", "art", "précision" — NEVER "chaleur" for appliances (chaleur = physical heat, wrong context)
+- Do NOT use "chaleur" for mixers, blenders, or any appliance that does not produce heat
+
+CLOSED ECOSYSTEM RULE — applies to ALL products with proprietary consumables or subscriptions:
+Products: Nespresso, Keurig, Dolce Gusto, Peloton, NordicTrack, Apple, Philips Hue, Ring, etc.
+
+MANDATORY for closed ecosystem products:
+1. SPECIFY the ecosystem in title and description — never write generic "capsules" or "subscription":
+   - Nespresso Vertuo → "Capsules Nespresso Vertuo exclusives" (NOT "capsules Nespresso")
+   - Nespresso Original → "Capsules Nespresso Original" (NOT "capsules Nespresso")
+   - These two systems are INCOMPATIBLE — never write "capsules Nespresso" without specifying the line
+2. SPECIFY incompatibilities explicitly — this prevents returns and negative reviews:
+   - "Capsules Vertuo exclusives — non compatibles avec capsules Original Line"
+   - "Abonnement requis — non compatible avec Zwift ou apps tierces"
+3. SPECIFY all formats the machine supports — never limit to one:
+   - Nespresso Vertuo Pop → NOT "machine à espresso" → "machine multi-formats : espresso (40ml) à mug (230ml)"
+   - Keurig → "compatible K-Cup pods uniquement"
+4. USE correct technical terms:
+   - Nespresso crema → "crema" (Italian technical term) NOT "crème riche"
+   - Centrifusion → always mention the RPM if known (7 000 tr/min)
+` : ''}
+
+${beautyHealth ? `
+BEAUTY & HEALTH SPECIFIC RULES:
+This is a skincare, beauty, or supplement product. Max description length: 150 words.
+
+PRIORITY — write these first if confirmed:
+1. Brand technology name (MVE Technology, Vitamin C stable form, Retinol 0.1%)
+2. Key active ingredients with % if known (3 Ceramides essentiels, Acide hyaluronique, Niacinamide 10%)
+3. Skin type target (peaux sensibles, peaux grasses, tous types de peau)
+4. Dermatologist / clinically tested claim if true for this brand
+5. Format value — never "plusieurs semaines": use "jusqu'à 3 mois" for 473ml+, "jusqu'à 6 semaines" for smaller
+
+BULLET ORDER for Beauty & Health:
+- Bullet ✓1: format + usage duration (e.g. "Flacon 473ml — jusqu'à 3 mois d'utilisation quotidienne")
+- Bullet ✓2: key active ingredients + technology (e.g. "3 Céramides essentiels + Technologie MVE — hydratation 24h")
+- Bullet ✓3: skin type + dermatologist claim (e.g. "Testé dermatologiquement — peaux sensibles et normales")
+- Bullet ✓4: texture/format + confirmed care (e.g. "Formule sans parfum, non-comédogène — sans rinçage")
+
+STRICTLY FORBIDDEN for Beauty & Health:
+- "aucune condition de stockage spéciale" — never mention storage unless required
+- "plusieurs semaines" — always use specific duration
+- "revitalisé", "apaisé" without a confirmed active ingredient backing it
+- "précision intentionnelle", "double action", "formule innovante" — AI nonsense, never use
+- Generic claims without ingredient: "hydrate deeply" → write "Acide hyaluronique — hydratation en profondeur"
+
+FOR ACTIVE SERUMS (niacinamide, retinol, acids, peptides, vitamin C):
+- Write pH if known for the brand (The Ordinary Niacinamide: pH 5.5-7.0)
+- Write confirmed free-from claims: "sans parfum, sans alcool, sans silicone" if true for this brand
+- Write chemical compatibility if known: "Compatible avec Retinol et Peptides — éviter avec Vitamine C pure"
+- Use clinical tone — The Ordinary brand language is transparent, ingredient-focused, no marketing fluff
+- For The Ordinary specifically: always mention "Développé sans parfum, sans alcool, sans silicone"
+- NEVER use "précision intentionnelle", "double action", "à double action" — these are meaningless
+
+FOR EAU THERMALE PRODUCTS (Avène, Vichy, Uriage, La Roche-Posay Thermal Water):
+- ALWAYS mention silica/oligo-éléments content if known (Avène: 36mg/L silice — anti-irritante)
+- ALWAYS mention "sans conservateur, sans parfum" if confirmed
+- ADD secondary uses if confirmed: fixateur de maquillage, après-soleil, soulage piqûres d'insectes
+- ADD "adapté aux bébés et femmes enceintes" if confirmed for the brand
+- NEVER use metaphors: "nuage", "honore", "source magique" — use clinical descriptors instead
+- Tone: pure, transparent, scientific — not poetic
+
+FOR ALL DERMATOLOGICAL & PHARMACEUTICAL BRANDS (La Roche-Posay, Avène, Bioderma, Eucerin, Vichy, Neutrogena, CeraVe, Uriage, Nuxe, A-Derma, Caudalie, and any brand positioned as dermatologist-tested or pharmacy brand):
+
+MANDATORY rules — apply to every product from these brands:
+1. HERO INGREDIENT — always mention the brand's signature asset if known:
+   - La Roche-Posay → "Eau Thermale de La Roche-Posay" (in every product)
+   - Avène → "Eau Thermale d'Avène"
+   - Uriage → "Eau Thermale d'Uriage"
+   - CeraVe → "3 Céramides essentiels + Technologie MVE"
+   - Other brands → identify their hero ingredient from your knowledge
+2. PATENTED TECHNOLOGY — mention if known:
+   - LRP sunscreen → "Mexoryl SX + XL" or "UVMune 400"
+   - CeraVe → "Technologie MVE — libération sur 24h"
+   - Other brands → use confirmed technology name only
+3. PRACTICAL INFO by product type:
+   - SPF/sunscreen → "photostable", "résistant à l'eau", "réappliquer toutes les 2h"
+   - Moisturizer → "hydratation 24h" or "48h" if confirmed
+   - Cleanser → "sans savon", "pH physiologique" if confirmed
+   - Eye cream → "zone contour des yeux testée ophtalmologiquement" if confirmed
+4. TONE — always clinical and trustworthy, NEVER glamour or aspirational:
+   - RIGHT: "Spécialement formulé pour peaux sensibles et réactives"
+   - WRONG: "Découvrez l'élégance d'un soin qui transforme votre peau"
+5. NEVER use "formule avancée" for dermatological brands — always replace with the real technology name
+6. SKIN TYPE — always specify: "peaux sensibles", "peaux grasses", "peaux sèches à très sèches", "tous types de peau"
+
+BRAND HERITAGE & AUTHORITY — if the brand has a founding claim, invention, or official positioning, mention it in prose or bullet:
+- Bioderma → "Inventeur de la micellaire depuis 1995" / "Inventore della micellare dal 1995"
+- La Roche-Posay → "N°1 en dermatologie recommandée par les dermatologues"
+- CeraVe → "Développé avec des dermatologues"
+- Avène → "Source thermale depuis 1736"
+- Vichy → "Recommandé par les professionnels de santé"
+- Eucerin → "Plus de 100 ans d'expertise dermatologique"
+- Neutrogena → "Recommandé par les dermatologues"
+- Other brands → use ONLY confirmed official claims — never invent a heritage claim
+
+PRIORITY SPECS for micellar water / eau micellaire:
+- pH value if known (Bioderma Sensibio: pH 5.5)
+- "sans rinçage" — mandatory if confirmed
+- Makeup removal scope: "removes waterproof makeup" if confirmed
+- Duration from format: 500ml → "jusqu'à 6 semaines", 250ml → "jusqu'à 3 semaines"
+` : ''}
 
 META TITLE RULES (max 60 chars):
 - Main keyword first
@@ -805,10 +1325,10 @@ async function localizeProduct(shop, token, productId, targetLang, locale, tone,
           ...(digests['body_html']
             ? [{ key: 'body_html', value: translated.description, locale, translatableContentDigest: digests['body_html'] }]
             : []),
-          // meta_title: use its own digest if exists, otherwise use title digest as fallback
-          ...(translated.meta_title ? [{ key: 'meta_title', value: translated.meta_title, locale, translatableContentDigest: digests['meta_title'] || digests['title'] }] : []),
-          // meta_description: use its own digest if exists, otherwise use body_html digest as fallback
-          ...(translated.meta_description ? [{ key: 'meta_description', value: translated.meta_description, locale, translatableContentDigest: digests['meta_description'] || digests['body_html'] || digests['title'] }] : [])
+          // meta_title: push ONLY if Shopify has its own digest — fallback digest causes "hash invalid" error
+          ...(translated.meta_title && digests['meta_title'] ? [{ key: 'meta_title', value: translated.meta_title, locale, translatableContentDigest: digests['meta_title'] }] : []),
+          // meta_description: push ONLY if Shopify has its own digest — fallback digest causes "hash invalid" error
+          ...(translated.meta_description && digests['meta_description'] ? [{ key: 'meta_description', value: translated.meta_description, locale, translatableContentDigest: digests['meta_description'] }] : [])
         ]
       }
     },
@@ -896,13 +1416,28 @@ app.post('/bulk-localize-all', async (req, res) => {
       products = products.slice(0, productLimit);
     }
 
+    // Skip produktet qe jane perkthyer tashme per ate gjuhe — kursen kosto API
+    const { data: existingRows } = await supabase
+      .from('translations')
+      .select('product_id, locale')
+      .eq('shop', shop);
+    const translatedSet = new Set((existingRows || []).map(r => `${String(r.product_id)}:${r.locale}`));
+
+    const toTranslate = [];
+    for (const product of products) {
+      const pid = String(normalizeProductId(product.id));
+      const missingLocales = locales.filter(l => !translatedSet.has(`${pid}:${l.locale}`));
+      if (missingLocales.length > 0) toTranslate.push({ product, missingLocales });
+    }
+    console.log(`[bulk] ${products.length} total — ${toTranslate.length} need translation — ${products.length - toTranslate.length} skipped`);
+
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.write('{"results":[');
     let first = true;
 
-    for (const product of products) {
+    for (const { product, missingLocales } of toTranslate) {
       const bulkPid = normalizeProductId(product.id);
-      for (const lang of locales) {
+      for (const lang of missingLocales) {
         try {
           const result = await localizeProduct(shop, token, bulkPid, lang.targetLang, lang.locale, tone, glossary);
           if (!first) res.write(',');
@@ -1149,7 +1684,48 @@ if (process.env.NODE_ENV !== 'production') {
   setTimeout(pollNewProducts, 15000);
 }
 
+async function autoResetWebhooks() {
+  try {
+    const { data: stores } = await supabase.from('stores').select('shop, access_token');
+    if (!stores || !stores.length) return;
+    const webhookTopics = [
+      { topic: 'products/create', address: `${APP_URL}/webhook/product-create` },
+      { topic: 'products/update', address: `${APP_URL}/webhook/product-create` },
+      { topic: 'products/delete', address: `${APP_URL}/webhook/product-delete` }
+    ];
+    for (const store of stores) {
+      if (!store.access_token || store.access_token.startsWith('shpua_')) continue;
+      try {
+        const listRes = await axios.get(
+          `https://${store.shop}/admin/api/2024-01/webhooks.json`,
+          { headers: { 'X-Shopify-Access-Token': store.access_token }, timeout: 10000 }
+        );
+        const existing = listRes.data.webhooks || [];
+        const allCorrect = webhookTopics.every(wh =>
+          existing.some(e => e.topic === wh.topic && e.address === wh.address)
+        );
+        if (allCorrect) { console.log(`[auto-webhooks] OK: ${store.shop}`); continue; }
+        for (const wh of existing) {
+          await axios.delete(
+            `https://${store.shop}/admin/api/2024-01/webhooks/${wh.id}.json`,
+            { headers: { 'X-Shopify-Access-Token': store.access_token }, timeout: 10000 }
+          );
+        }
+        for (const wh of webhookTopics) {
+          await axios.post(
+            `https://${store.shop}/admin/api/2024-01/webhooks.json`,
+            { webhook: { topic: wh.topic, address: wh.address, format: 'json' } },
+            { headers: { 'X-Shopify-Access-Token': store.access_token, 'Content-Type': 'application/json' }, timeout: 10000 }
+          );
+        }
+        console.log(`[auto-webhooks] Reset OK: ${store.shop}`);
+      } catch(e) { console.warn(`[auto-webhooks] Failed for ${store.shop}:`, e.message); }
+    }
+  } catch(e) { console.error('[auto-webhooks] Error:', e.message); }
+}
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Getoify server running on port ${PORT}`);
+  setTimeout(autoResetWebhooks, 5000);
 });
