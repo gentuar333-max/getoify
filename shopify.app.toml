@@ -1,11 +1,21 @@
 name = "Getoify-6"
 client_id = "c549e6d38a656a012e7fd412adb11460"
 application_url = "https://www.getoify.com"
+embedded = false
 
 [auth]
 redirect_urls = [
-  "https://www.getoify.com/auth/callback"
+  "https://www.getoify.com/auth/callback",
+  "https://getoify.vercel.app/auth/callback",
+  "https://getoify.onrender.com/auth/callback"
 ]
 
 [access_scopes]
 scopes = "read_locales,read_products,write_products,read_translations,write_translations"
+
+[webhooks]
+api_version = "2024-01"
+
+[build]
+automatically_update_urls_on_dev = false
+dev_store_url = ""
