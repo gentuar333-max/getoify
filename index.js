@@ -1673,22 +1673,29 @@ app.post('/webhook/collection-create', async (req, res) => {
   res.status(200).send('OK');
   const rawBody = req.body;
   const shop = req.headers['x-shopify-shop-domain'];
+  console.log('=== WEBHOOK collection-create/update ===', shop);
   try {
     const body = Buffer.isBuffer(rawBody) ? JSON.parse(rawBody.toString()) : rawBody;
     if (!body.id) return;
-    const store = await getStore(shop).catch(() => null);
-    if (!store?.access_token) return;
-    const savedLocales = store.selected_locales || [];
-    if (!savedLocales.length) return;
-    const glossary = store.glossary || 'checkout, Shopify';
-    const localeMap = { 'fr':'French','de':'German','it':'Italian','es':'Spanish','nl':'Dutch','pt':'Portuguese','pl':'Polish','sv':'Swedish' };
-    for (const locale of savedLocales) {
+    // setImmediate — same fix as product webhook, prevents Vercel timeout
+    setImmediate(async () => {
       try {
-        await localizeCollection(shop, store.access_token, body.id, localeMap[locale] || locale, locale, glossary);
-      } catch(e) { console.error('[collection webhook]:', e.message); }
-      await new Promise(r => setTimeout(r, 300));
-    }
-  } catch(err) { console.error('[collection webhook]:', err.message); }
+        const store = await getStore(shop).catch(() => null);
+        if (!store?.access_token) { console.error('[collection webhook] No token for', shop); return; }
+        const savedLocales = store.selected_locales || [];
+        if (!savedLocales.length) { console.log('[collection webhook] No locales for', shop); return; }
+        const glossary = store.glossary || 'checkout, Shopify';
+        const localeMap = { 'fr':'French','de':'German','it':'Italian','es':'Spanish','nl':'Dutch','pt':'Portuguese','pl':'Polish','sv':'Swedish' };
+        for (const locale of savedLocales) {
+          try {
+            await localizeCollection(shop, store.access_token, body.id, localeMap[locale] || locale, locale, glossary);
+            console.log(`[collection webhook] Done: ${body.title || body.id} → ${locale}`);
+          } catch(e) { console.error('[collection webhook] Error:', locale, e.message); }
+          await new Promise(r => setTimeout(r, 300));
+        }
+      } catch(e) { console.error('[collection webhook] setImmediate error:', e.message); }
+    });
+  } catch(err) { console.error('[collection webhook] Error:', err.message); }
 });
 
 // Vercel Cron endpoint — called every 5 minutes by vercel.json crons config
