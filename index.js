@@ -230,7 +230,9 @@ app.get('/reset-webhooks', async (req, res) => {
     const webhookTopics = [
       { topic: 'products/create', address: `${APP_URL}/webhook/product-create` },
       { topic: 'products/update', address: `${APP_URL}/webhook/product-create` },
-      { topic: 'products/delete', address: `${APP_URL}/webhook/product-delete` }
+      { topic: 'products/delete', address: `${APP_URL}/webhook/product-delete` },
+      { topic: 'collections/create', address: `${APP_URL}/webhook/collection-create` },
+      { topic: 'collections/update', address: `${APP_URL}/webhook/collection-create` }
     ];
     const registered = [];
     for (const wh of webhookTopics) {
