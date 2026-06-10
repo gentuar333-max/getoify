@@ -230,9 +230,7 @@ app.get('/reset-webhooks', async (req, res) => {
     const webhookTopics = [
       { topic: 'products/create', address: `${APP_URL}/webhook/product-create` },
       { topic: 'products/update', address: `${APP_URL}/webhook/product-create` },
-      { topic: 'products/delete', address: `${APP_URL}/webhook/product-delete` },
-      { topic: 'collections/create', address: `${APP_URL}/webhook/collection-create` },
-      { topic: 'collections/update', address: `${APP_URL}/webhook/collection-create` }
+      { topic: 'products/delete', address: `${APP_URL}/webhook/product-delete` }
     ];
     const registered = [];
     for (const wh of webhookTopics) {
@@ -727,6 +725,10 @@ MANDATORY:
 Priority specs by product type — use these exact data points:
 - Smartphone → 1) processor name + nm node  2) screen: inches + Hz + tech  3) main camera MP + aperture  4) battery mAh + charge W
 - Earbuds → 1) ANC dB level  2) battery h per bud + case h  3) Bluetooth version + codec  4) driver size mm or charge time
+- Over-ear headphones → 1) ANC processor name (e.g. QN1, ACAA)  2) battery hours confirmed (e.g. WH-1000XM5=30h, XM4=30h)  3) Bluetooth version + codec (LDAC, aptX, AAC)  4) weight g + foldable yes/no
+  CRITICAL for Sony WH-1000XM5: 30h battery, QN1 processor, BT 5.2, LDAC, 250g, foldable. NEVER write 8h — that is the XM3 fast charge figure, not total battery.
+  CRITICAL for Bose QC45: 24h battery, BT 5.1, AAC/SBC, 238g. NEVER mix with QC35 specs.
+  CRITICAL for Sony WH-1000XM4: 30h battery, QN1 processor, BT 5.0, LDAC, 254g.
 - Laptop/tablet → 1) processor + cores  2) RAM GB + storage TB/GB  3) screen inches + resolution  4) battery hours
 - Smartwatch → 1) battery days  2) sensors: HR + SpO2 + ECG if available  3) water resistance ATM  4) GPS type
 - Camera → 1) sensor MP + size  2) aperture f/  3) zoom range  4) video max resolution + fps
