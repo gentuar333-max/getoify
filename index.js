@@ -496,10 +496,8 @@ function isBeautyHealthProduct(product) {
   return BEAUTY_HEALTH_TITLE_KEYWORDS.some(k => title.includes(k));
 }
 
-// Generic/Unknown fallback
-function isGenericProduct(product) {
-  return true;
-}
+// Generic fallback
+function isGenericProduct(product) { return true; }
 
 // Sport & Fitness keywords
 const SPORT_FITNESS_TYPES = [
@@ -679,18 +677,11 @@ TITLE RULES:
 
 UNIT CONVERSION — apply automatically for all non-English languages:
 When specs contain imperial units, convert to metric for FR/DE/IT/ES/NL/PT/PL/SV:
-- sq in → cm² (× 6.45): "310 sq in → 2 000 cm²"
-- sq ft → m² (× 0.093): "10 sq ft → 0,93 m²"
-- oz (fluid) → ml (× 29.6): "12 fl oz → 355 ml"
-- oz (weight) → g (× 28.3): "16 oz → 450 g"
-- lbs → kg (× 0.453): "10 lbs → 4,5 kg"
-- °F → °C ((F-32) × 5/9): "500°F → 260°C"
-- BTU → kW (× 0.000293): "30 000 BTU → 8,8 kW"
-- miles → km (× 1.609)
-- inches → cm (× 2.54)
-Format: write metric first, imperial in parentheses if useful: "2 000 cm² (310 sq in)"
-For French: use comma as decimal separator: "4,5 kg" not "4.5 kg"
-NEVER write "po²", "sq in", "lbs", "°F" alone in FR/DE/IT/ES outputs — always convert.
+- sq in → cm² (× 6.45), sq ft → m² (× 0.093), oz fluid → ml (× 29.6)
+- oz weight → g (× 28.3), lbs → kg (× 0.453), °F → °C ((F-32)×5/9)
+- BTU → kW (× 0.000293), miles → km (× 1.609), inches → cm (× 2.54)
+Format: metric first, imperial in parentheses. French: comma decimal "4,5 kg"
+NEVER write "po²", "sq in", "lbs", "°F" alone in FR/DE/IT/ES outputs.
 
 MERCHANT SPEC OVERRIDE — HIGHEST PRIORITY:
 If the product title contains specs separated by | or — (e.g. "Nike Pegasus 41 — ReactX | 10mm | 280g | Daily Trainer"):
@@ -939,46 +930,22 @@ WEARABLE MATERIALS & SIZING:
 TONE: performance-driven, factual, direct — no poetry, no vague lifestyle claims.
 
 PROSE OPENING RULES — MANDATORY for Sport & Fitness:
-The opening 1-2 sentences must NEVER contain:
-- "Découvrez", "Explorez", "Plongez", "Embarquez" — adventure verbs without specs
-- "élégance de l'aventure", "vers les sommets", "explorateurs" — lifestyle poetry
-- "libère des contraintes", "vous accompagne" — vague emotional language
-
-CORRECT opening format for Sport & Fitness:
-- Lead with KEY DIFFERENTIATOR + ONE SPEC: "Montre GPS multisport avec écran MIP transflectif — autonomie 21 jours."
-- Or: "Vélo connecté avec résistance Auto-Follow — 100 niveaux magnétiques silencieux."
-- Never open with poetry. Open with function.
+NEVER start with: "Découvrez", "Explorez", "Plongez", "vers les sommets", "élégance de l'aventure"
+ALWAYS start with: KEY DIFFERENTIATOR + ONE SPEC.
+Example: "Montre GPS multisport avec écran MIP — autonomie 21 jours smartwatch."
 ` : ''}
 
-${isGeneric ? `
-GENERIC & UNKNOWN PRODUCT RULES:
-Apply maximum caution — write ONLY what is confirmed in the title or image.
+\${isGeneric ? \`
+GENERIC & UNKNOWN PRODUCT RULES — ZERO HALLUCINATION:
+Write ONLY what is confirmed in the title or image. Never invent specs.
 
-ZERO HALLUCINATION RULE:
-- If you recognize the exact product (LEGO set number, book, toy) → use your knowledge
-- If NOT recognized → write only what the title states, nothing more
-- NEVER invent dimensions, weights, ages, piece counts not in the title
+LEGO SETS: piece count + set name, mechanism, age recommendation, dimensions
+CANDLES: weight + burn time, fragrance notes, wax type, vessel format
+STATIONERY: format + pages, ruling type, cover + closure, extras
+HANDMADE: mention "fait main" only if confirmed, never invent materials
 
-LEGO SETS — if product name contains a set number:
-- Bullet ✓1: piece count + set name (e.g. "806 pièces — Lamborghini Huracán Tecnica")
-- Bullet ✓2: key mechanism (e.g. "Moteur V10 fonctionnel, timon et spoiler actifs")
-- Bullet ✓3: recommended age + difficulty (e.g. "Âge recommandé 10+ — niveau avancé")
-- Bullet ✓4: dimensions assembled if known
-
-CANDLES & HOME FRAGRANCE:
-- Bullet ✓1: size/weight + burn time (e.g. "623g — jusqu'à 150 heures")
-- Bullet ✓2: fragrance notes
-- Bullet ✓3: wax type if known
-- Bullet ✓4: vessel/format
-
-STATIONERY & NOTEBOOKS:
-- Bullet ✓1: format + pages
-- Bullet ✓2: ruling type
-- Bullet ✓3: cover + closure
-- Bullet ✓4: extras
-
-TONE: honest, simple, informative — no lifestyle poetry, no invented features.
-` : ''}
+TONE: honest, simple, informative — no poetry, no invented features.
+\` : \`\`}
 
 ${homeKitchen ? `
 HOME & KITCHEN SPECIFIC RULES:
@@ -1367,7 +1334,8 @@ app.post('/bulk-localize-collections', async (req, res) => {
   try {
     const store = await getStore(shop);
     const savedLocales = store.selected_locales || [];
-    const results = await bulkLocalizeCollections(shop, token, store.tone, glossary, savedLocales);
+    const tok = token || store.access_token;
+    const results = await bulkLocalizeCollections(shop, tok, store.tone, glossary || store.glossary, savedLocales);
     res.json({ success: true, results });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
@@ -1377,7 +1345,8 @@ app.post('/bulk-localize-blogs', async (req, res) => {
   try {
     const store = await getStore(shop);
     const savedLocales = store.selected_locales || [];
-    const results = await bulkLocalizeBlogs(shop, token, glossary, savedLocales);
+    const tok = token || store.access_token;
+    const results = await bulkLocalizeBlogs(shop, tok, glossary || store.glossary, savedLocales);
     res.json({ success: true, results });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
@@ -1528,31 +1497,25 @@ app.post('/webhook/product-create', async (req, res) => {
     }
 
     console.log('Calling localizeProduct directly for:', body.title);
-    // Thirr localizeProduct drejtperdrejt — jo HTTP self-call qe deshtonte ne Vercel serverless
     setImmediate(async () => {
       try {
         const store = await getStore(shop);
-        if (!store?.access_token) { console.error('[webhook] No token for', shop); return; }
-        const tone = store.tone || 'professional and elegant';
+        if (!store?.access_token) return;
         const glossary = store.glossary || 'checkout, Shopify';
         const savedLocales = store.selected_locales || [];
         const locales = savedLocales.length > 0
           ? savedLocales.map(l => ({ locale: l, targetLang: LOCALE_MAP[l] || l }))
           : await getShopLocales(shop, store.access_token);
-        if (!locales || !locales.length) { console.error('[webhook] No locales for', shop); return; }
+        if (!locales?.length) return;
         const pid = normalizeProductId(body.id);
         for (const lang of locales) {
           try {
-            await localizeProduct(shop, store.access_token, pid, lang.targetLang, lang.locale, tone, glossary);
+            await localizeProduct(shop, store.access_token, pid, lang.targetLang, lang.locale, store.tone || 'professional', glossary);
             console.log(`[webhook] Done: ${body.title} → ${lang.locale}`);
-          } catch(e) {
-            console.error(`[webhook] Error ${lang.locale}:`, e.message);
-          }
+          } catch(e) { console.error(`[webhook] Error ${lang.locale}:`, e.message); }
           await new Promise(r => setTimeout(r, 300));
         }
-      } catch(e) {
-        console.error('[webhook] localizeProduct error:', e.message);
-      }
+      } catch(e) { console.error('[webhook] Error:', e.message); }
     });
   } catch (err) {
     console.error('Webhook error:', err.message);
@@ -1703,12 +1666,11 @@ async function pollNewProducts() {
   }
 }
 
-// Collection create + update webhook
+// Collection webhook
 app.post('/webhook/collection-create', async (req, res) => {
   res.status(200).send('OK');
   const rawBody = req.body;
   const shop = req.headers['x-shopify-shop-domain'];
-  console.log('=== WEBHOOK collection-create/update ===', shop);
   try {
     const body = Buffer.isBuffer(rawBody) ? JSON.parse(rawBody.toString()) : rawBody;
     if (!body.id) return;
@@ -1743,7 +1705,7 @@ if (process.env.NODE_ENV !== 'production') {
 async function autoResetWebhooks() {
   try {
     const { data: stores } = await supabase.from('stores').select('shop, access_token');
-    if (!stores || !stores.length) return;
+    if (!stores?.length) return;
     const webhookTopics = [
       { topic: 'products/create', address: `${APP_URL}/webhook/product-create` },
       { topic: 'products/update', address: `${APP_URL}/webhook/product-create` },
@@ -1754,14 +1716,10 @@ async function autoResetWebhooks() {
     for (const store of stores) {
       if (!store.access_token || store.access_token.startsWith('shpua_')) continue;
       try {
-        const listRes = await axios.get(
-          `https://${store.shop}/admin/api/2024-01/webhooks.json`,
-          { headers: { 'X-Shopify-Access-Token': store.access_token }, timeout: 10000 }
-        );
+        const listRes = await axios.get(`https://${store.shop}/admin/api/2024-01/webhooks.json`,
+          { headers: { 'X-Shopify-Access-Token': store.access_token }, timeout: 10000 });
         const existing = listRes.data.webhooks || [];
-        const allCorrect = webhookTopics.every(wh =>
-          existing.some(e => e.topic === wh.topic && e.address === wh.address)
-        );
+        const allCorrect = webhookTopics.every(wh => existing.some(e => e.topic === wh.topic && e.address === wh.address));
         if (allCorrect) { console.log(`[auto-webhooks] OK: ${store.shop}`); continue; }
         for (const wh of existing) {
           await axios.delete(`https://${store.shop}/admin/api/2024-01/webhooks/${wh.id}.json`,
