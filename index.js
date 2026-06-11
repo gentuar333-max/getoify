@@ -1548,11 +1548,13 @@ app.post('/bulk-localize-all', async (req, res) => {
     const PLANS = app.locals.PLANS;
     let productLimit = 15; // free default
     let localeLimit = 2;
+    let bulkLimit = 15; // free default
     if (PLANS) {
       const planName = store.plan || 'free';
       const plan = PLANS[planName] || PLANS.free;
       productLimit = plan.product_limit;
       localeLimit = plan.locale_limit;
+      bulkLimit = plan.bulk_limit !== undefined ? plan.bulk_limit : plan.product_limit;
       if (savedLocales.length > localeLimit) {
         console.warn(`[plan-limit] ${shop} has ${savedLocales.length} locales but plan allows ${localeLimit}`);
         savedLocales.splice(localeLimit);
@@ -1575,10 +1577,10 @@ app.post('/bulk-localize-all', async (req, res) => {
       bulkUrl = nextMatch ? nextMatch[1] : null;
     }
 
-    // Enforce product limit — never translate more than plan allows
-    if (products.length > productLimit) {
-      console.warn(`[plan-limit] Slicing ${products.length} → ${productLimit} products for ${shop}`);
-      products = products.slice(0, productLimit);
+    // Enforce bulk limit — never translate more than bulk_limit in one run
+    if (products.length > bulkLimit) {
+      console.warn(`[bulk-limit] Slicing ${products.length} → ${bulkLimit} products for ${shop} (bulk_limit)`);
+      products = products.slice(0, bulkLimit);
     }
 
     // Skip produktet qe jane perkthyer tashme per ate gjuhe — kursen kosto API
