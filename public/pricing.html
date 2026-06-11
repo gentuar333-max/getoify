@@ -337,7 +337,7 @@
   // Save shop from URL param to localStorage
   const _urlShop = new URLSearchParams(window.location.search).get('shop');
   if (_urlShop) localStorage.setItem('getoify_shop', _urlShop);
-  const prices = { starter: { monthly: 19, annual: 15 }, growth: { monthly: 49, annual: 39 }, pro: { monthly: 99, annual: 79 }, enterprise: { monthly: 199, annual: 159 } };
+  const prices = { description: { monthly: 9, annual: 8 }, starter: { monthly: 19, annual: 15 }, growth: { monthly: 49, annual: 39 }, pro: { monthly: 99, annual: 79 }, enterprise: { monthly: 199, annual: 159 } };
 
   function toggleBilling() {
     isAnnual = !isAnnual;
