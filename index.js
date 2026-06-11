@@ -337,9 +337,7 @@ app.get('/reset-webhooks', async (req, res) => {
 // Robots.txt
 app.get('/robots.txt', (req, res) => {
   res.header('Content-Type', 'text/plain');
-  res.send(`User-agent: *
-Allow: /
-Sitemap: https://www.getoify.com/sitemap.xml`);
+  res.send('User-agent: *\nAllow: /\nSitemap: https://www.getoify.com/sitemap.xml\n');
 });
 
 // Sitemap
