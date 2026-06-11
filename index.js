@@ -95,6 +95,25 @@ async function removeScriptTag(shop, token) {
   }
 }
 
+// Install widget manually — thirre nje here per stores ekzistuese
+// https://getoify.com/install-widget-manual?shop=xxx
+app.get('/install-widget-manual', async (req, res) => {
+  const { shop } = req.query;
+  if (!shop) return res.status(400).json({ error: 'Missing shop' });
+  try {
+    const { data: store } = await supabase
+      .from('stores')
+      .select('access_token')
+      .eq('shop', shop)
+      .single();
+    if (!store?.access_token) return res.status(404).json({ error: 'Store not found' });
+    await installScriptTag(shop, store.access_token);
+    res.json({ success: true, shop, message: 'Widget installed' });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Widget config endpoint — widget.js e thirr kete per te marre gjuhet aktive
 app.get('/widget-config', async (req, res) => {
   const { shop } = req.query;
