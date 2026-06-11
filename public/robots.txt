@@ -1,5 +1,3 @@
 ﻿User-agent: *
 Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
+Sitemap: https://www.getoify.com/sitemap.xml
