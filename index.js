@@ -1327,6 +1327,22 @@ async function localizeProduct(shop, token, productId, targetLang, locale, tone,
   const digests = {};
   contents.forEach(c => { digests[c.key] = c.digest; });
 
+  // Merr metafields te produktit
+  let metafields = [];
+  try {
+    const mfRes = await axios.get(
+      `https://${shop}/admin/api/2024-01/products/${pid}/metafields.json`,
+      { headers: { 'X-Shopify-Access-Token': token } }
+    );
+    metafields = (mfRes.data.metafields || []).filter(mf =>
+      typeof mf.value === 'string' && mf.value.trim().length > 0 &&
+      !['integer','boolean','json','number_integer','number_decimal','url','color','date','date_time','weight','volume','dimension','rating'].includes(mf.type)
+    );
+    if (metafields.length > 0) console.log(`[metafields] Found ${metafields.length} for "${product.title}"`);
+  } catch(mfErr) {
+    console.warn('[metafields] Fetch failed:', mfErr.message);
+  }
+
   const cleanBody = (product.body_html || '').replace(/<[^>]*>/g, '').trim();
   const hadNoDescription = !cleanBody;
 
@@ -1339,6 +1355,34 @@ async function localizeProduct(shop, token, productId, targetLang, locale, tone,
   }
 
   let translated = await generateProductCopyWithClaude(product, targetLang, glossary, cleanBody, imageUrl);
+
+  // Perkthej metafields
+  const translatedMetafields = [];
+  if (metafields.length > 0) {
+    for (const mf of metafields.slice(0, 10)) { // max 10 metafields per produkt
+      try {
+        const mfPrompt = `Translate this product field value into ${targetLang}. Return ONLY the translated text, nothing else. Keep brand names, technical terms, and numbers unchanged. Field: "${mf.key}". Value: ${mf.value}`;
+        const mfRes = await axios.post('https://api.anthropic.com/v1/messages', {
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 500,
+          messages: [{ role: 'user', content: mfPrompt }]
+        }, {
+          headers: {
+            'x-api-key': process.env.ANTHROPIC_API_KEY,
+            'anthropic-version': '2023-06-01',
+            'content-type': 'application/json'
+          },
+          timeout: 15000
+        });
+        const translatedValue = mfRes.data.content?.[0]?.text?.trim() || mf.value;
+        translatedMetafields.push({ ...mf, translatedValue });
+        console.log(`[metafields] Translated "${mf.key}" → ${targetLang}`);
+      } catch(e) {
+        console.warn(`[metafields] Translation failed for "${mf.key}":`, e.message);
+      }
+      await new Promise(r => setTimeout(r, 200));
+    }
+  }
 
   if (!translated.meta_title) {
     translated.meta_title = (translated.title || product.title).substring(0, 60);
@@ -1417,6 +1461,38 @@ async function localizeProduct(shop, token, productId, targetLang, locale, tone,
     meta_title: translated.meta_title,
     meta_description: translated.meta_description
   }, { onConflict: 'shop,product_id,locale' });
+
+  // Regjistro metafield translations te Shopify
+  if (translatedMetafields.length > 0) {
+    for (const mf of translatedMetafields) {
+      try {
+        const mfResourceId = `gid://shopify/Metafield/${mf.id}`;
+        // Merr digest per kete metafield
+        const mfDigestRes = await axios.post(
+          `https://${shop}/admin/api/2024-01/graphql.json`,
+          { query: digestQuery, variables: { resourceId: mfResourceId } },
+          { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
+        );
+        const mfContents = mfDigestRes.data.data?.translatableResource?.translatableContent || [];
+        const mfDigest = mfContents.find(c => c.key === 'value')?.digest;
+        if (!mfDigest) { console.warn(`[metafields] No digest for ${mf.key}`); continue; }
+        await axios.post(
+          `https://${shop}/admin/api/2024-01/graphql.json`,
+          {
+            query: mutation,
+            variables: {
+              resourceId: mfResourceId,
+              translations: [{ key: 'value', value: mf.translatedValue, locale, translatableContentDigest: mfDigest }]
+            }
+          },
+          { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
+        );
+        console.log(`[metafields] Registered: ${mf.key} → ${locale}`);
+      } catch(e) {
+        console.warn(`[metafields] Register failed for "${mf.key}":`, e.message);
+      }
+    }
+  }
 
   // Log Shopify response për debugging
   const shopifyResult = pushRes.data.data?.translationsRegister;
