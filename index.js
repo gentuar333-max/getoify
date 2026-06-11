@@ -52,6 +52,67 @@ registerStripe(app, { supabase });
 const registerShopifyBilling = require('./lib/shopify-billing');
 registerShopifyBilling(app, { supabase });
 
+// ─── WIDGET SCRIPTTAG ─────────────────────────────────────────────────────
+
+async function installScriptTag(shop, token) {
+  const scriptUrl = `${APP_URL}/widget.js`;
+  try {
+    const existing = await axios.get(
+      `https://${shop}/admin/api/2024-01/script_tags.json`,
+      { headers: { 'X-Shopify-Access-Token': token } }
+    );
+    const alreadyInstalled = (existing.data.script_tags || []).some(s => s.src === scriptUrl);
+    if (alreadyInstalled) { console.log(`[widget] ScriptTag already installed: ${shop}`); return; }
+    await axios.post(
+      `https://${shop}/admin/api/2024-01/script_tags.json`,
+      { script_tag: { event: 'onload', src: scriptUrl } },
+      { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
+    );
+    console.log(`[widget] ScriptTag installed: ${shop}`);
+  } catch(e) {
+    console.error(`[widget] Install failed: ${shop}`, e.response?.data || e.message);
+  }
+}
+
+async function removeScriptTag(shop, token) {
+  const scriptUrl = `${APP_URL}/widget.js`;
+  try {
+    const existing = await axios.get(
+      `https://${shop}/admin/api/2024-01/script_tags.json`,
+      { headers: { 'X-Shopify-Access-Token': token } }
+    );
+    for (const tag of (existing.data.script_tags || [])) {
+      if (tag.src === scriptUrl) {
+        await axios.delete(
+          `https://${shop}/admin/api/2024-01/script_tags/${tag.id}.json`,
+          { headers: { 'X-Shopify-Access-Token': token } }
+        );
+        console.log(`[widget] ScriptTag removed: ${shop}`);
+      }
+    }
+  } catch(e) {
+    console.error(`[widget] Remove failed: ${shop}`, e.response?.data || e.message);
+  }
+}
+
+// Widget config endpoint — widget.js e thirr kete per te marre gjuhet aktive
+app.get('/widget-config', async (req, res) => {
+  const { shop } = req.query;
+  if (!shop) return res.status(400).json({ error: 'Missing shop' });
+  res.header('Access-Control-Allow-Origin', '*');
+  try {
+    const { data } = await supabase
+      .from('stores')
+      .select('selected_locales')
+      .eq('shop', shop)
+      .single();
+    const locales = data?.selected_locales || [];
+    res.json({ shop, locales });
+  } catch(e) {
+    res.json({ shop, locales: [] });
+  }
+});
+
 const SHOPIFY_PRODUCTS_PAGE = 250;
 const SHOPIFY_PRODUCTS_TIMEOUT_MS = 60000;
 
@@ -73,6 +134,7 @@ app.get('/settings', (req, res) => res.sendFile(path.join(__dirname, 'public', '
 app.get('/autosync', (req, res) => res.sendFile(path.join(__dirname, 'public', 'autosync.html')));
 app.get('/product', (req, res) => res.sendFile(path.join(__dirname, 'public', 'product-detail.html')));
 app.get('/pricing', (req, res) => res.sendFile(path.join(__dirname, 'public', 'pricing.html')));
+app.get('/language-switcher', (req, res) => res.sendFile(path.join(__dirname, 'public', 'language-switcher.html')));
 app.get('/google6e865cb2268111cc.html', (req, res) => res.send('google-site-verification: google6e865cb2268111cc.html'));
 app.get('/privacy', (req, res) => res.sendFile(path.join(__dirname, 'public', 'privacy.html')));
 app.get('/terms', (req, res) => res.sendFile(path.join(__dirname, 'public', 'terms.html')));
@@ -147,7 +209,10 @@ app.get('/auth/callback', async (req, res) => {
       }
     }
 
-    res.redirect('/dashboard?shop=' + shop + '&token=' + accessToken + '&autorun=1');
+    // Instalo widget ScriptTag automatikisht
+installScriptTag(shop, accessToken).catch(e => console.error('[widget] OAuth install error:', e.message));
+
+res.redirect('/dashboard?shop=' + shop + '&token=' + accessToken + '&autorun=1');
   } catch (error) {
     console.error('OAuth callback error:', error.message);
     res.redirect('/?error=oauth_failed&shop=' + (req.query.shop || ''));
@@ -395,6 +460,7 @@ app.post('/save-locales', async (req, res) => {
       .eq('shop', shop);
     if (error) throw error;
     res.json({ ok: true });
+    // Widget config përditësohet automatikisht — widget.js e lexon nga /widget-config
   } catch(e) {
     res.status(500).json({ error: e.message });
   }
