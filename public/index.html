@@ -720,38 +720,7 @@
 
   .footer-copy { font-size: 13px; color: var(--text-light); }
 
-  /* COMPARISON TABLE */
-  .cmp-section { background: #061e47; padding: 90px 5%; position: relative; overflow: hidden; }
-  .cmp-wrap { max-width: 1060px; margin: 0 auto; }
-  .cmp-header { text-align: center; margin-bottom: 52px; }
-  .cmp-eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 2.5px; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 16px; }
-  .cmp-title { font-family: 'Playfair Display', serif; font-size: clamp(28px,4vw,46px); font-weight: 700; color: #fff; letter-spacing: -1.5px; line-height: 1.15; margin: 0 0 14px; }
-  .cmp-title em { font-style: italic; color: var(--gold); }
-  .cmp-sub { font-size: 15px; color: rgba(255,255,255,0.45); font-weight: 300; }
-  .cmp-table { width: 100%; border-collapse: collapse; border-radius: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
-  .cmp-table thead th { padding: 14px 12px; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; text-align: center; background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.4); border-bottom: 1px solid rgba(255,255,255,0.1); border-left: 1px solid rgba(255,255,255,0.08); }
-  .cmp-table thead th:first-child { text-align: left; border-left: none; background: rgba(255,255,255,0.03); }
-  .cmp-table thead th.col-us { background: rgba(150,191,72,0.14); color: #96BF48; border-top: 3px solid #96BF48; }
-  .cmp-table tbody tr { border-bottom: 1px solid rgba(255,255,255,0.06); transition: background 0.15s; }
-  .cmp-table tbody tr:last-child { border-bottom: none; }
-  .cmp-table tbody tr:hover { background: rgba(255,255,255,0.03); }
-  .cmp-table tbody td { padding: 14px 12px; font-size: 13px; color: rgba(255,255,255,0.65); text-align: center; border-left: 1px solid rgba(255,255,255,0.07); }
-  .cmp-table tbody td:first-child { text-align: left; border-left: none; padding-left: 20px; }
-  .cmp-table tbody td.col-us { background: rgba(150,191,72,0.07); }
-  .cmp-row-bold td:first-child { color: #fff; font-weight: 600; }
-  .cmp-check { color: #96BF48; font-size: 16px; font-weight: 700; }
-  .cmp-cross { color: rgba(255,255,255,0.18); font-size: 16px; }
-  .cmp-auto { font-size: 11px; font-weight: 600; color: #96BF48; letter-spacing: 0.3px; }
-  .cmp-partial { font-size: 11px; color: rgba(255,255,255,0.3); }
-  .cmp-manual { font-size: 11px; color: rgba(255,255,255,0.3); }
-  .cmp-divider td { padding: 6px 0; background: rgba(255,255,255,0.04); font-size: 10px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.25); text-align: left; padding-left: 20px; border-left: none; }
-
   @media (max-width: 768px) {
-    .cmp-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .cmp-table { min-width: 580px; }
-  }
-
-  @media (min-width: 769px) {
     .value-cards { grid-template-columns: 1fr; }
     .features-grid { grid-template-columns: 1fr; }
     .certs-grid { grid-template-columns: 1fr; }
@@ -787,7 +756,7 @@
 <section class="hero">
   <div class="hero-badge">Shopify AI Localization</div>
   <h1>Localize everything,<br><em>automatically.</em></h1>
-  <p class="hero-sub">Connect your Shopify store. Your entire catalog — translated in 5 languages, brand-accurate, SEO-optimized — without a single manual click.</p>
+  <p class="hero-sub">Connect your Shopify store. Your entire catalog — translated in 8 languages, brand-accurate, SEO-optimized — without a single manual click.</p>
   <div class="hero-ctas">
     <a href="#connect-modal" class="btn-primary-shopify" onclick="handleConnectModal(event)">
       <svg width="18" height="18" viewBox="0 0 109 124" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -816,7 +785,7 @@
     <div class="stat-label">auto-sync on new product</div>
   </div>
   <div class="stat-item">
-    <div class="stat-number">94%</div>
+    <div class="stat-number">98%</div>
     <div class="stat-label">brand voice preserved</div>
   </div>
 </div>
@@ -876,7 +845,7 @@
   <div class="features-header">
     <div class="section-eyebrow">Features</div>
     <h2 class="section-title">Everything you need, built in</h2>
-    <p class="section-sub">Eight modules designed to work together.</p>
+    <p class="section-sub">Ten modules designed to work together.</p>
   </div>
 
   <div class="features-grid">
@@ -905,8 +874,8 @@
     <div class="feature-card">
       <span class="feature-tag">Volume</span>
       <div class="feature-name">Bulk Translate</div>
-      <div class="feature-desc">12,000 products × 5 languages. No manual clicks. Getoify processes your entire catalog in bulk, maintains consistency, and notifies you when it's ready.</div>
-      <span class="feature-highlight">60,000 translations. One click.</span>
+      <div class="feature-desc">12,000 products × 8 languages. No manual clicks. Getoify processes your entire catalog in bulk, maintains consistency, and notifies you when it's ready.</div>
+      <span class="feature-highlight">96,000 translations. One click.</span>
     </div>
 
     <div class="feature-card">
@@ -919,8 +888,22 @@
     <div class="feature-card">
       <span class="feature-tag">Real-time</span>
       <div class="feature-name">Auto-Sync</div>
-      <div class="feature-desc">New product added to Shopify? Localized in 5 languages within 2 minutes, automatically. Native webhook integration. Your catalog is always current, always localized.</div>
+      <div class="feature-desc">New product added to Shopify? Localized in 8 languages within 2 minutes, automatically. Native webhook integration. Your catalog is always current, always localized.</div>
       <span class="feature-highlight">New product → localized in 2 min</span>
+    </div>
+
+    <div class="feature-card">
+      <span class="feature-tag">Categories</span>
+      <div class="feature-name">Collections</div>
+      <div class="feature-desc">Every collection title and description — automatically translated when you create or update it. Your store navigation speaks your customers' language, not just your products.</div>
+      <span class="feature-highlight">Full store navigation localized</span>
+    </div>
+
+    <div class="feature-card">
+      <span class="feature-tag">Content</span>
+      <div class="feature-name">Blog & Articles</div>
+      <div class="feature-desc">Your blog posts and articles translated into every language — automatically. Build organic traffic in every market with localized content that ranks in local search results.</div>
+      <span class="feature-highlight">SEO content in every language</span>
     </div>
 
     <div class="feature-card" style="grid-column: 1 / -1;">
@@ -933,128 +916,18 @@
   </div>
 </section>
 
-<!-- COMPARISON TABLE -->
-<section class="cmp-section">
-  <div class="cmp-wrap">
-    <div class="cmp-header">
-      <div class="cmp-eyebrow">How we compare</div>
-      <h2 class="cmp-title">Everything your store needs.<br><em>Nothing your competitors offer.</em></h2>
-      <p class="cmp-sub">One honest table. No asterisks.</p>
+<!-- UNIQUE DIFFERENTIATORS -->
+<section style="padding:90px 5%;background:#ffffff;">
+  <div class="features-grid" style="max-width:1060px;margin:0 auto;">
+    <div class="feature-card">
+      <span class="feature-tag">Only Getoify</span>
+      <div class="feature-name">Writes descriptions from scratch.</div>
+      <div class="feature-desc">Other tools need content to translate. Getoify generates from the product name alone — description, brand voice, SEO — in all 8 languages.</div>
     </div>
-
-    <div class="cmp-table-wrap">
-      <table class="cmp-table">
-        <thead>
-          <tr>
-            <th style="width:34%;"></th>
-            <th class="col-us">Getoify</th>
-            <th>Weglot</th>
-            <th>Langify</th>
-            <th>Transcy</th>
-            <th>Shopify Magic</th>
-          </tr>
-        </thead>
-        <tbody>
-
-          <tr class="cmp-divider"><td colspan="6">What sets us apart</td></tr>
-
-          <tr class="cmp-row-bold">
-            <td>AI generates descriptions from title</td>
-            <td class="col-us"><span class="cmp-auto">automatic</span></td>
-            <td><span class="cmp-cross">&#10005;</span></td>
-            <td><span class="cmp-cross">&#10005;</span></td>
-            <td><span class="cmp-cross">&#10005;</span></td>
-            <td><span class="cmp-manual">manual</span></td>
-          </tr>
-          <tr class="cmp-row-bold">
-            <td>Brand voice &amp; glossary</td>
-            <td class="col-us"><span class="cmp-check">&#10003;</span></td>
-            <td><span class="cmp-cross">&#10005;</span></td>
-            <td><span class="cmp-cross">&#10005;</span></td>
-            <td><span class="cmp-cross">&#10005;</span></td>
-            <td><span class="cmp-cross">&#10005;</span></td>
-          </tr>
-          <tr class="cmp-row-bold">
-            <td>Your data stays in Shopify</td>
-            <td class="col-us"><span class="cmp-check">&#10003;</span></td>
-            <td><span class="cmp-cross">&#10005;</span></td>
-            <td><span class="cmp-check">&#10003;</span></td>
-            <td><span class="cmp-partial">partial</span></td>
-            <td><span class="cmp-check">&#10003;</span></td>
-          </tr>
-
-          <tr class="cmp-divider"><td colspan="6">Core features</td></tr>
-
-          <tr>
-            <td>Products &amp; collections</td>
-            <td class="col-us"><span class="cmp-check">&#10003;</span></td>
-            <td><span class="cmp-check">&#10003;</span></td>
-            <td><span class="cmp-check">&#10003;</span></td>
-            <td><span class="cmp-check">&#10003;</span></td>
-            <td><span class="cmp-cross">&#10005;</span></td>
-          </tr>
-          <tr>
-            <td>Blog &amp; articles</td>
-            <td class="col-us"><span class="cmp-auto">automatic</span></td>
-            <td><span class="cmp-check">&#10003;</span></td>
-            <td><span class="cmp-check">&#10003;</span></td>
-            <td><span class="cmp-check">&#10003;</span></td>
-            <td><span class="cmp-cross">&#10005;</span></td>
-          </tr>
-          <tr>
-            <td>Metafields</td>
-            <td class="col-us"><span class="cmp-check">&#10003;</span></td>
-            <td><span class="cmp-check">&#10003;</span></td>
-            <td><span class="cmp-check">&#10003;</span></td>
-            <td><span class="cmp-partial">partial</span></td>
-            <td><span class="cmp-cross">&#10005;</span></td>
-          </tr>
-          <tr>
-            <td>SEO metadata per language</td>
-            <td class="col-us"><span class="cmp-check">&#10003;</span></td>
-            <td><span class="cmp-check">&#10003;</span></td>
-            <td><span class="cmp-partial">partial</span></td>
-            <td><span class="cmp-partial">partial</span></td>
-            <td><span class="cmp-cross">&#10005;</span></td>
-          </tr>
-          <tr>
-            <td>Language switcher</td>
-            <td class="col-us"><span class="cmp-auto">automatic</span></td>
-            <td><span class="cmp-check">&#10003;</span></td>
-            <td><span class="cmp-check">&#10003;</span></td>
-            <td><span class="cmp-check">&#10003;</span></td>
-            <td><span class="cmp-cross">&#10005;</span></td>
-          </tr>
-          <tr>
-            <td>New product synced in 2 minutes</td>
-            <td class="col-us"><span class="cmp-auto">automatic</span></td>
-            <td><span class="cmp-check">&#10003;</span></td>
-            <td><span class="cmp-check">&#10003;</span></td>
-            <td><span class="cmp-check">&#10003;</span></td>
-            <td><span class="cmp-cross">&#10005;</span></td>
-          </tr>
-
-          <tr class="cmp-divider"><td colspan="6">Limitations</td></tr>
-
-          <tr>
-            <td>Multi-currency</td>
-            <td class="col-us"><span class="cmp-cross">&#10005;</span></td>
-            <td><span class="cmp-cross">&#10005;</span></td>
-            <td><span class="cmp-check">&#10003;</span></td>
-            <td><span class="cmp-check">&#10003;</span></td>
-            <td><span class="cmp-cross">&#10005;</span></td>
-          </tr>
-          <tr>
-            <td>Auto-redirect by country</td>
-            <td class="col-us"><span class="cmp-cross">&#10005;</span></td>
-            <td><span class="cmp-check">&#10003;</span></td>
-            <td><span class="cmp-cross">&#10005;</span></td>
-            <td><span class="cmp-check">&#10003;</span></td>
-            <td><span class="cmp-cross">&#10005;</span></td>
-          </tr>
-
-        </tbody>
-      </table>
+    <div class="feature-card">
+      <span class="feature-tag">No lock-in</span>
+      <div class="feature-name">Your translations stay — even if you leave.</div>
+      <div class="feature-desc">Weglot stores translations on its own servers. Cancel and everything disappears. Getoify writes directly to Shopify. Your content is yours, permanently.</div>
     </div>
   </div>
 </section>
@@ -1138,7 +1011,6 @@
   </div>
   <div class="footer-bottom">
     <span class="footer-copy">&copy; 2025 Getoify. All rights reserved.</span>
-
   </div>
 </footer>
 
