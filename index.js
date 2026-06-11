@@ -250,6 +250,14 @@ app.get('/reset-webhooks', async (req, res) => {
   }
 });
 
+// Robots.txt
+app.get('/robots.txt', (req, res) => {
+  res.header('Content-Type', 'text/plain');
+  res.send(`User-agent: *
+Allow: /
+Sitemap: https://www.getoify.com/sitemap.xml`);
+});
+
 // Sitemap
 app.get('/sitemap.xml', (req, res) => {
   res.header('Content-Type', 'application/xml');
