@@ -1346,6 +1346,7 @@ async function localizeProduct(shop, token, productId, targetLang, locale, tone,
     );
     metafields = (mfRes.data.metafields || []).filter(mf =>
       typeof mf.value === 'string' && mf.value.trim().length > 0 &&
+      mf.value.trim().length <= 200 && // skip long fields (e.g. INCI ingredient lists — international standard, same across languages, expensive to translate)
       !['integer','boolean','json','number_integer','number_decimal','url','color','date','date_time','weight','volume','dimension','rating'].includes(mf.type)
     );
     if (metafields.length > 0) console.log(`[metafields] Found ${metafields.length} for "${product.title}"`);
@@ -1374,7 +1375,7 @@ async function localizeProduct(shop, token, productId, targetLang, locale, tone,
         const mfPrompt = `Translate this product field value into ${targetLang}. Return ONLY the translated text, nothing else. Keep brand names, technical terms, and numbers unchanged. Field: "${mf.key}". Value: ${mf.value}`;
         const mfRes = await axios.post('https://api.anthropic.com/v1/messages', {
           model: 'claude-haiku-4-5-20251001',
-          max_tokens: 500,
+          max_tokens: 150,
           messages: [{ role: 'user', content: mfPrompt }]
         }, {
           headers: {
