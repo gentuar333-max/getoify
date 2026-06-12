@@ -1227,7 +1227,7 @@ Respond ONLY in this exact JSON format, no extra text, no markdown backticks:
       ? `Product name: "${product.title}"\n${category ? `Category: ${category}\n` : ''}${tags ? `Tags: ${tags}\n` : ''}`
       : `No product name provided. Identify the product from the image and write an appropriate name in ${targetLang}.`;
 
-    const textPrompt = `You are a native ${targetLang} speaker and professional ecommerce copywriter. Analyze the product image carefully.
+    const contextBlock = `You are a native ${targetLang} speaker and professional ecommerce copywriter. Analyze the product image carefully.
 
 Glossary (keep these terms exactly as written, never translate): ${glossary || 'checkout, Shopify'}
 Target language: ${targetLang}
@@ -1235,17 +1235,23 @@ Target language: ${targetLang}
 ${titleSection}
 
 Look carefully at the image. Identify ONLY what is clearly visible: materials, colors, shape, dimensions, text/branding, use case.
-Do NOT invent specifications that are not visible or stated.
+Do NOT invent specifications that are not visible or stated.`;
 
-${sharedRules}`;
-
+    // sharedRules varet vetem nga targetLang/langCfg/kategoria (jo produkti/imazhi) —
+    // i pari + cache_control: produkte te tjera te NJEJTES gjuhe+kategori (brenda 5 min) -90%
     userContent = [
+      { type: 'text', text: sharedRules, cache_control: { type: 'ephemeral' } },
       { type: 'image', source: { type: 'url', url: imageUrl } },
-      { type: 'text', text: textPrompt }
+      { type: 'text', text: contextBlock }
     ];
   } else {
-    // Haiku — tekst i paster (perkthim ose gjerim nga titulli)
-    const textPrompt = `You are a native ${targetLang} speaker and professional ecommerce copywriter.
+    // Haiku — tekst i paster (perkthim ose gjenerim nga titulli)
+    // rulesBlock varet VETEM nga targetLang/langCfg/kategoria, jo nga produkti —
+    // i pari + cache_control: produkte te tjera te NJEJTES gjuhe+kategori
+    // (brenda 5 min, bulk run) marrin -90% kosto per kete pjese (input).
+    const rulesBlock = cleanBody ? translationRules : sharedRules;
+
+    const contextBlock = `You are a native ${targetLang} speaker and professional ecommerce copywriter.
 
 Glossary (keep these terms exactly as written, never translate): ${glossary || 'checkout, Shopify'}
 Target language: ${targetLang}
@@ -1263,19 +1269,18 @@ TRANSLATION RULES:
 - If the original has bullets keep bullets, if prose keep prose
 - Apply the tone "${langCfg.tone}" consistently throughout
 - Use sensory words where natural: ${langCfg.sensoryWords}
-- Avoid: ${langCfg.avoidWords}
-
-${translationRules}`
+- Avoid: ${langCfg.avoidWords}`
       : `Product name: "${product.title}"
 ${category ? `Category: ${category}` : ''}
 ${tags ? `Tags: ${tags}` : ''}
 
-No description exists. Write product copy in ${targetLang} based ONLY on the product name above — no invention.
-
-${sharedRules}`
+No description exists. Write product copy in ${targetLang} based ONLY on the product name above — no invention.`
     }`;
 
-    userContent = textPrompt;
+    userContent = [
+      { type: 'text', text: rulesBlock, cache_control: { type: 'ephemeral' } },
+      { type: 'text', text: contextBlock }
+    ];
   }
 
   try {
