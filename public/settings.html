@@ -358,8 +358,8 @@
         `<div class="pf"><i class="ti ti-check" style="color:#6BAF8A"></i>${f}</div>`
       ).join('');
 
-      // Hide upgrade section if on Pro or Enterprise (top tier)
-      if (data.plan === 'pro' || data.plan === 'enterprise') {
+      // Hide upgrade section if on Pro
+      if (data.plan === 'pro') {
         document.getElementById('upgrade-section').style.display = 'none';
       }
       // Show manage subscription if paid plan
