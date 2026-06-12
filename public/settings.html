@@ -324,7 +324,9 @@
     free:    { label: 'Free',    limit: 15,   locales: 2, desc: 'You are on the Free plan. Upgrade to unlock more products and languages.', features: ['50 products', '2 languages', 'AI description generation', 'Auto-sync new products'] },
     starter: { label: 'Starter', limit: 500,  locales: 3, desc: 'Starter plan — 500 products, 3 languages.', features: ['500 products', '3 languages', 'AI description generation', 'Brand voice & glossary', 'Auto-sync new products'] },
     growth:  { label: 'Growth',  limit: 2500, locales: 5, desc: 'Growth plan — 2,500 products, 5 languages.', features: ['2,500 products', '5 languages', 'Everything in Starter', 'Priority processing', 'Email support'] },
-    pro:     { label: 'Pro',     limit: 5000, locales: 5, desc: 'Pro plan — 5,000 products, 5 languages.', features: ['5,000 products × 5 languages', 'Up to 25,000 translations', 'Full translation history', 'Auto-sync new products'] }
+    pro:     { label: 'Pro',     limit: 5000, locales: 8, desc: 'Pro plan — 5,000 products, 8 languages.', features: ['5,000 products × 8 languages', 'Up to 40,000 translations', 'Full translation history', 'Auto-sync new products'] },
+    enterprise: { label: 'Enterprise', limit: 10000, locales: 8, desc: 'Enterprise plan — 10,000 products, 8 languages.', features: ['10,000 products × 8 languages', 'Up to 80,000 translations', 'Priority support', 'Auto-sync new products'] },
+    description: { label: 'Local Starter', limit: 500, locales: 0, desc: 'Local Starter — AI descriptions only, no translation.', features: ['500 products', 'AI description generation', 'No translation (1 language)', 'Auto-sync new products'] }
   };
 
   async function manageSubscription() {
