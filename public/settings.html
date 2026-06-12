@@ -14,7 +14,7 @@
       --ink-muted: #5C5850; --ink-faint: #8B8070; --accent: #8B7355; --green: #6BAF8A;
     }
     html, body { height: 100%; font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--ink); background: var(--cream-bg); -webkit-font-smoothing: antialiased; }
-    .app { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+    .app { display: grid; grid-template-columns: 220px 1fr; height: 100vh; }
     .sb { background: var(--cream); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
     .sb-logo { padding: 18px 20px 14px; border-bottom: 1px solid var(--border); font-size: 15px; font-weight: 500; color: var(--ink); }
     .sb-logo span { color: var(--accent); }
@@ -31,10 +31,10 @@
     .sb-foot { padding: 12px 20px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 9px; }
     .sb-av { width: 28px; height: 28px; border-radius: 50%; background: var(--cream-mid); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 500; color: var(--accent); flex-shrink: 0; }
     .sb-un { font-size: 12px; color: var(--ink-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .main { display: flex; flex-direction: column; }
+    .main { display: flex; flex-direction: column; overflow: hidden; }
     .topbar { background: var(--cream); border-bottom: 1px solid var(--border); padding: 0 24px; height: 50px; display: flex; align-items: center; flex-shrink: 0; }
     .tb-title { font-size: 14px; font-weight: 500; color: var(--ink); }
-    .body { padding: 24px; flex: 1; }
+    .body { padding: 24px; overflow-y: auto; flex: 1; }
     .body-inner { max-width: 620px; }
     .section { background: var(--cream); border: 1px solid var(--border); border-radius: 8px; padding: 18px 20px; margin-bottom: 12px; }
     .section-title { font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 4px; }
@@ -152,7 +152,7 @@
 
         <div class="section">
           <div class="section-title">Target languages</div>
-          <div class="section-desc">Choose which languages your products will be translated into. All 6 languages are included — select as many as you need.</div>
+          <div class="section-desc">Choose which languages your products will be translated into. All 8 languages are available — select up to your plan's limit.</div>
 
           <div class="lang-grid" id="lang-grid">
             <div class="lc" data-locale="de" onclick="toggleLang(this)">
