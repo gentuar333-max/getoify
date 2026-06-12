@@ -1589,12 +1589,24 @@ app.post('/bulk-localize-all', async (req, res) => {
       .select('product_id, locale')
       .eq('shop', shop);
     const translatedSet = new Set((existingRows || []).map(r => `${String(r.product_id)}:${r.locale}`));
+    const existingProductIds = new Set((existingRows || []).map(r => String(r.product_id)));
 
     const toTranslate = [];
+    let trackedCount = existingProductIds.size; // produktet aktuale ne plan
     for (const product of products) {
       const pid = String(normalizeProductId(product.id));
       const missingLocales = locales.filter(l => !translatedSet.has(`${pid}:${l.locale}`));
-      if (missingLocales.length > 0) toTranslate.push({ product, missingLocales });
+      if (missingLocales.length === 0) continue;
+
+      const isNewProduct = !existingProductIds.has(pid);
+      if (isNewProduct) {
+        if (PLANS && trackedCount >= productLimit) {
+          console.log(`[plan-limit] ${shop} reached ${productLimit} products — stopping bulk for new products`);
+          break;
+        }
+        trackedCount++;
+      }
+      toTranslate.push({ product, missingLocales });
     }
     console.log(`[bulk] ${products.length} total — ${toTranslate.length} need translation — ${products.length - toTranslate.length} skipped`);
 
