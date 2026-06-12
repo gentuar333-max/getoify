@@ -1810,6 +1810,25 @@ async function pollNewProducts() {
         continue;
       }
 
+      // Plan limit check — skip polling for stores that hit their product limit
+      const PLANS = app.locals.PLANS;
+      let uniqueProducts = 0;
+      let planLimit = 15;
+      if (PLANS) {
+        const planName = store.plan || 'free';
+        const planStartedAt = store.plan_started_at || null;
+        const plan = PLANS[planName] || PLANS.free;
+        planLimit = plan.product_limit;
+        let productQuery = supabase.from('translations').select('product_id, created_at').eq('shop', shop);
+        if (planStartedAt) productQuery = productQuery.gte('created_at', planStartedAt);
+        const { data: productRows } = await productQuery;
+        uniqueProducts = new Set((productRows || []).map(r => r.product_id)).size;
+        if (uniqueProducts >= planLimit) {
+          console.log(`[poll] Skipping ${shop} — ${planName} limit reached (${planLimit} products, ${uniqueProducts} used)`);
+          continue;
+        }
+      }
+
       try {
         const res = await axios.get(
           `https://${shop}/admin/api/2024-01/products.json?limit=50&order=created_at+desc`,
@@ -1831,6 +1850,12 @@ async function pollNewProducts() {
 
           if (needsLocalize) {
 
+            // Re-check limit on each new product — stop mid-run if reached
+            if (PLANS && uniqueProducts >= planLimit) {
+              console.log(`[poll] ${shop} reached limit (${planLimit}) mid-run — stopping`);
+              break;
+            }
+
             console.log('New product found via polling:', product.title);
             const savedLocales = store.selected_locales || [];
             const locales = savedLocales.length > 0
@@ -1844,6 +1869,7 @@ async function pollNewProducts() {
                 console.error('Poll localize error:', e.message);
               }
             }
+            if (PLANS) uniqueProducts++;
           }
         }
       } catch(e) {
