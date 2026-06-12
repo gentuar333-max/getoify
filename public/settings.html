@@ -269,10 +269,6 @@
   let planLoaded = false;
 
   function toggleLang(card) {
-    if (!planLoaded) {
-      showToast('Loading your plan, one moment...', false);
-      return;
-    }
     const locale = card.dataset.locale;
     if (card.classList.contains('sel')) {
       card.classList.remove('sel');
