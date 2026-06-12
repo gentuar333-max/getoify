@@ -287,7 +287,7 @@
 
   async function loadSavedLanguages() {
     try {
-      const res = await fetch('/store-settings?shop=' + shop);
+      const res = await fetch('/store-settings?shop=' + shop, { cache: 'no-store' });
       const data = await res.json();
       const saved = data.selected_locales || [];
       saved.forEach(locale => {
@@ -347,7 +347,7 @@
 
   async function loadPlan() {
     try {
-      const res = await fetch('/plan?shop=' + shop);
+      const res = await fetch('/plan?shop=' + shop, { cache: 'no-store' });
       const data = await res.json();
       const plan = PLAN_CONFIG[data.plan] || PLAN_CONFIG.free;
 
