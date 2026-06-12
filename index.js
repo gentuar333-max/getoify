@@ -1209,6 +1209,18 @@ Only after passing all 4 steps, write the JSON.
 Respond ONLY in this exact JSON format, no extra text, no markdown backticks:
 {"title":"...","description":"...","meta_title":"...","meta_description":"..."}`;
 
+  // Translation-mode rules — sharedRules minus CATEGORY KNOWLEDGE (STEP A/B/C +
+  // category-specific spec blocks). When the merchant already wrote a description,
+  // Haiku is translating EXISTING text, not generating specs from scratch — it
+  // doesn't need to know what specs SHOULD exist, only how to render what's
+  // already there (tone, unit conversion, SEO meta, self-check). This cuts the
+  // prompt from ~6,957 to ~1,062 tokens for the majority of locale calls.
+  const catStart = sharedRules.indexOf('CATEGORY KNOWLEDGE RULE:');
+  const catEnd = sharedRules.indexOf('META TITLE RULES');
+  const translationRules = (catStart >= 0 && catEnd > catStart)
+    ? sharedRules.slice(0, catStart) + sharedRules.slice(catEnd)
+    : sharedRules; // fallback — never breaks if markers shift
+
   if (hasImage && !cleanBody) {
     // Sonnet 4.6 — imazh + titull, gjeneron nga zero
     const titleSection = product.title
@@ -1253,7 +1265,7 @@ TRANSLATION RULES:
 - Use sensory words where natural: ${langCfg.sensoryWords}
 - Avoid: ${langCfg.avoidWords}
 
-${sharedRules}`
+${translationRules}`
       : `Product name: "${product.title}"
 ${category ? `Category: ${category}` : ''}
 ${tags ? `Tags: ${tags}` : ''}
