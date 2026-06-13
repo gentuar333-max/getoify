@@ -139,6 +139,10 @@
           </div>
           <div class="usage-bar"><div class="usage-fill" id="usage-fill" style="width:0%"></div></div>
           <div class="usage-row"><span class="usage-lbl" id="usage-used">0 used</span><span class="usage-val" id="plan-limit">50 limit</span></div>
+          <div id="limit-banner" style="display:none;margin-top:10px;padding:10px 12px;background:#fdecea;border:1px solid #f5b5ae;border-radius:8px;color:#8a2c20;font-size:13px;">
+            You\'ve reached your plan limit for this period. New products won\'t be translated until you upgrade or your period renews.
+            <a href="#" onclick="window.location.href=\'/pricing?shop=\'+shop" style="color:#8a2c20;text-decoration:underline;font-weight:600;">Upgrade now</a>
+          </div>
           <div class="field-row" style="margin-top:10px;">
             <div><div class="field-lbl">Total translations</div></div>
             <span class="field-val" id="api-total">—</span>
@@ -391,6 +395,16 @@
       document.getElementById('usage-fill').style.width = pct + '%';
       document.getElementById('usage-used').textContent = periodUsed + ' used this period';
       document.getElementById('api-total').textContent = allTime + ' total products localized';
+
+      // Limit reached - show banner + highlight usage bar
+      const limitBanner = document.getElementById('limit-banner');
+      if (periodUsed >= limit) {
+        limitBanner.style.display = 'block';
+        document.getElementById('usage-fill').style.background = '#d9534f';
+      } else {
+        limitBanner.style.display = 'none';
+        document.getElementById('usage-fill').style.background = '';
+      }
     } catch(e) {}
   }
 
