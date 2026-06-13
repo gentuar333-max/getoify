@@ -809,7 +809,7 @@ DESCRIPTION RULES:
 - AVOID: ${langCfg.avoidWords}
 - ${langCfg.avoidNote}
 - Address the customer using "${langCfg.tone}"
-- Then write exactly 4 bullet points starting with ✓, in this order:
+- Then write exactly 4 bullet points starting with •, in this order:
   ${langCfg.bulletOrder}
 - Each bullet MUST contain a number, measurement, or confirmed technical fact. Poetry bullets are FORBIDDEN.
 - RATIO: 80% technical facts, 20% tone. Not the reverse.
@@ -825,9 +825,9 @@ MANDATORY:
 → At least 3 bullets must contain a specific confirmed number or spec name.
 → Generic phrases are STRICTLY FORBIDDEN — these are marketing words, not specs: "advanced processor", "powerful chip", "high resolution", "long battery life", "imagerie IA avancée", "traitement avancé", "exigeantes et créatives", "tâches complexes", "performances optimisées", "s'adapte à votre", "s'ajuste à votre", "compiti impegnativi", "intelligent features", "stunning display", "incredible camera", "next-generation", "optimisées pour", "précision intentionnelle", "double action", "à double action", "formule innovante", "technologie avancée", "soin intensif". If you catch yourself writing any of these, replace with the real ingredient, number, or spec name.
 → Write the REAL name: "Snapdragon 8 Elite" not "advanced chip". "A18 Pro 3nm" not "powerful processor".
-→ ONE spec per bullet — never combine. WRONG: "✓ A18 Pro gère les tâches exigeantes et créatives". RIGHT: "✓ Puce A18 Pro 3nm — Neural Engine 16 cœurs".
-→ If you know 2 numbers for the same spec (e.g. battery + charge speed), they count as ONE bullet: "✓ 5000mAh — charge 45W filaire en 70 min".
-→ UNCERTAINTY RULE — CRITICAL: If you are not 100% certain of a specific number (chip generation, exact MP count, exact mAh, number of sensors/motors/cyclones), do NOT invent it. Instead use "up to" framing, describe it qualitatively ("multiple sensors", "advanced sensor array"), or omit the uncertain number. WRONG: "✓ Puce A19 Pro" (A19 doesn't exist) or "✓ 8 pressure sensors" (invented count). RIGHT: "✓ Puce A17 Pro 3nm" (confirmed) or "✓ Piezo sensor adjusts suction automatically" (no fake count). If unsure whether it's A17 or A18, write "Puce Apple Pro 3nm" without the generation number. A fabricated spec is worse than a missing one — merchants will publish it as fact.
+→ ONE spec per bullet — never combine. WRONG: "• A18 Pro gère les tâches exigeantes et créatives". RIGHT: "• Puce A18 Pro 3nm — Neural Engine 16 cœurs".
+→ If you know 2 numbers for the same spec (e.g. battery + charge speed), they count as ONE bullet: "• 5000mAh — charge 45W filaire en 70 min".
+→ UNCERTAINTY RULE — CRITICAL: If you are not 100% certain of a specific number (chip generation, exact MP count, exact mAh, number of sensors/motors/cyclones, power/speed modes for appliances), do NOT invent it. Instead use "up to" framing, describe it qualitatively ("multiple sensors", "advanced sensor array", "multiple power modes"), or omit the uncertain number. WRONG: "• Puce A19 Pro" (A19 doesn't exist), "• 8 pressure sensors" (invented count), or "• 8 speed modes" (most appliances have 2-4: Eco/Auto/Boost). RIGHT: "• Puce A17 Pro 3nm" (confirmed), "• Piezo sensor adjusts suction automatically" (no fake count), or "• Multiple power modes adapt to surface type" (no fake count). If unsure whether it's A17 or A18, write "Puce Apple Pro 3nm" without the generation number. A fabricated spec is worse than a missing one — merchants will publish it as fact.
 
 Priority specs by product type — use these exact data points:
 - Smartphone → 1) processor name + nm node  2) screen: inches + Hz + tech  3) main camera MP + aperture  4) battery mAh + charge W
@@ -877,25 +877,25 @@ This is a clothing, footwear, or accessory product. Apply these rules:
 PRIORITY SPECS by product type:
 
 FOOTWEAR (sneakers, running shoes, boots):
-- Bullet ✓1: sole technology + material (e.g. "Semelle React + unité Air Max 270° — amorti réactif")
-- Bullet ✓2: upper material + construction (e.g. "Empeigne mesh respirant + renforts synthétiques")
-- Bullet ✓3: fit + sizing info (e.g. "Pointure fidèle — convient pour usage lifestyle quotidien")
-- Bullet ✓4: care instructions (e.g. "Nettoyage à la main recommandé — semelle caoutchouc durable")
+- Bullet 1: sole technology + material (e.g. "Semelle React + unité Air Max 270° — amorti réactif")
+- Bullet 2: upper material + construction (e.g. "Empeigne mesh respirant + renforts synthétiques")
+- Bullet 3: fit + sizing info (e.g. "Pointure fidèle — convient pour usage lifestyle quotidien")
+- Bullet 4: care instructions (e.g. "Nettoyage à la main recommandé — semelle caoutchouc durable")
 - ALWAYS mention: sole type, upper material, occasion (running/lifestyle/training)
 - IF KNOWN: weight (g), drop (mm), "true to size" or "size up"
 
 CLOTHING (t-shirts, hoodies, jackets, dresses):
-- Bullet ✓1: fabric composition % (e.g. "100% coton biologique — doux et respirant")
-- Bullet ✓2: fit type + cut (e.g. "Coupe regular — taille fidèle, longueur standard")
-- Bullet ✓3: key feature or design (e.g. "Poche kangourou — cordon de serrage ajustable")
-- Bullet ✓4: care instructions (e.g. "Lavage machine 30°C — ne pas sécher au sèche-linge")
+- Bullet 1: fabric composition % (e.g. "100% coton biologique — doux et respirant")
+- Bullet 2: fit type + cut (e.g. "Coupe regular — taille fidèle, longueur standard")
+- Bullet 3: key feature or design (e.g. "Poche kangourou — cordon de serrage ajustable")
+- Bullet 4: care instructions (e.g. "Lavage machine 30°C — ne pas sécher au sèche-linge")
 - ALWAYS mention: material %, fit type, wash care
 
 BAGS & ACCESSORIES:
-- Bullet ✓1: material + dimensions if known (e.g. "Cuir grainé — 30×20×10cm, 0,8kg")
-- Bullet ✓2: capacity + compartments (e.g. "15L — compartiment principal + 2 poches zippées")
-- Bullet ✓3: closure + strap type (e.g. "Fermeture éclair YKK — bandoulière réglable incluse")
-- Bullet ✓4: care + warranty
+- Bullet 1: material + dimensions if known (e.g. "Cuir grainé — 30×20×10cm, 0,8kg")
+- Bullet 2: capacity + compartments (e.g. "15L — compartiment principal + 2 poches zippées")
+- Bullet 3: closure + strap type (e.g. "Fermeture éclair YKK — bandoulière réglable incluse")
+- Bullet 4: care + warranty
 
 FORBIDDEN for Fashion & Apparel:
 - "intemporel", "authentique", "iconique" alone — always follow with a concrete spec: WRONG: "coupe intemporelle" / RIGHT: "coupe droite depuis 1873"
@@ -935,40 +935,40 @@ When the product name contains a variant identifier (Solar, AMOLED, Pro, Plus, U
   Apple Watch Ultra = 10 ATM / Apple Watch SE = 50m — different resistance
 - RULE: if you know the variant suffix but are not 100% certain of that variant's spec → write "up to" or omit
 
-WATER RESISTANCE — verify before writing:
-- 5 ATM = rain, splashes, hand washing only
-- 10 ATM = swimming, snorkeling, surface water sports
-- 20 ATM = scuba diving
-- Never write 5 ATM for a product confirmed at 10 ATM — this undersells and misleads
+WATER RESISTANCE — verify before writing, always specify real-world limitations:
+- 5 ATM = rain, splashes, hand washing only — NOT swimming
+- 10 ATM = pool swimming, snorkeling, calm water — NOT diving or high-velocity water sports
+- 20 ATM+ = scuba diving
+- Never write 5 ATM for a product confirmed at 10 ATM (undersells), and never write "sports aquatiques"/"water sports" for 10 ATM without the diving/high-velocity limitation
 
 DISPLAY TYPE — verify before writing:
 - Solar models typically use MIP/transflective (better in sunlight, lower power)
 - AMOLED models use AMOLED (vivid colors, higher power draw)
 - Never write AMOLED for a Solar variant — they are physically incompatible
 
-BATTERY LIFE — always specify mode:
-- Never write "X jours" without specifying the mode
-- Format: "48 jours smartwatch / 145h GPS / 550 jours expedition (avec solaire)"
+BATTERY LIFE — always specify the mode, use realistic ranges (not maximum theoretical):
+- Format: "48 jours smartwatch / 145h GPS / 550 jours expedition (avec solaire)" or "4-5 jours (jusqu'à 7 jours mode économie)"
+- Never write "X jours" or "jusqu'à X jours" alone — always specify the mode and use a realistic range, not the max
 
 MASSAGE GUN / PERCUSSION THERAPY (Theragun, Hyperice, Hypervolt, Achedaway):
-- Bullet ✓1: PPM + amplitude mm confirmed for this exact model
-- Bullet ✓2: batteries × autonomy = total hours (e.g. "2 batteries × 150 min = 5h total")
-- Bullet ✓3: PRO differentiators — OLED forcemètre, Bluetooth app, guided routines if Pro/Plus
-- Bullet ✓4: attachments count + weight kg
+- Bullet 1: PPM + amplitude mm confirmed for this exact model
+- Bullet 2: batteries × autonomy = total hours (e.g. "2 batteries × 150 min = 5h total")
+- Bullet 3: PRO differentiators — OLED forcemètre, Bluetooth app, guided routines if Pro/Plus
+- Bullet 4: attachments count + weight kg
 - FORBIDDEN: "portatif" for Theragun Pro, Pro Plus, Elite (all >0.8 kg)
 - FORBIDDEN: "bien-être" for Pro/Elite models — write "usage professionnel et récupération athlétique"
 
 FITNESS EQUIPMENT (dumbbells, kettlebells, resistance bands):
-- Bullet ✓1: weight/resistance range + increments
-- Bullet ✓2: material + grip type
-- Bullet ✓3: muscle groups targeted
-- Bullet ✓4: dimensions + storage
+- Bullet 1: weight/resistance range + increments
+- Bullet 2: material + grip type
+- Bullet 3: muscle groups targeted
+- Bullet 4: dimensions + storage
 
 PROFESSIONAL GYM EQUIPMENT (Concept2, Rogue, Eleiko, Technogym, Life Fitness):
-- Bullet ✓1: resistance mechanism + technology name (e.g. "Volant d'inertie air — résistance auto-régulée")
-- Bullet ✓2: monitor/screen name + connectivity (e.g. "Performance Monitor PM5 — Bluetooth/ANT+, WiFi, Zwift")
-- Bullet ✓3: capacity + adjustability (e.g. "Capacité 227kg — course ajustable 38-48" pour 140-210cm")
-- Bullet ✓4: storage + warranty (e.g. "Démontable 2 parties <30 sec — garantie 5 ans cadre, 2 ans pièces")
+- Bullet 1: resistance mechanism + technology name (e.g. "Volant d'inertie air — résistance auto-régulée")
+- Bullet 2: monitor/screen name + connectivity (e.g. "Performance Monitor PM5 — Bluetooth/ANT+, WiFi, Zwift")
+- Bullet 3: capacity + adjustability (e.g. "Capacité 227kg — course ajustable 38-48" pour 140-210cm")
+- Bullet 4: storage + warranty (e.g. "Démontable 2 parties <30 sec — garantie 5 ans cadre, 2 ans pièces")
 - ALWAYS mention: exact component names (PM5, J-cups, etc.), max capacity, warranty terms
 - SOCIAL PROOF: if used at CrossFit Games, Olympics, or pro clubs — mention it: "utilisé aux CrossFit Games et clubs professionnels"
 - NEVER write "professionnel" without proof — write the actual proof instead
@@ -976,10 +976,10 @@ PROFESSIONAL GYM EQUIPMENT (Concept2, Rogue, Eleiko, Technogym, Life Fitness):
 - COMPATIBLE APPS: always list if known (Zwift, Garmin Connect, Polar, ErgData, Concept2 Logbook)
 
 CONNECTED FITNESS BIKES & CARDIO (Peloton, NordicTrack, Ergatta, iFit, Echelon):
-- Bullet ✓1: KEY DIFFERENTIATOR vs base model (e.g. "Auto-Follow — résistance auto-ajustée selon le cours")
-- Bullet ✓2: screen size + rotation + class types (e.g. "Écran tactile rotatif 23,8" — classes live et on-demand")
-- Bullet ✓3: connectivity + ecosystem (e.g. "Apple GymKit, WiFi, Bluetooth 5.0 — compatible Apple Watch instantané")
-- Bullet ✓4: warranty PER COMPONENT — never write single warranty:
+- Bullet 1: KEY DIFFERENTIATOR vs base model (e.g. "Auto-Follow — résistance auto-ajustée selon le cours")
+- Bullet 2: screen size + rotation + class types (e.g. "Écran tactile rotatif 23,8" — classes live et on-demand")
+- Bullet 3: connectivity + ecosystem (e.g. "Apple GymKit, WiFi, Bluetooth 5.0 — compatible Apple Watch instantané")
+- Bullet 4: warranty PER COMPONENT — never write single warranty:
   Format: "X ans cadre, Y mois pièces, Z mois main-d'œuvre"
   Peloton Bike+: 5 ans cadre, 12 mois pièces/électronique, 12 mois main-d'œuvre
   Never write "12 mois" alone for Peloton — undersells vs NordicTrack 10 ans
@@ -989,16 +989,16 @@ CONNECTED FITNESS BIKES & CARDIO (Peloton, NordicTrack, Ergatta, iFit, Echelon):
 - INCOMPATIBILITIES: if not compatible with Zwift or other apps → mention "non compatible apps tierces"
 
 SPORTS WEARABLES (Garmin, Polar, Whoop, Oura):
-- Bullet ✓1: battery life with mode specified (smartwatch / GPS / expedition)
-- Bullet ✓2: display type CONFIRMED for this variant + resolution
-- Bullet ✓3: key sensors (HR, SpO2, HRV) + differentiating features (TOPO maps, ClimbPro, PacePro)
-- Bullet ✓4: water resistance ATM CONFIRMED + weight g
+- Bullet 1: battery life with mode specified (smartwatch / GPS / expedition)
+- Bullet 2: display type CONFIRMED for this variant + resolution
+- Bullet 3: key sensors (HR, SpO2, HRV) + differentiating features (TOPO maps, ClimbPro, PacePro)
+- Bullet 4: water resistance ATM CONFIRMED + weight g
 
 SPORTS NUTRITION:
-- Bullet ✓1: key active + g per serving
-- Bullet ✓2: servings per container + flavor
-- Bullet ✓3: additional blend
-- Bullet ✓4: certification if confirmed
+- Bullet 1: key active + g per serving
+- Bullet 2: servings per container + flavor
+- Bullet 3: additional blend
+- Bullet 4: certification if confirmed
 
 SUBSCRIPTION & BUSINESS MODEL TRANSPARENCY:
 If the product requires a subscription (Whoop, Peloton, Oura, etc.):
@@ -1007,11 +1007,6 @@ If the product requires a subscription (Whoop, Peloton, Oura, etc.):
 - Format: "Abonnement requis — voir tarifs sur [brand].com" or "Abonnement mensuel ou annuel requis"
 - If device is free with subscription → mention: "Appareil inclus avec abonnement"
 - French buyers hate surprise pricing — transparency without wrong numbers builds trust
-
-BATTERY LIFE — never write maximum theoretical:
-- Always write realistic range based on typical use: "4-5 jours (jusqu'à 7 jours mode économie)"
-- NEVER write "jusqu'à X jours" alone — always add "selon utilisation" or specify the mode
-- Format: "[realistic range] jours / [max] jours en mode économie"
 
 SCREENLESS DEVICES:
 If the product has no screen (Whoop, Oura Ring, smart rings):
@@ -1025,13 +1020,6 @@ SENSOR ACCURACY — never write "24/7" without verifying each sensor individuall
 - SpO2 → most wearables = nocturne + spot check ONLY — NEVER write "SpO2 continue" unless confirmed
 - Température cutanée → typically continuous — write "surveillance continue température"
 - Format: "Surveillance continue : FC, HRV, température. SpO2 nocturne et spot check."
-
-WATER RESISTANCE — always specify real-world limitations:
-- 5 ATM = pluie, douche légère, éclaboussures — NOT swimming
-- 10 ATM = douche, natation en piscine, eau calme — NOT diving or high-velocity water sports
-- 20 ATM+ = plongée
-- Always add limitation: "10 ATM — douche, natation piscine. Non destiné à la plongée ou surf."
-- NEVER write "sports aquatiques" for 10 ATM without specifying the limitation
 
 WEARABLE MATERIALS & SIZING:
 - If titanium confirmed → always mention: "Titane — [weight]g, légèreté et résistance"
@@ -1063,10 +1051,10 @@ HOME & KITCHEN SPECIFIC RULES:
 This is a kitchen/home appliance product. Apply these additional rules:
 - PRIORITY SPECS: motor power (W), capacity (L or ml), speed settings (number), included accessories
 - If brand+model is known (KitchenAid 5KSM175PS, Dyson V15, Nespresso Vertuo): list ALL confirmed specs — W, L, speeds, accessories
-- Bullet ✓1: capacity + material (e.g. "Bol inox 4,8 L — compatible lave-vaisselle")
-- Bullet ✓2: motor/mechanism with W and speed (e.g. "Moteur 300W — 10 vitesses, mélange planétaire")
-- Bullet ✓3: accessories included (e.g. "Fouet, batteur plat et crochet pétrin inclus")
-- Bullet ✓4: care + warranty confirmed facts only
+- Bullet 1: capacity + material (e.g. "Bol inox 4,8 L — compatible lave-vaisselle")
+- Bullet 2: motor/mechanism with W and speed (e.g. "Moteur 300W — 10 vitesses, mélange planétaire")
+- Bullet 3: accessories included (e.g. "Fouet, batteur plat et crochet pétrin inclus")
+- Bullet 4: care + warranty confirmed facts only
 - PROSE: use "plaisir", "savoir-faire", "art", "précision" — NEVER "chaleur" for appliances (chaleur = physical heat, wrong context)
 - Do NOT use "chaleur" for mixers, blenders, or any appliance that does not produce heat
 
@@ -1101,10 +1089,10 @@ PRIORITY — write these first if confirmed:
 5. Format value — never "plusieurs semaines": use "jusqu'à 3 mois" for 473ml+, "jusqu'à 6 semaines" for smaller
 
 BULLET ORDER for Beauty & Health:
-- Bullet ✓1: format + usage duration (e.g. "Flacon 473ml — jusqu'à 3 mois d'utilisation quotidienne")
-- Bullet ✓2: key active ingredients + technology (e.g. "3 Céramides essentiels + Technologie MVE — hydratation 24h")
-- Bullet ✓3: skin type + dermatologist claim (e.g. "Testé dermatologiquement — peaux sensibles et normales")
-- Bullet ✓4: texture/format + confirmed care (e.g. "Formule sans parfum, non-comédogène — sans rinçage")
+- Bullet 1: format + usage duration (e.g. "Flacon 473ml — jusqu'à 3 mois d'utilisation quotidienne")
+- Bullet 2: key active ingredients + technology (e.g. "3 Céramides essentiels + Technologie MVE — hydratation 24h")
+- Bullet 3: skin type + dermatologist claim (e.g. "Testé dermatologiquement — peaux sensibles et normales")
+- Bullet 4: texture/format + confirmed care (e.g. "Formule sans parfum, non-comédogène — sans rinçage")
 
 STRICTLY FORBIDDEN for Beauty & Health:
 - "aucune condition de stockage spéciale" — never mention storage unless required
@@ -1183,9 +1171,9 @@ ${langCfg.cta ? `- End with: "${langCfg.cta}"` : '- No call to action'}
 SELF-CHECK — do this mentally before writing any JSON:
 
 Step 1 — SPECS CHECK:
-- Bullet ✓1 must contain a number or measurement (ml, cm, kg, pieces, hours...)
-- If no measurement is known from the name or image, replace bullet ✓1 with a confirmed functional detail instead
-- NEVER write vague bullets like "✓ Generous capacity" or "✓ Quality construction"
+- Bullet 1 must contain a number or measurement (ml, cm, kg, pieces, hours...)
+- If no measurement is known from the name or image, replace bullet 1 with a confirmed functional detail instead
+- NEVER write vague bullets like "• Generous capacity" or "• Quality construction"
 
 Step 2 — REDUNDANCY CHECK:
 - List every key noun and adjective you plan to use
@@ -1195,10 +1183,10 @@ Step 2 — REDUNDANCY CHECK:
 - "design": max 1 occurrence total
 
 Step 3 — BULLET CHECK:
-- Bullet ✓1: spec with number/measurement — if unknown, use the most specific confirmed functional detail
-- Bullet ✓2: how the mechanism works (one concrete action)
-- Bullet ✓3: design or emotional appeal (style, origin, feel) — no repeated adjectives from prose
-- Bullet ✓4: care or warranty — write in ${targetLang} only. If dishwasher-safe is NOT confirmed, write a storage or warranty fact instead. NEVER invent care instructions.
+- Bullet 1: spec with number/measurement — if unknown, use the most specific confirmed functional detail
+- Bullet 2: how the mechanism works (one concrete action)
+- Bullet 3: design or emotional appeal (style, origin, feel) — no repeated adjectives from prose
+- Bullet 4: care or warranty — write in ${targetLang} only. If dishwasher-safe is NOT confirmed, write a storage or warranty fact instead. NEVER invent care instructions.
 - Each bullet max 12 words
 
 Step 4 — TONE CHECK:
