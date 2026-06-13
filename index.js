@@ -1666,25 +1666,7 @@ app.post('/webhook/product-create', async (req, res) => {
     const body = Buffer.isBuffer(rawBody) ? JSON.parse(rawBody.toString()) : rawBody;
     if (!body.title || !body.id) return;
 
-    // Plan limit check before processing
-    const PLANS = app.locals.PLANS;
-    if (PLANS) {
-      const { data: storeData } = await supabase
-        .from('stores').select('plan, plan_started_at').eq('shop', shop).single();
-      const planName = storeData?.plan || 'free';
-      const planStartedAt = storeData?.plan_started_at || null;
-      const plan = PLANS[planName] || PLANS.free;
-      let productQuery = supabase.from('translations').select('product_id, created_at').eq('shop', shop);
-      if (planStartedAt) productQuery = productQuery.gte('created_at', planStartedAt);
-      const { data: productRows } = await productQuery;
-      const uniqueProducts = new Set((productRows || []).map(r => r.product_id)).size;
-      if (uniqueProducts >= plan.product_limit) {
-        console.warn(`[plan-limit] Webhook blocked for ${shop} — ${planName} limit (${plan.product_limit} products, ${uniqueProducts} used)`);
-        return;
-      }
-    }
-
-    // Kontrollo nëse produkti ekziston tashmë në translations
+    // Kontrollo nese produkti ekziston tashme - perdoret edhe per limit check
     const { data: existing } = await supabase
       .from('translations')
       .select('original_title, original_description')
@@ -1693,6 +1675,28 @@ app.post('/webhook/product-create', async (req, res) => {
       .limit(1);
 
     const isNewProduct = !existing || existing.length === 0;
+
+    // Plan limit check - vetem per produkte te REJA. Produktet ekzistuese
+    // mund te ri-perkthehen kur editohen (psh title/description ndryshon),
+    // pavaresisht limitit - nuk shton ne numerimin e produkteve.
+    if (isNewProduct) {
+      const PLANS = app.locals.PLANS;
+      if (PLANS) {
+        const { data: storeData } = await supabase
+          .from('stores').select('plan, plan_started_at').eq('shop', shop).single();
+        const planName = storeData?.plan || 'free';
+        const planStartedAt = storeData?.plan_started_at || null;
+        const plan = PLANS[planName] || PLANS.free;
+        let productQuery = supabase.from('translations').select('product_id, created_at').eq('shop', shop);
+        if (planStartedAt) productQuery = productQuery.gte('created_at', planStartedAt);
+        const { data: productRows } = await productQuery;
+        const uniqueProducts = new Set((productRows || []).map(r => r.product_id)).size;
+        if (uniqueProducts >= plan.product_limit) {
+          console.warn(`[plan-limit] Webhook blocked (new product) for ${shop} — ${planName} limit (${plan.product_limit} products, ${uniqueProducts} used)`);
+          return;
+        }
+      }
+    }
 
     if (isNewProduct) {
       // Produkt i ri — lokalizon direkt pa asnjë kontroll
