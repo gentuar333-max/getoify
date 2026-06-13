@@ -68,6 +68,8 @@
     .st { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 500; }
     .st-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
     .d-gr { background: var(--green); } .d-gy { background: var(--ink-faint); }
+    .d-sp { background: var(--blue); animation: st-spin 0.8s linear infinite; }
+    @keyframes st-spin { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(0.6); } }
     .action-btn { font-size: 11px; padding: 4px 10px; border-radius: 4px; border: 1px solid var(--border); background: var(--cream); color: var(--ink-muted); cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.1s; }
     .action-btn:hover { background: var(--cream-mid); color: var(--ink); }
     .pager { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-top: 1px solid var(--border); }
@@ -261,7 +263,12 @@
 
   function getStatus(p) {
     const locales = getLocalesForProduct(p.id);
-    return locales.length > 0 ? 'done' : 'none';
+    if (locales.length > 0) return 'done';
+    if (p.created_at) {
+      const ageMs = Date.now() - new Date(p.created_at).getTime();
+      if (ageMs >= 0 && ageMs < 5 * 60 * 1000) return 'processing';
+    }
+    return 'none';
   }
 
   function updateStats() {
@@ -321,6 +328,8 @@
       const status = getStatus(p);
       const statusHtml = status === 'done'
         ? '<div class="st"><div class="st-dot d-gr"></div>Localized</div>'
+        : status === 'processing'
+        ? '<div class="st"><div class="st-dot d-sp"></div>Processing...</div>'
         : '<div class="st"><div class="st-dot d-gy"></div>Not started</div>';
       const pillsHtml = locales.length
         ? (() => {
