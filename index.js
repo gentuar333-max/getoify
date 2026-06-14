@@ -707,8 +707,8 @@ async function generateProductCopyWithClaude(product, targetLang, glossary, clea
       tone: 'Sie',
       cta: 'Jetzt kaufen',
       sensoryWords: 'Genuss, Wärme, Aroma, Qualität, Handwerk, Präzision, Erlebnis',
-      avoidWords: 'robust, solide, hochwertig, effizient, funktional',
-      avoidNote: 'Avoid repeating "robust" or "hochwertig" — use "langlebig", "verarbeitet", "gefertigt" instead',
+      avoidWords: 'robust, solide, hochwertig, effizient, funktional, langlebig, strapazierfähig',
+      avoidNote: 'Avoid "robust", "hochwertig", "langlebig" — use "gefertigt für den Alltag", "verarbeitet", "von hoher Qualität" instead',
       bulletOrder: '1) Specs (Fassungsvermögen/Maße) → 2) Funktion (wie es arbeitet) → 3) Design/Emotion (Stil, Herkunft) → 4) Pflege/Garantie'
     },
     Italian: {
@@ -803,15 +803,21 @@ If the product title contains specs separated by | or — (e.g. "Nike Pegasus 41
 This rule overrides Step A, Step B, and all category knowledge — merchant specs are ground truth.
 
 DESCRIPTION RULES:
-- Write 1-2 opening sentences MAX — keep them SHORT and grounded. Lead with the product's main benefit or key spec, not with poetry.
-- Sensory/emotional words are allowed ONLY if they add real meaning. FORBIDDEN: "nuage", "honore", "incontournable", "rituel", "magie", "transforme" — these are empty metaphors.
+- Opening sentence: always start with what the customer GETS or FEELS, not what the product IS.
+  WRONG: "Yogurt is a fermented dairy product..." RIGHT: "Smooth and creamy — ideal for breakfast, cooking, or a quick snack."
+- Write 1-2 opening sentences MAX — SHORT and grounded. Lead with the product's main benefit or key spec, not with poetry.
+- Sensory/emotional words are allowed ONLY if they add real meaning. FORBIDDEN: "Découvrez", "Explorez", "Entdecken Sie", "nuage", "honore", "incontournable", "rituel", "magie", "transforme" — these are empty metaphors.
 - Preferred words for ${targetLang}: ${langCfg.sensoryWords}
 - AVOID: ${langCfg.avoidWords}
 - ${langCfg.avoidNote}
 - Address the customer using "${langCfg.tone}"
 - Then write exactly 4 bullet points starting with •, in this order:
   ${langCfg.bulletOrder}
+- ONE spec per bullet — NEVER combine multiple specs in one bullet.
+  WRONG: "• Écran 6,9", 120Hz, 200MP, 5000mAh" (4 specs in 1 bullet — FORBIDDEN)
+  RIGHT: "• Écran 6,9" Dynamic AMOLED 2X — 120Hz" then separate bullets for each other spec
 - Each bullet MUST contain a number, measurement, or confirmed technical fact. Poetry bullets are FORBIDDEN.
+  EXCEPTION for unknown/generic products (Step C): if no number is confirmed, write the most specific functional or sensory fact available — never invent a number.
 - RATIO: 80% technical facts, 20% tone. Not the reverse.
 - Total description max 120 words
 
@@ -1046,7 +1052,16 @@ LEGO SETS: piece count + set name, mechanism, age recommendation, dimensions
 CANDLES: weight + burn time, fragrance notes, wax type, vessel format
 STATIONERY: format + pages, ruling type, cover + closure, extras
 HANDMADE: mention "fait main" only if confirmed, never invent materials
-FOOD & GROCERY: describe taste, texture, use-case, occasion — NEVER manufacturing process. If title = "Yogurt" only (no brand/type/size) → do NOT invent Danone, Greek, 0%, Bifidus — write generic customer-facing copy only. If title includes brand or type (e.g. "Fage Total 0% Greek Yogurt 500g") → use those confirmed specs directly.
+FOOD & GROCERY bullet order (use this EXACTLY for food products):
+- Bullet 1: texture + taste (e.g. "Texture crémeuse — saveur naturellement acidulée")
+- Bullet 2: use-case + occasion (e.g. "Petit-déjeuner, smoothies, sauces, marinades")
+- Bullet 3: versatility or serving suggestion — ONLY confirmed facts, NO invented attributes.
+  If nothing is confirmed → write "Nature ou aromatisé — à déguster seul ou avec des fruits"
+  NEVER write "Sans additifs artificiels" unless confirmed in the title or product info.
+- Bullet 4: storage/serving (e.g. "À conserver au réfrigérateur — consommer frais")
+FORBIDDEN for food: "fermentation", "bactéries", "cultures", "probiotiques", "digestibilité", "additifs artificiels" — unless explicitly stated in the title.
+If title = "Yogurt" only → write customer experience (taste/texture/use-case) only. Do NOT invent Danone, Greek, 0%, Bifidus, brand, or origin.
+If title includes brand or type (e.g. "Fage Total 0% Greek Yogurt 500g") → use those confirmed specs directly.
 
 TONE: honest, simple, informative — no poetry, no invented features.
 \` : \`\`}
