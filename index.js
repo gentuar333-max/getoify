@@ -758,6 +758,14 @@ async function generateProductCopyWithClaude(product, targetLang, glossary, clea
       avoidWords: 'robust, solid, hållbar, effektiv, funktionell',
       avoidNote: 'Avoid repeating "robust" or "hållbar" — use "kvalitativ", "tillverkad för att hålla"',
       bulletOrder: '1) Specifikationer → 2) Funktion → 3) Design/Känsla → 4) Skötsel/Garanti'
+    },
+    English: {
+      tone: 'you',
+      cta: null,
+      sensoryWords: 'precision, clarity, craftsmanship, quality, performance',
+      avoidWords: 'cutting-edge, stunning, sleek, vibrant, reliable, dependable, practical, seamless, next-level, game-changing, powerful, robust',
+      avoidNote: 'Replace marketing adjectives with the real spec. WRONG: "reliable performance" RIGHT: "Snapdragon 8 Elite 3nm". WRONG: "vibrant display" RIGHT: "6.7" Dynamic AMOLED 2X — 120Hz"',
+      bulletOrder: '1) Processor + nm node → 2) Screen inches + Hz + tech → 3) Camera MP + aperture → 4) Battery mAh + charge W'
     }
   };
 
