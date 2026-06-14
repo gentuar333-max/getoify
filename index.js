@@ -1052,13 +1052,13 @@ LEGO SETS: piece count + set name, mechanism, age recommendation, dimensions
 CANDLES: weight + burn time, fragrance notes, wax type, vessel format
 STATIONERY: format + pages, ruling type, cover + closure, extras
 HANDMADE: mention "fait main" only if confirmed, never invent materials
-FOOD & GROCERY bullet order (use this EXACTLY for food products):
-- Bullet 1: texture + taste (e.g. "Texture crémeuse — saveur naturellement acidulée")
-- Bullet 2: use-case + occasion (e.g. "Petit-déjeuner, smoothies, sauces, marinades")
+FOOD & GROCERY — OVERRIDE bulletOrder: ignore the general bullet order above. Use ONLY this food-specific order:
+- Bullet 1: texture + taste (e.g. "• Texture crémeuse — saveur naturellement acidulée")
+- Bullet 2: use-case + occasions (e.g. "• Petit-déjeuner, smoothies, sauces, marinades")
 - Bullet 3: versatility or serving suggestion — ONLY confirmed facts, NO invented attributes.
-  If nothing is confirmed → write "Nature ou aromatisé — à déguster seul ou avec des fruits"
+  If nothing is confirmed → write "• Nature ou aromatisé — à déguster seul ou avec des fruits"
   NEVER write "Sans additifs artificiels" unless confirmed in the title or product info.
-- Bullet 4: storage/serving (e.g. "À conserver au réfrigérateur — consommer frais")
+- Bullet 4: storage/serving (e.g. "• À conserver au réfrigérateur — consommer frais")
 FORBIDDEN for food: "fermentation", "bactéries", "cultures", "probiotiques", "digestibilité", "additifs artificiels" — unless explicitly stated in the title.
 If title = "Yogurt" only → write customer experience (taste/texture/use-case) only. Do NOT invent Danone, Greek, 0%, Bifidus, brand, or origin.
 If title includes brand or type (e.g. "Fage Total 0% Greek Yogurt 500g") → use those confirmed specs directly.
@@ -1995,6 +1995,20 @@ async function autoResetWebhooks() {
     }
   } catch(e) { console.error('[auto-webhooks] Error:', e.message); }
 }
+
+// TEST ENDPOINT — remove after testing
+app.post('/test-prompt', async (req, res) => {
+  const { title, lang } = req.body;
+  const product = { title, product_type: '', tags: '', body_html: '' };
+  try {
+    const result = await generateProductCopyWithClaude(
+      product, lang, 'checkout, Shopify', '', null
+    );
+    res.json(result);
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
