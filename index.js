@@ -867,6 +867,10 @@ Category typical ranges (use "up to" framing):
 
 STEP C — UNKNOWN CATEGORY:
 Does not match any known category → write ONLY what is confirmed from the name or image.
+CRITICAL: Describe what the CUSTOMER experiences (taste, texture, feel, use-case, benefit) — NOT how the product is made or manufactured, unless the process itself is a marketed differentiator (e.g. "cold-pressed", "stone-ground", "slow-fermented 48h").
+WRONG: "Yogurt is a fermented dairy product made with live bacterial cultures" (Wikipedia/process)
+RIGHT: "Creamy texture, tangy flavour — versatile for breakfast, cooking, or as a snack" (customer experience)
+If the title gives NO specs (brand, type, size, %) → keep description SHORT (2 sentences max + 4 bullets), honest, and grounded in what IS confirmed. Never invent brand, weight, fat%, origin, or specific culture names.
 
 RULE: "up to" = typical range (Step B). Real confirmed numbers = Step A only. Never mix.
 
@@ -1042,6 +1046,7 @@ LEGO SETS: piece count + set name, mechanism, age recommendation, dimensions
 CANDLES: weight + burn time, fragrance notes, wax type, vessel format
 STATIONERY: format + pages, ruling type, cover + closure, extras
 HANDMADE: mention "fait main" only if confirmed, never invent materials
+FOOD & GROCERY: describe taste, texture, use-case, occasion — NEVER manufacturing process. If title = "Yogurt" only (no brand/type/size) → do NOT invent Danone, Greek, 0%, Bifidus — write generic customer-facing copy only. If title includes brand or type (e.g. "Fage Total 0% Greek Yogurt 500g") → use those confirmed specs directly.
 
 TONE: honest, simple, informative — no poetry, no invented features.
 \` : \`\`}
