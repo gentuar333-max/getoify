@@ -764,7 +764,7 @@ async function generateProductCopyWithClaude(product, targetLang, glossary, clea
       cta: null,
       sensoryWords: 'precision, clarity, craftsmanship, quality, performance',
       avoidWords: 'cutting-edge, stunning, sleek, vibrant, reliable, dependable, practical, seamless, next-level, game-changing, powerful, robust',
-      avoidNote: 'Replace marketing adjectives with the real spec. WRONG: "reliable performance" RIGHT: "Snapdragon 8 Elite 3nm". WRONG: "vibrant display" RIGHT: "6.7" Dynamic AMOLED 2X — 120Hz"',
+      avoidNote: 'Replace marketing adjectives with the real spec — use exact chip name, screen size, MP count instead of vague words like reliable, vibrant, powerful',
       bulletOrder: '1) Processor + nm node → 2) Screen inches + Hz + tech → 3) Camera MP + aperture → 4) Battery mAh + charge W'
     }
   };
