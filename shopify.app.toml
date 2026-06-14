@@ -24,3 +24,14 @@ redirect_urls = [
   "https://getoify.vercel.app/auth/callback",
   "https://getoify.onrender.com/auth/callback"
 ]
+[[webhooks.subscriptions]]
+topics = ["customers/data_request"]
+uri = "/webhook/customers/data-request"
+
+[[webhooks.subscriptions]]
+topics = ["customers/redact"]
+uri = "/webhook/customers/redact"
+
+[[webhooks.subscriptions]]
+topics = ["shop/redact"]
+uri = "/webhook/shop/redact"
