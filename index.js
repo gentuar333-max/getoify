@@ -834,6 +834,7 @@ MANDATORY:
 → ONE spec per bullet — never combine. WRONG: "• A18 Pro gère les tâches exigeantes et créatives". RIGHT: "• Puce A18 Pro 3nm — Neural Engine 16 cœurs".
 → If you know 2 numbers for the same spec (e.g. battery + charge speed), they count as ONE bullet: "• 5000mAh — charge 45W filaire en 70 min".
 → UNCERTAINTY RULE — CRITICAL: If you are not 100% certain of a specific number (chip generation, exact MP count, exact mAh, number of sensors/motors/cyclones), do NOT invent it. Instead use "up to" framing, describe it qualitatively ("multiple sensors", "advanced sensor array"), or omit the uncertain number. WRONG: "• Puce A19 Pro" (A19 doesn't exist) or "• 8 pressure sensors" (invented count). RIGHT: "• Puce A17 Pro 3nm" (confirmed) or "• Piezo sensor adjusts suction automatically" (no fake count). If unsure whether it's A17 or A18, write "Puce Apple Pro 3nm" without the generation number. A fabricated spec is worse than a missing one — merchants will publish it as fact.
+→ PROCESSOR NAME RULE: If you recognize the brand but are NOT certain of the exact processor name for this specific model (e.g. Samsung Galaxy A55, mid-range phones, older flagships) → write "octa-core processor" or omit entirely. NEVER invent a chip name. WRONG: "MediaTek Dimensity 6000" (invented). RIGHT: "Processeur octa-core" or skip bullet and use confirmed spec instead.
 
 Priority specs by product type — use these exact data points:
 - Smartphone → 1) processor name + nm node  2) screen: inches + Hz + tech  3) main camera MP + aperture  4) battery mAh + charge W
