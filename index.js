@@ -1780,6 +1780,39 @@ app.post('/webhook/product-delete', async (req, res) => {
   }
 });
 
+// ─── COMPLIANCE WEBHOOKS (required for Shopify App Store) ────────────────────
+
+// customers/data_request — merchant asks for customer data export
+app.post('/webhook/customers/data-request', (req, res) => {
+  // Getoify does not store personal customer data — nothing to export
+  console.log('[compliance] customers/data_request received');
+  res.status(200).send('OK');
+});
+
+// customers/redact — merchant asks to delete customer data
+app.post('/webhook/customers/redact', (req, res) => {
+  // Getoify does not store personal customer data — nothing to delete
+  console.log('[compliance] customers/redact received');
+  res.status(200).send('OK');
+});
+
+// shop/redact — shop uninstalled, delete all shop data
+app.post('/webhook/shop/redact', async (req, res) => {
+  res.status(200).send('OK');
+  const rawBody = req.body;
+  try {
+    const body = Buffer.isBuffer(rawBody) ? JSON.parse(rawBody.toString()) : rawBody;
+    const shop = body.myshopify_domain || req.headers['x-shopify-shop-domain'];
+    if (!shop) return;
+    console.log('[compliance] shop/redact — deleting all data for:', shop);
+    await supabase.from('translations').delete().eq('shop', shop);
+    await supabase.from('stores').delete().eq('shop', shop);
+    console.log('[compliance] shop/redact done:', shop);
+  } catch(e) {
+    console.error('[compliance] shop/redact error:', e.message);
+  }
+});
+
 app.post('/process-product', async (req, res) => {
   const { shop, productId, productTitle } = req.body;
   let pid;
