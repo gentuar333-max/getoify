@@ -606,34 +606,6 @@ function isBeautyHealthProduct(product) {
 // Generic fallback
 function isGenericProduct(product) { return true; }
 
-// Electronics keywords
-const ELECTRONICS_TYPES = [
-  'electronics', 'smartphone', 'phone', 'laptop', 'tablet', 'camera', 'audio', 'computer'
-];
-const ELECTRONICS_TITLE_KEYWORDS = [
-  // Smartphones
-  'iphone', 'galaxy', 'pixel', 'oneplus', 'xiaomi', 'huawei', 'realme', 'motorola',
-  // Laptops/tablets
-  'macbook', 'ipad', 'surface', 'chromebook', 'thinkpad', 'xps', 'zenbook',
-  // Audio
-  'airpods', 'earbuds', 'headphones', 'earphones', 'wh-', 'wf-', 'buds',
-  // TV/Monitor
-  'tv', 'monitor', 'oled', 'qled',
-  // Camera
-  'gopro', 'mirrorless', 'dslr',
-  // Accessories
-  'power bank', 'powerbank', 'charger', 'usb-c hub',
-  // Chips (title contains chip = electronics)
-  'snapdragon', 'm1', 'm2', 'm3', 'a17', 'a18', 'intel', 'ryzen'
-];
-
-function isElectronicsProduct(product) {
-  const type = (product.product_type || '').toLowerCase();
-  const title = (product.title || '').toLowerCase();
-  if (ELECTRONICS_TYPES.some(t => type.includes(t))) return true;
-  return ELECTRONICS_TITLE_KEYWORDS.some(k => title.includes(k));
-}
-
 // Sport & Fitness keywords
 const SPORT_FITNESS_TYPES = [
   'sport', 'fitness', 'gym', 'workout', 'training', 'recovery', 'yoga', 'running', 'cycling'
@@ -714,10 +686,9 @@ async function generateProductCopyWithClaude(product, targetLang, glossary, clea
   const beautyHealth = !homeKitchen && isBeautyHealthProduct(product);
   const sportFitness = !homeKitchen && !beautyHealth && isSportFitnessProduct(product);
   const fashionApparel = !homeKitchen && !beautyHealth && !sportFitness && isFashionApparelProduct(product);
-  const electronics = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && isElectronicsProduct(product);
-  const isGeneric = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && !electronics;
+  const isGeneric = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel;
 
-  console.log(`[category] homeKitchen:${homeKitchen} beautyHealth:${beautyHealth} sportFitness:${sportFitness} fashionApparel:${fashionApparel} electronics:${electronics} product:"${product.title}"`);
+  console.log(`[category] homeKitchen:${homeKitchen} beautyHealth:${beautyHealth} sportFitness:${sportFitness} fashionApparel:${fashionApparel} product:"${product.title}"`);
 
   console.log(`[model-select] ${model} — image:${hasImage} body:${!!cleanBody} product:"${product.title}"`);
 
@@ -961,39 +932,6 @@ FIT LANGUAGE — always use precise fit terms, never vague descriptions:
 
 TONE: aspirational but grounded — mix lifestyle language with concrete specs.
 ` : ''}
-
-${electronics ? `
-ELECTRONICS SPECIFIC RULES:
-This is a tech or electronics product. Apply these rules:
-
-PROSE OPENING — mandatory:
-Never start with "Experience", "Discover", "Explore", "Meet".
-Start with the KEY SPEC + what the customer gets from it.
-RIGHT: "The Galaxy S25+ brings Snapdragon 8 Elite speed and a 6.7" AMOLED display to your everyday."
-WRONG: "Experience the future of mobile technology."
-
-PRIORITY SPECS by product type — use these exact data points, one per bullet:
-- Smartphone  → bullet1: processor+nm | bullet2: screen"+Hz+tech | bullet3: camera MP+aperture | bullet4: battery mAh+chargeW
-- Laptop      → bullet1: processor+cores | bullet2: RAM+storage | bullet3: screen"+resolution | bullet4: battery hours
-- Earbuds     → bullet1: ANC dB | bullet2: battery h per bud+case h | bullet3: BT version+codec | bullet4: driver mm or charge time
-- Headphones  → bullet1: ANC processor name | bullet2: battery hours | bullet3: BT version+codec | bullet4: weight g+foldable
-- Tablet      → bullet1: processor | bullet2: RAM+storage | bullet3: screen"+resolution | bullet4: battery hours
-- Power bank  → bullet1: mAh | bullet2: charge W output | bullet3: ports count | bullet4: weight g
-- Charger     → bullet1: W output | bullet2: ports+types | bullet3: cable length | bullet4: compatibility
-
-STRICTLY FORBIDDEN:
-- "cutting-edge", "stunning", "powerful", "smart", "advanced", "innovative", "next-generation", "seamless"
-- Combining 2+ specs in 1 bullet
-- Inventing mAh for Apple products (Apple never publishes battery capacity)
-- Inventing processor names for mid-range phones
-
-PROCESSOR RULE:
-- Flagship confirmed → write exact name: Snapdragon 8 Elite, A17 Pro 3nm, M3 Pro
-- Mid-range uncertain → write "octa-core processor" or omit
-- NEVER invent a chip name
-
-TONE: direct, factual, spec-driven — no lifestyle language, no poetry.
-` : ``}
 
 ${sportFitness ? `
 SPORT & FITNESS SPECIFIC RULES:
