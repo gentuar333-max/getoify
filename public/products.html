@@ -190,7 +190,7 @@
 
   function nav(e, page) { e.preventDefault(); window.location.href = page + '?shop=' + shop; }
 
-  const langFlags = { de: '🇩🇪', fr: '🇫🇷', it: '🇮🇹', es: '🇪🇸', nl: '🇳🇱', pt: '🇵🇹', 'pt-BR': '🇧🇷', 'pt-br': '🇧🇷', pl: '🇵🇱', ja: '🇯🇵', hi: '🇮🇳', id: '🇮🇩', en: null, 'en-GB': null, 'en-US': null, 'en-AU': null, 'en-CA': null, zh: '🇨🇳', ar: '🇸🇦', ko: '🇰🇷', sv: '🇸🇪', da: '🇩🇰', fi: '🇫🇮', nb: '🇳🇴' };
+  const langFlags = { de: '🇩🇪', fr: '🇫🇷', it: '🇮🇹', es: '🇪🇸', nl: '🇳🇱', pt: '🇵🇹', 'pt-BR': '🇧🇷', 'pt-br': '🇧🇷', pl: '🇵🇱', ja: '🇯🇵', hi: '🇮🇳', id: '🇮🇩', en: 'EN', 'en-GB': 'EN', 'en-US': 'EN', 'en-AU': 'EN', 'en-CA': 'EN', zh: '🇨🇳', ar: '🇸🇦', ko: '🇰🇷' };
   let allProducts = [];
   let translatedMap = {};
   let activeFilter = 'all';
@@ -336,15 +336,9 @@
             const MAX = 3;
             const shown = locales.slice(0, MAX);
             const rest = locales.length - MAX;
-            const pills = shown.map(l => {
-              const flag = langFlags[l];
-              if (flag === null) {
-                return `<span class="lpill lp-done" style="font-size:9px;padding:2px 5px;letter-spacing:0.03em">EN</span>`;
-              }
-              return `<span class="lpill lp-done" style="font-size:12px;padding:1px 4px;line-height:1">${flag}</span>`;
-            }).join('');
-            const more = rest > 0 ? `<span class="lpill lp-done" style="color:var(--ink-faint)">+${rest}</span>` : '';
-            return pills + more;
+            const flags = shown.map(l => langFlags[l] || l.toUpperCase()).join(' ');
+            const label = rest > 0 ? `${flags} <span style="color:var(--ink-faint);font-weight:500">+${rest}</span>` : flags;
+            return `<span class="lpill lp-done">${label}</span>`;
           })()
         : '<span class="lpill lp-none">No translations</span>';
       const date = p.created_at ? new Date(p.created_at).toLocaleDateString() : '—';
