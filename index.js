@@ -763,7 +763,7 @@ async function generateProductCopyWithClaude(product, targetLang, glossary, clea
       tone: 'you',
       cta: null,
       sensoryWords: 'precision, clarity, craftsmanship, quality, performance',
-      avoidWords: 'cutting-edge, stunning, sleek, vibrant, reliable, dependable, practical, seamless, next-level, game-changing, powerful, robust',
+      avoidWords: 'cutting-edge, stunning, sleek, vibrant, reliable, dependable, practical, seamless, next-level, game-changing, powerful, robust, immersive, advanced, innovative, revolutionary, exceptional, ultimate, premium, superior, effortless, intelligent',
       avoidNote: 'Replace marketing adjectives with the real spec — use exact chip name, screen size, MP count instead of vague words like reliable, vibrant, powerful',
       bulletOrder: '1) Processor + nm node → 2) Screen inches + Hz + tech → 3) Camera MP + aperture → 4) Battery mAh + charge W'
     }
@@ -784,10 +784,11 @@ async function generateProductCopyWithClaude(product, targetLang, glossary, clea
   // Blloku i rregullave te perbashketa per te dy promptet
   const sharedRules = `
 TITLE RULES:
-- Translate the product name naturally into ${targetLang}
-- Add key specs (capacity, material, size) ONLY if confirmed from the product name or image — never invent
-- Format: [Translated name] [Premium if strongly justified] — [spec1] | [spec2]
-- Elegant and informative — no ALL CAPS, no exclamation marks
+- CRITICAL: NEVER modify, extend, or add specs to the original product name. Translate it naturally but keep it identical in structure.
+  WRONG: "iPhone 15 Pro" → "iPhone 15 Pro — A17 Pro | 6.1" | 48MP" (added specs — FORBIDDEN)
+  RIGHT: "iPhone 15 Pro" → "iPhone 15 Pro" (identical, only translated if non-English name)
+- Only add specs if the merchant ALREADY included them in the title (e.g. "Nike Pegasus 41 — ReactX | 10mm")
+- No ALL CAPS, no exclamation marks
 - Max 70 chars
 
 UNIT CONVERSION — apply automatically for all non-English languages:
