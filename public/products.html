@@ -336,9 +336,12 @@
             const MAX = 3;
             const shown = locales.slice(0, MAX);
             const rest = locales.length - MAX;
-            const flags = shown.map(l => langFlags[l] || l.toUpperCase()).join(' ');
-            const label = rest > 0 ? `${flags} <span style="color:var(--ink-faint);font-weight:500">+${rest}</span>` : flags;
-            return `<span class="lpill lp-done">${label}</span>`;
+            const pills = shown.map(l => {
+              const label = langFlags[l] || l.split('-')[0].toUpperCase();
+              return `<span class="lpill lp-done" style="font-size:10px;padding:2px 6px">${label}</span>`;
+            }).join('');
+            const more = rest > 0 ? `<span class="lpill lp-done" style="color:var(--ink-faint)">+${rest}</span>` : '';
+            return pills + more;
           })()
         : '<span class="lpill lp-none">No translations</span>';
       const date = p.created_at ? new Date(p.created_at).toLocaleDateString() : '—';
