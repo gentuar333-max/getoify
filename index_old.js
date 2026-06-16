@@ -758,14 +758,6 @@ async function generateProductCopyWithClaude(product, targetLang, glossary, clea
       avoidWords: 'robust, solid, hållbar, effektiv, funktionell',
       avoidNote: 'Avoid repeating "robust" or "hållbar" — use "kvalitativ", "tillverkad för att hålla"',
       bulletOrder: '1) Specifikationer → 2) Funktion → 3) Design/Känsla → 4) Skötsel/Garanti'
-    },
-    English: {
-      tone: 'you',
-      cta: null,
-      sensoryWords: 'precision, clarity, craftsmanship, quality, performance',
-      avoidWords: 'cutting-edge, stunning, sleek, vibrant, reliable, dependable, practical, seamless, next-level, game-changing, powerful, robust, immersive, advanced, innovative, revolutionary, exceptional, ultimate, premium, superior, effortless, intelligent',
-      avoidNote: 'Replace marketing adjectives with the real spec — use exact chip name, screen size, MP count instead of vague words like reliable, vibrant, powerful',
-      bulletOrder: '1) Processor + nm node → 2) Screen inches + Hz + tech → 3) Camera MP + aperture → 4) Battery mAh + charge W'
     }
   };
 
@@ -784,11 +776,10 @@ async function generateProductCopyWithClaude(product, targetLang, glossary, clea
   // Blloku i rregullave te perbashketa per te dy promptet
   const sharedRules = `
 TITLE RULES:
-- CRITICAL: NEVER modify, extend, or add specs to the original product name. Translate it naturally but keep it identical in structure.
-  WRONG: "iPhone 15 Pro" → "iPhone 15 Pro — A17 Pro | 6.1" | 48MP" (added specs — FORBIDDEN)
-  RIGHT: "iPhone 15 Pro" → "iPhone 15 Pro" (identical, only translated if non-English name)
-- Only add specs if the merchant ALREADY included them in the title (e.g. "Nike Pegasus 41 — ReactX | 10mm")
-- No ALL CAPS, no exclamation marks
+- Translate the product name naturally into ${targetLang}
+- Add key specs (capacity, material, size) ONLY if confirmed from the product name or image — never invent
+- Format: [Translated name] [Premium if strongly justified] — [spec1] | [spec2]
+- Elegant and informative — no ALL CAPS, no exclamation marks
 - Max 70 chars
 
 UNIT CONVERSION — apply automatically for all non-English languages:
@@ -1305,7 +1296,6 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
     const claudeRes = await axios.post('https://api.anthropic.com/v1/messages', {
       model,
       max_tokens: 1500,
-      temperature: 0,
       messages: [{ role: 'user', content: userContent }]
     }, {
       headers: {
@@ -1782,39 +1772,6 @@ app.post('/webhook/product-delete', async (req, res) => {
   }
 });
 
-// ─── COMPLIANCE WEBHOOKS (required for Shopify App Store) ────────────────────
-
-// customers/data_request — merchant asks for customer data export
-app.post('/webhook/customers/data-request', (req, res) => {
-  // Getoify does not store personal customer data — nothing to export
-  console.log('[compliance] customers/data_request received');
-  res.status(200).send('OK');
-});
-
-// customers/redact — merchant asks to delete customer data
-app.post('/webhook/customers/redact', (req, res) => {
-  // Getoify does not store personal customer data — nothing to delete
-  console.log('[compliance] customers/redact received');
-  res.status(200).send('OK');
-});
-
-// shop/redact — shop uninstalled, delete all shop data
-app.post('/webhook/shop/redact', async (req, res) => {
-  res.status(200).send('OK');
-  const rawBody = req.body;
-  try {
-    const body = Buffer.isBuffer(rawBody) ? JSON.parse(rawBody.toString()) : rawBody;
-    const shop = body.myshopify_domain || req.headers['x-shopify-shop-domain'];
-    if (!shop) return;
-    console.log('[compliance] shop/redact — deleting all data for:', shop);
-    await supabase.from('translations').delete().eq('shop', shop);
-    await supabase.from('stores').delete().eq('shop', shop);
-    console.log('[compliance] shop/redact done:', shop);
-  } catch(e) {
-    console.error('[compliance] shop/redact error:', e.message);
-  }
-});
-
 app.post('/process-product', async (req, res) => {
   const { shop, productId, productTitle } = req.body;
   let pid;
@@ -1969,26 +1926,28 @@ async function pollNewProducts() {
 
 // Collection webhook
 app.post('/webhook/collection-create', async (req, res) => {
-  res.status(200).send('OK');
   const rawBody = req.body;
   const shop = req.headers['x-shopify-shop-domain'];
   console.log('=== WEBHOOK collection-create/update ===', shop);
   try {
     const body = Buffer.isBuffer(rawBody) ? JSON.parse(rawBody.toString()) : rawBody;
-    if (!body.id) return;
+    if (!body.id) { res.status(200).send('OK'); return; }
     const store = await getStore(shop).catch(() => null);
-    if (!store?.access_token) return;
+    if (!store?.access_token) { res.status(200).send('OK'); return; }
     const savedLocales = store.selected_locales || [];
-    if (!savedLocales.length) return;
+    if (!savedLocales.length) { res.status(200).send('OK'); return; }
     const glossary = store.glossary || 'checkout, Shopify';
+    const localeMap = { 'fr':'French','de':'German','it':'Italian','es':'Spanish','nl':'Dutch','pt':'Portuguese','pl':'Polish','sv':'Swedish' };
+    // Lokalizon PARA res.send — ashtu Vercel nuk e mbyll instancen
     for (const locale of savedLocales) {
       try {
-        await localizeCollection(shop, store.access_token, body.id, LOCALE_MAP[locale] || locale, locale, glossary);
+        await localizeCollection(shop, store.access_token, body.id, localeMap[locale] || locale, locale, glossary);
         console.log(`[collection webhook] Done: ${body.title || body.id} → ${locale}`);
       } catch(e) { console.error('[collection webhook] Error:', locale, e.message); }
       await new Promise(r => setTimeout(r, 300));
     }
   } catch(err) { console.error('[collection webhook] Error:', err.message); }
+  res.status(200).send('OK');
 });
 
 // Vercel Cron endpoint — called every 5 minutes by vercel.json crons config
