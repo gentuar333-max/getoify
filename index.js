@@ -603,6 +603,48 @@ function isBeautyHealthProduct(product) {
   return BEAUTY_HEALTH_TITLE_KEYWORDS.some(k => title.includes(k));
 }
 
+// Tech & Electronics keywords — per detektim nga titulli/product_type
+const TECH_ELECTRONICS_TYPES = [
+  'electronics', 'phone', 'smartphone', 'tablet', 'laptop', 'computer',
+  'audio', 'wearable', 'smartwatch', 'camera', 'gaming'
+];
+const TECH_ELECTRONICS_TITLE_KEYWORDS = [
+  'iphone', 'galaxy', 'pixel', 'ipad', 'macbook', 'surface', 'thinkpad',
+  'smartphone', 'smartwatch', 'earbuds', 'headphones', 'earphone',
+  'laptop', 'tablet', 'monitor', 'webcam', 'router', 'ssd', 'processor',
+  'graphics card', 'gpu', 'cpu', 'console', 'playstation', 'xbox', 'switch',
+  'drone', 'action camera', 'gopro', 'smart tv', 'soundbar', 'projector'
+];
+
+function isTechElectronicsProduct(product) {
+  const type = (product.product_type || '').toLowerCase();
+  const title = (product.title || '').toLowerCase();
+  if (TECH_ELECTRONICS_TYPES.some(t => type.includes(t))) return true;
+  return TECH_ELECTRONICS_TITLE_KEYWORDS.some(k => title.includes(k));
+}
+
+// Specifika qe nese gjenden si metafield, konsiderohen "konfirmim i jashtem"
+// per nje produkt tech/electronics — perdoret nga hasExternalConfirmation
+const SPEC_METAFIELD_KEYWORDS = [
+  'battery', 'ram', 'storage', 'display', 'screen', 'camera', 'processor',
+  'cpu', 'chip', 'resolution', 'capacity', 'weight', 'dimension', 'water',
+  'resistance', 'charge', 'watt', 'refresh', 'hz', 'mp', 'gb', 'mah'
+];
+
+function hasSpecMetafields(metafields) {
+  return (metafields || []).some(mf =>
+    SPEC_METAFIELD_KEYWORDS.some(k => (mf.key || '').toLowerCase().includes(k))
+  );
+}
+
+// Zbulon nese titulli ka tashme specifika te konfirmuara nga shitesi (— ose | te ndara)
+// Format: "Nike Pegasus 41 — ReactX | 10mm | 280g" — nese ekziston, AI nuk ka nevoje te shpike
+function hasMerchantSpecsInTitle(title) {
+  if (!title) return false;
+  const afterSeparator = title.split(/[—|]/).slice(1).join(' ');
+  return /\d/.test(afterSeparator);
+}
+
 // Generic fallback
 function isGenericProduct(product) { return true; }
 
@@ -677,7 +719,7 @@ function isHomeKitchenProduct(product) {
   return HOME_KITCHEN_TITLE_KEYWORDS.some(k => title.includes(k));
 }
 
-async function generateProductCopyWithClaude(product, targetLang, glossary, cleanBody, imageUrl) {
+async function generateProductCopyWithClaude(product, targetLang, glossary, cleanBody, imageUrl, metafields = []) {
   const category = product.product_type || '';
   const tags = (product.tags || '').split(',').slice(0, 5).join(', ');
   const hasImage = !!imageUrl;
@@ -686,9 +728,18 @@ async function generateProductCopyWithClaude(product, targetLang, glossary, clea
   const beautyHealth = !homeKitchen && isBeautyHealthProduct(product);
   const sportFitness = !homeKitchen && !beautyHealth && isSportFitnessProduct(product);
   const fashionApparel = !homeKitchen && !beautyHealth && !sportFitness && isFashionApparelProduct(product);
-  const isGeneric = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel;
+  const techElectronics = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && isTechElectronicsProduct(product);
+  const isGeneric = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && !techElectronics;
 
-  console.log(`[category] homeKitchen:${homeKitchen} beautyHealth:${beautyHealth} sportFitness:${sportFitness} fashionApparel:${fashionApparel} product:"${product.title}"`);
+  // Konfirmim i jashtem: titulli ka specifika te shitesit, OSE metafields kane
+  // te dhena specifikash reale. Nese asnje nuk eshte e vertete, STEP A (recall
+  // nga memoria) çaktivizohet me poshte ne sharedRules — shih EXTERNAL CONFIRMATION STATUS.
+  const hasExternalConfirmation = hasMerchantSpecsInTitle(product.title) || hasSpecMetafields(metafields);
+  const confirmedSpecsBlock = metafields.length > 0
+    ? `\nCONFIRMED MERCHANT DATA (Shopify metafields — treat as ground truth, same priority as title override):\n${metafields.slice(0, 15).map(mf => `- ${mf.key}: ${mf.value}`).join('\n')}\n`
+    : '';
+
+  console.log(`[category] homeKitchen:${homeKitchen} beautyHealth:${beautyHealth} sportFitness:${sportFitness} fashionApparel:${fashionApparel} techElectronics:${techElectronics} externalConfirmation:${hasExternalConfirmation} product:"${product.title}"`);
 
   console.log(`[model-select] ${model} — image:${hasImage} body:${!!cleanBody} product:"${product.title}"`);
 
@@ -831,6 +882,10 @@ DESCRIPTION RULES:
 - Total description max 120 words
 
 CATEGORY KNOWLEDGE RULE:
+
+EXTERNAL CONFIRMATION STATUS: ${hasExternalConfirmation ? 'CONFIRMED — see CONFIRMED MERCHANT DATA below or merchant title for real spec data.' : 'NOT CONFIRMED — no merchant-provided specs exist for this product.'}
+${!hasExternalConfirmation ? 'Because there is no external confirmation, STEP A\'s permission to write an exact number from memory is SUSPENDED for this product, even if you recognize the brand and model with high confidence. Treat this product as STEP B: use "up to" / qualitative framing for every numeric spec. Do not write an exact mAh, Hz, MP, or chip generation number unless it appears in the title or in CONFIRMED MERCHANT DATA.' : ''}
+
 You are an ecommerce expert with deep product knowledge across all categories. Apply this logic:
 
 STEP A — KNOWN BRAND + MODEL (MANDATORY SPECS):
@@ -1054,7 +1109,7 @@ ALWAYS start with: KEY DIFFERENTIATOR + ONE SPEC.
 Example: "Montre GPS multisport avec écran MIP — autonomie 21 jours smartwatch."
 ` : ''}
 
-\${isGeneric ? \`
+${isGeneric ? `
 GENERIC & UNKNOWN PRODUCT RULES — ZERO HALLUCINATION:
 Write ONLY what is confirmed in the title or image. Never invent specs.
 
@@ -1074,7 +1129,7 @@ If title = "Yogurt" only → write customer experience (taste/texture/use-case) 
 If title includes brand or type (e.g. "Fage Total 0% Greek Yogurt 500g") → use those confirmed specs directly.
 
 TONE: honest, simple, informative — no poetry, no invented features.
-\` : \`\`}
+` : ''}
 
 ${homeKitchen ? `
 HOME & KITCHEN SPECIFIC RULES:
@@ -1251,7 +1306,7 @@ Glossary (keep these terms exactly as written, never translate): ${glossary || '
 Target language: ${targetLang}
 
 ${titleSection}
-
+${confirmedSpecsBlock}
 Look carefully at the image. Identify ONLY what is clearly visible: materials, colors, shape, dimensions, text/branding, use case.
 Do NOT invent specifications that are not visible or stated.`;
 
@@ -1291,7 +1346,7 @@ TRANSLATION RULES:
       : `Product name: "${product.title}"
 ${category ? `Category: ${category}` : ''}
 ${tags ? `Tags: ${tags}` : ''}
-
+${confirmedSpecsBlock}
 No description exists. Write product copy in ${targetLang} based ONLY on the product name above — no invention.`
     }`;
 
@@ -1389,7 +1444,7 @@ async function localizeProduct(shop, token, productId, targetLang, locale, tone,
     console.log(`[image] "${product.title}" has image + no body — routing to Sonnet 4.6`);
   }
 
-  let translated = await generateProductCopyWithClaude(product, targetLang, glossary, cleanBody, imageUrl);
+  let translated = await generateProductCopyWithClaude(product, targetLang, glossary, cleanBody, imageUrl, metafields);
 
   // Perkthej metafields
   const translatedMetafields = [];
@@ -1434,7 +1489,7 @@ async function localizeProduct(shop, token, productId, targetLang, locale, tone,
       let bodyForShopify = translated.description;
       if (localeKey !== primaryKey) {
         const primaryLang = LOCALE_MAP[primaryKey] || primaryLocale;
-        const primaryCopy = await generateProductCopyWithClaude(product, primaryLang, glossary, '', imageUrl);
+        const primaryCopy = await generateProductCopyWithClaude(product, primaryLang, glossary, '', imageUrl, metafields);
         bodyForShopify = primaryCopy.description;
       }
       const bodyUpdated = await updateShopifyProductBodyIfEmpty(shop, token, pid, bodyForShopify);
