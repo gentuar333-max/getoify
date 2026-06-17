@@ -574,9 +574,8 @@ function titleHasKnownBrand(title) {
   return KNOWN_BRANDS.some(brand => t.includes(brand));
 }
 
-// Haiku per gjithcka — me i lire, CATEGORY KNOWLEDGE e mbulon te gjitha rastet
 function selectModel(hasImage, cleanBody, productTitle) {
-  return 'claude-haiku-4-5-20251001';
+  return 'claude-sonnet-4-6';
 }
 
 // Beauty & Health keywords — per detektim nga titulli
