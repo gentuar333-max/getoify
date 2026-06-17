@@ -542,6 +542,34 @@ async function updateShopifyProductBodyIfEmpty(shop, token, pid, descriptionText
   return true;
 }
 
+// Perkthim fushe-per-fushe (metafields) — Gemini 3.1 Flash-Lite, modeli me i lire
+// i Google, pozicionuar zyrtarisht per "high-volume... translation" pune. Detyra
+// eshte e izoluar (perkthe vleren e dhene, mos shpik gjë), pra i pershtatet mire
+// pa rrezikuar gjenerimin kryesor te specifikave (ai mbetet plotesisht te Claude,
+// shih generateProductCopy). Nese thirrja deshton (kyc i gabuar/mungues,
+// API jashte funksionimit), hidhet error — caller (localizeProduct) e kap dhe
+// thjesht e lë ate fushe te paperkthyer per kete xhirim, sic ndodhte edhe me Claude.
+async function translateFieldWithGemini(text, fieldKey, targetLang) {
+  const prompt = `Translate this product field value into ${targetLang}. Return ONLY the translated text, nothing else. Keep brand names, technical terms, and numbers unchanged. Field: "${fieldKey}". Value: ${text}`;
+  const res = await axios.post(
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent',
+    {
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { maxOutputTokens: 150, temperature: 0 }
+    },
+    {
+      headers: {
+        'x-goog-api-key': process.env.GEMINI_API_KEY,
+        'content-type': 'application/json'
+      },
+      timeout: 15000
+    }
+  );
+  const translated = res.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+  if (!translated) throw new Error('Empty response from Gemini');
+  return translated;
+}
+
 // Brands te njohura — kur titulli permban keto, Haiku e di gjithcka nga njohurite
 // Sonnet nuk nevojitet pasi CATEGORY KNOWLEDGE + Step A e mbulon
 const KNOWN_BRANDS = [
@@ -574,9 +602,10 @@ function titleHasKnownBrand(title) {
   return KNOWN_BRANDS.some(brand => t.includes(brand));
 }
 
-function selectModel(hasImage, cleanBody, productTitle) {
-  return 'claude-sonnet-4-6';
-}
+// Modeli zgjidhet tani EXPLICITISHT brenda generateProductCopy (Sonnet per
+// gjenerimin e pare, Gemini per cdo perkthim) — jo me nje funksion te vecante
+// si selectModel(), pikerisht sepse nje ndryshim i heshtur aty ishte shkaku
+// i shpenzimit te tepruar te diskutuar me heret (Sonnet po perdorej per gjithcka).
 
 // Beauty & Health keywords — per detektim nga titulli
 const BEAUTY_HEALTH_TYPES = [
@@ -718,11 +747,10 @@ function isHomeKitchenProduct(product) {
   return HOME_KITCHEN_TITLE_KEYWORDS.some(k => title.includes(k));
 }
 
-async function generateProductCopyWithClaude(product, targetLang, glossary, cleanBody, imageUrl, metafields = []) {
+async function generateProductCopy(product, targetLang, glossary, cleanBody, imageUrl, metafields = []) {
   const category = product.product_type || '';
   const tags = (product.tags || '').split(',').slice(0, 5).join(', ');
   const hasImage = !!imageUrl;
-  const model = selectModel(hasImage, cleanBody, product.title);
   const homeKitchen = isHomeKitchenProduct(product);
   const beautyHealth = !homeKitchen && isBeautyHealthProduct(product);
   const sportFitness = !homeKitchen && !beautyHealth && isSportFitnessProduct(product);
@@ -739,8 +767,6 @@ async function generateProductCopyWithClaude(product, targetLang, glossary, clea
     : '';
 
   console.log(`[category] homeKitchen:${homeKitchen} beautyHealth:${beautyHealth} sportFitness:${sportFitness} fashionApparel:${fashionApparel} techElectronics:${techElectronics} externalConfirmation:${hasExternalConfirmation} product:"${product.title}"`);
-
-  console.log(`[model-select] ${model} — image:${hasImage} body:${!!cleanBody} product:"${product.title}"`);
 
   // ─── LANGUAGE CONFIG ───────────────────────────────────────────────────────
   // Rregulla specifike per cdo gjuhe: tone, CTA, sensory words, forbidden words
@@ -1293,8 +1319,10 @@ Respond ONLY in this exact JSON format, no extra text, no markdown backticks:
     ? sharedRules.slice(0, catStart) + sharedRules.slice(catEnd)
     : sharedRules; // fallback — never breaks if markers shift
 
+  let isTranslation = false;
+
   if (hasImage && !cleanBody) {
-    // Sonnet 4.6 — imazh + titull, gjeneron nga zero
+    // GJENERIM I PARE me imazh — Claude Sonnet 4.6 (vizion), STEP A/B/C te plota
     const titleSection = product.title
       ? `Product name: "${product.title}"\n${category ? `Category: ${category}\n` : ''}${tags ? `Tags: ${tags}\n` : ''}`
       : `No product name provided. Identify the product from the image and write an appropriate name in ${targetLang}.`;
@@ -1316,20 +1344,21 @@ Do NOT invent specifications that are not visible or stated.`;
       { type: 'image', source: { type: 'url', url: imageUrl } },
       { type: 'text', text: contextBlock }
     ];
-  } else {
-    // Haiku — tekst i paster (perkthim ose gjenerim nga titulli)
-    // rulesBlock varet VETEM nga targetLang/langCfg/kategoria, jo nga produkti —
-    // i pari + cache_control: produkte te tjera te NJEJTES gjuhe+kategori
-    // (brenda 5 min, bulk run) marrin -90% kosto per kete pjese (input).
-    const rulesBlock = cleanBody ? translationRules : sharedRules;
-
+  } else if (cleanBody) {
+    // PERKTHIM — Gemini 3.1 Flash-Lite. "cleanBody" ketu mund te jete ose
+    // pershkrim i shkruar nga shitesi, ose gjenerimi i pare i AI-t (Sonnet) i
+    // ruajtur tashme ne Shopify body_html nga nje lokale e meparshme e ketij
+    // produkti (shih primaryCopy/updateShopifyProductBodyIfEmpty ne localizeProduct).
+    // Te dyja jane "perkthim i nje teksti ekzistues", jo "gjenerim" — Sonnet
+    // s'nevojitet, dhe e njejta translationRules (rregullat e tonit/SEO per
+    // gjuhe) perdoret pavaresisht se cili provider e ekzekuton.
+    isTranslation = true;
     const contextBlock = `You are a native ${targetLang} speaker and professional ecommerce copywriter.
 
 Glossary (keep these terms exactly as written, never translate): ${glossary || 'checkout, Shopify'}
 Target language: ${targetLang}
 
-${cleanBody
-      ? `The merchant has written this product description. Translate it faithfully into ${targetLang}.
+The merchant has written this product description. Translate it faithfully into ${targetLang}.
 Do NOT rewrite, do NOT add information, do NOT change the structure or style.
 Preserve bullet points, formatting, and tone exactly.
 
@@ -1341,47 +1370,79 @@ TRANSLATION RULES:
 - If the original has bullets keep bullets, if prose keep prose
 - Apply the tone "${langCfg.tone}" consistently throughout
 - Use sensory words where natural: ${langCfg.sensoryWords}
-- Avoid: ${langCfg.avoidWords}`
-      : `Product name: "${product.title}"
+- Avoid: ${langCfg.avoidWords}`;
+
+    // Gemini pranon nje string te vetem teksti (jo array blloqesh si Claude) —
+    // pa cache_control, sepse caching i Gemini punon ndryshe (shih /docs/caching)
+    // dhe per vellimin aktual te perkthimeve s'ia vlen kompleksiteti shtese.
+    userContent = `${translationRules}\n\n${contextBlock}`;
+  } else {
+    // GJENERIM I PARE nga titulli, pa imazh — Claude Sonnet 4.6, STEP A/B/C te plota
+    const contextBlock = `You are a native ${targetLang} speaker and professional ecommerce copywriter.
+
+Glossary (keep these terms exactly as written, never translate): ${glossary || 'checkout, Shopify'}
+Target language: ${targetLang}
+
+Product name: "${product.title}"
 ${category ? `Category: ${category}` : ''}
 ${tags ? `Tags: ${tags}` : ''}
 ${confirmedSpecsBlock}
-No description exists. Write product copy in ${targetLang} based ONLY on the product name above — no invention.`
-    }`;
+No description exists. Write product copy in ${targetLang} based ONLY on the product name above — no invention.`;
 
     userContent = [
-      { type: 'text', text: rulesBlock, cache_control: { type: 'ephemeral' } },
+      { type: 'text', text: sharedRules, cache_control: { type: 'ephemeral' } },
       { type: 'text', text: contextBlock }
     ];
   }
 
-  try {
-    const claudeRes = await axios.post('https://api.anthropic.com/v1/messages', {
-      model,
-      max_tokens: 1500,
-      temperature: 0,
-      messages: [{ role: 'user', content: userContent }]
-    }, {
-      headers: {
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json'
-      },
-      timeout: 45000
-    });
+  console.log(`[provider] ${isTranslation ? 'gemini-3.1-flash-lite (perkthim)' : 'claude-sonnet-4-6 (gjenerim i pare)'} — image:${hasImage} body:${!!cleanBody} product:"${product.title}"`);
 
+  try {
     let rawText = '';
-    for (const block of claudeRes.data.content) {
-      if (block.type === 'text') rawText += block.text;
+
+    if (isTranslation) {
+      const geminiRes = await axios.post(
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent',
+        {
+          contents: [{ parts: [{ text: userContent }] }],
+          generationConfig: { maxOutputTokens: 1500, temperature: 0 }
+        },
+        {
+          headers: {
+            'x-goog-api-key': process.env.GEMINI_API_KEY,
+            'content-type': 'application/json'
+          },
+          timeout: 45000
+        }
+      );
+      rawText = geminiRes.data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    } else {
+      const claudeRes = await axios.post('https://api.anthropic.com/v1/messages', {
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1500,
+        temperature: 0,
+        messages: [{ role: 'user', content: userContent }]
+      }, {
+        headers: {
+          'x-api-key': process.env.ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json'
+        },
+        timeout: 45000
+      });
+      for (const block of claudeRes.data.content) {
+        if (block.type === 'text') rawText += block.text;
+      }
     }
+
     rawText = rawText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('No JSON in Claude response');
+    if (!jsonMatch) throw new Error(`No JSON in ${isTranslation ? 'Gemini' : 'Claude'} response`);
     const parsed = JSON.parse(jsonMatch[0]);
     if (!parsed.title || !parsed.description) throw new Error('Missing title or description');
     return parsed;
-  } catch (claudeErr) {
-    console.error('Claude API failed:', claudeErr.response?.data || claudeErr.message);
+  } catch (apiErr) {
+    console.error(`${isTranslation ? 'Gemini' : 'Claude'} API failed:`, apiErr.response?.data || apiErr.message);
     return {
       title: product.title,
       description: product.title,
@@ -1443,29 +1504,16 @@ async function localizeProduct(shop, token, productId, targetLang, locale, tone,
     console.log(`[image] "${product.title}" has image + no body — routing to Sonnet 4.6`);
   }
 
-  let translated = await generateProductCopyWithClaude(product, targetLang, glossary, cleanBody, imageUrl, metafields);
+  let translated = await generateProductCopy(product, targetLang, glossary, cleanBody, imageUrl, metafields);
 
   // Perkthej metafields
   const translatedMetafields = [];
   if (metafields.length > 0) {
     for (const mf of metafields.slice(0, 10)) { // max 10 metafields per produkt
       try {
-        const mfPrompt = `Translate this product field value into ${targetLang}. Return ONLY the translated text, nothing else. Keep brand names, technical terms, and numbers unchanged. Field: "${mf.key}". Value: ${mf.value}`;
-        const mfRes = await axios.post('https://api.anthropic.com/v1/messages', {
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 150,
-          messages: [{ role: 'user', content: mfPrompt }]
-        }, {
-          headers: {
-            'x-api-key': process.env.ANTHROPIC_API_KEY,
-            'anthropic-version': '2023-06-01',
-            'content-type': 'application/json'
-          },
-          timeout: 15000
-        });
-        const translatedValue = mfRes.data.content?.[0]?.text?.trim() || mf.value;
+        const translatedValue = await translateFieldWithGemini(mf.value, mf.key, targetLang);
         translatedMetafields.push({ ...mf, translatedValue });
-        console.log(`[metafields] Translated "${mf.key}" → ${targetLang}`);
+        console.log(`[metafields] Translated "${mf.key}" → ${targetLang} (Gemini)`);
       } catch(e) {
         console.warn(`[metafields] Translation failed for "${mf.key}":`, e.message);
       }
@@ -1488,7 +1536,7 @@ async function localizeProduct(shop, token, productId, targetLang, locale, tone,
       let bodyForShopify = translated.description;
       if (localeKey !== primaryKey) {
         const primaryLang = LOCALE_MAP[primaryKey] || primaryLocale;
-        const primaryCopy = await generateProductCopyWithClaude(product, primaryLang, glossary, '', imageUrl, metafields);
+        const primaryCopy = await generateProductCopy(product, primaryLang, glossary, '', imageUrl, metafields);
         bodyForShopify = primaryCopy.description;
       }
       const bodyUpdated = await updateShopifyProductBodyIfEmpty(shop, token, pid, bodyForShopify);
@@ -2097,7 +2145,7 @@ app.post('/test-prompt', async (req, res) => {
   const { title, lang } = req.body;
   const product = { title, product_type: '', tags: '', body_html: '' };
   try {
-    const result = await generateProductCopyWithClaude(
+    const result = await generateProductCopy(
       product, lang, 'checkout, Shopify', '', null
     );
     res.json(result);
