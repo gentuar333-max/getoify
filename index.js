@@ -673,6 +673,45 @@ function hasMerchantSpecsInTitle(title) {
   return /\d/.test(afterSeparator);
 }
 
+// "Deri ne" / "up to" — fjala hedge per cdo gjuhe te STEP B; kontrollohet para
+// nje numri specifikash per te zbuluar nese eshte pretendim i "zhveshur" (i
+// rrezikshem) kur s'ka konfirmim te jashtem. Disa gjuhe (NL/PT/PL/SV) s'kane
+// term te perkthyer ne STEP B, pra modeli shpesh mban "up to" anglisht ose
+// perdor termin lokal — i mbulojme te dy rastet me mire-se-asgje.
+const UP_TO_HEDGES = {
+  French: { match: 'jusqu', display: 'jusqu\'à' },
+  German: { match: 'bis zu', display: 'bis zu' },
+  Italian: { match: 'fino a', display: 'fino a' },
+  Spanish: { match: 'hasta', display: 'hasta' },
+  Dutch: { match: 'tot', display: 'tot' },
+  Portuguese: { match: 'até', display: 'até' },
+  Polish: { match: 'do', display: 'do' },
+  Swedish: { match: 'upp till', display: 'upp till' }
+};
+
+// Zbulon nje numer specifikash teknike (mAh, GB/TB, ", Hz, MP, h/ore, W) qe
+// NUK eshte i paraprire nga nje fjale "deri ne" brenda ~25 karaktereve para tij.
+// Perdoret VETEM kur hasExternalConfirmation eshte false — nese gjendet numer
+// i "zhveshur", modeli e shkeli gate-in (EXTERNAL CONFIRMATION STATUS ne
+// sharedRules) PAVARESISHT instruksionit ne prompt — shih diskutimin per
+// MacBook Neo: Sonnet 4.6 i bindur nga STEP A "MANDATORY" qe vjen menjehere
+// pas paralajmerimit, ne vend te tij. Kjo eshte rrjeta e sigurise mekanike.
+function hasUnhedgedSpecNumber(text, targetLang) {
+  if (!text) return false;
+  const localHedge = UP_TO_HEDGES[targetLang]?.match;
+  const hedgeWords = ['up to', localHedge].filter(Boolean)
+    .map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  const hedgeRegex = new RegExp(hedgeWords.join('|'), 'i');
+
+  const specPattern = /\d+(?:[.,]\d+)?\s*(mah|gb|tb|"|inch(?:es)?|hz|mp|h\b|hours?|w\b|watts?)/gi;
+  let match;
+  while ((match = specPattern.exec(text)) !== null) {
+    const before = text.slice(Math.max(0, match.index - 25), match.index);
+    if (!hedgeRegex.test(before)) return true;
+  }
+  return false;
+}
+
 // Generic fallback
 function isGenericProduct(product) { return true; }
 
@@ -1399,6 +1438,11 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
 
   try {
     let rawText = '';
+    const extractJson = (text) => {
+      const clean = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      const m = clean.match(/\{[\s\S]*\}/);
+      return m ? JSON.parse(m[0]) : null;
+    };
 
     if (isTranslation) {
       const geminiRes = await axios.post(
@@ -1417,29 +1461,55 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
       );
       rawText = geminiRes.data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     } else {
-      const claudeRes = await axios.post('https://api.anthropic.com/v1/messages', {
-        model: 'claude-sonnet-4-6',
-        max_tokens: 1500,
-        temperature: 0,
-        messages: [{ role: 'user', content: userContent }]
-      }, {
-        headers: {
-          'x-api-key': process.env.ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01',
-          'content-type': 'application/json'
-        },
-        timeout: 45000
-      });
-      for (const block of claudeRes.data.content) {
-        if (block.type === 'text') rawText += block.text;
+      const callSonnet = async (content) => {
+        const claudeRes = await axios.post('https://api.anthropic.com/v1/messages', {
+          model: 'claude-sonnet-4-6',
+          max_tokens: 1500,
+          temperature: 0,
+          messages: [{ role: 'user', content }]
+        }, {
+          headers: {
+            'x-api-key': process.env.ANTHROPIC_API_KEY,
+            'anthropic-version': '2023-06-01',
+            'content-type': 'application/json'
+          },
+          timeout: 45000
+        });
+        let text = '';
+        for (const block of claudeRes.data.content) {
+          if (block.type === 'text') text += block.text;
+        }
+        return text;
+      };
+
+      rawText = await callSonnet(userContent);
+
+      // Rrjeta e sigurise mekanike: nese s'ka konfirmim te jashtem dhe Sonnet
+      // prape shkroi numra te "zhveshur" (shkeli EXTERNAL CONFIRMATION STATUS
+      // ne favor te STEP A "MANDATORY" — shih rastin MacBook Neo), provo NJE
+      // here te dyte me korrigjim te forte te shtuar, ne vend qe pergjigja e
+      // gabuar te shkoje direkt te shitesi pa kontroll.
+      if (!hasExternalConfirmation) {
+        let firstParsed;
+        try { firstParsed = extractJson(rawText); } catch { firstParsed = null; }
+
+        if (firstParsed?.description && hasUnhedgedSpecNumber(firstParsed.description, targetLang)) {
+          console.warn(`[gate-violation] Sonnet shkroi numra te pakonfirmuar per "${product.title}" (${targetLang}) — duke provuar korrigjim`);
+          const correction = {
+            type: 'text',
+            text: `Your previous response violated a critical rule: it stated exact numeric specs (RAM, storage, screen size, battery, etc.) as confirmed facts, even though there is NO external confirmation for this product (no title override, no metafields). Rewrite the ENTIRE response. Every single numeric spec MUST use "up to" / "${UP_TO_HEDGES[targetLang]?.display || 'up to'}" framing, or be omitted entirely if it cannot be phrased that way. Respond ONLY with the corrected JSON, same format as before.`
+          };
+          rawText = await callSonnet([...userContent, correction]);
+        }
       }
     }
 
-    rawText = rawText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error(`No JSON in ${isTranslation ? 'Gemini' : 'Claude'} response`);
-    const parsed = JSON.parse(jsonMatch[0]);
+    const parsed = extractJson(rawText);
+    if (!parsed) throw new Error(`No JSON in ${isTranslation ? 'Gemini' : 'Claude'} response`);
     if (!parsed.title || !parsed.description) throw new Error('Missing title or description');
+    if (!isTranslation && !hasExternalConfirmation && hasUnhedgedSpecNumber(parsed.description, targetLang)) {
+      console.warn(`[gate-violation] Vazhdoi pas korrigjimit per "${product.title}" — duke ruajtur prape, shiko logs per monitorim`);
+    }
     return parsed;
   } catch (apiErr) {
     console.error(`${isTranslation ? 'Gemini' : 'Claude'} API failed:`, apiErr.response?.data || apiErr.message);
@@ -1451,6 +1521,7 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
     };
   }
 }
+
 
 async function localizeProduct(shop, token, productId, targetLang, locale, tone, glossary) {
   const pid = normalizeProductId(productId);
