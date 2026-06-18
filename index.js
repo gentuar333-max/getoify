@@ -25,6 +25,22 @@ axios.interceptors.response.use(
   async err => {
     const url = err.config?.url || '';
     const status = err.response?.status;
+
+    // 429 nga Shopify — i mundshem tani me konkurrence ne bulk-localize-all
+    // (disa produkte njekohesisht = me shume kerkesa/sekonde te i njejti shop).
+    // Rites NJE here me Retry-After (ose 2s fallback), max 3 perpjekje gjithsej.
+    if (status === 429 && url.includes('myshopify.com')) {
+      const cfg = err.config;
+      cfg.__retryCount = (cfg.__retryCount || 0) + 1;
+      if (cfg.__retryCount <= 3) {
+        const retryAfter = parseFloat(err.response.headers?.['retry-after']) || 2;
+        console.warn(`[429] Shopify rate limit — riprovo ${url} pas ${retryAfter}s (perpjekja ${cfg.__retryCount}/3)`);
+        await new Promise(r => setTimeout(r, retryAfter * 1000));
+        return axios(cfg);
+      }
+      console.error(`[429] Shopify rate limit — u dorezuar pas 3 perpjekjeve: ${url}`);
+    }
+
     if (status === 401 && url.includes('myshopify.com')) {
       const shopMatch = url.match(/https:\/\/([^/]+)/);
       if (shopMatch) {
@@ -134,6 +150,28 @@ app.get('/widget-config', async (req, res) => {
 
 const SHOPIFY_PRODUCTS_PAGE = 250;
 const SHOPIFY_PRODUCTS_TIMEOUT_MS = 60000;
+
+// Sa PRODUKTE perpunohen njekohesisht ne bulk-localize-all. Lokalet brenda
+// nje produkti TE VETEM mbeten sekuenciale (shih processProductLocales) —
+// arkitektura "Sonnet nje here, Gemini per pjesen tjeter" varet nga kjo
+// rradhitje, prandaj konkurrenca aplikohet vetem mes produkteve te ndryshme.
+const BULK_CONCURRENCY = 4;
+
+// Ekzekuton 'items' me konkurrence maksimale 'limit', pa varesi te jashtme.
+// 'limit' "runner" lupa rrjedhin paralel, secila merr artikullin tjeter te
+// lire sapo perfundon te vetin — nuk pret "batch"-in te plotesohet (me
+// efikase se chunking i thjeshte ne grupe fikse).
+async function runWithConcurrency(items, limit, worker) {
+  let nextIndex = 0;
+  async function runNext() {
+    while (nextIndex < items.length) {
+      const i = nextIndex++;
+      await worker(items[i], i);
+    }
+  }
+  const runners = Array.from({ length: Math.min(limit, items.length) }, () => runNext());
+  await Promise.all(runners);
+}
 
 const LOCALE_MAP = {
   'fr': 'French', 'de': 'German', 'it': 'Italian', 'es': 'Spanish',
@@ -712,6 +750,62 @@ function hasUnhedgedSpecNumber(text, targetLang) {
   return false;
 }
 
+// Ngjyrat e njohura — listuara nga me e gjata te me e shkurtra qe te mos
+// kapet pjeserisht (p.sh. "space gray" para "gray")
+const COLOR_KEYWORDS = [
+  'rose gold', 'space gray', 'space grey', 'midnight blue', 'desert titanium',
+  'black', 'white', 'silver', 'gold', 'blue', 'red', 'green', 'pink',
+  'purple', 'gray', 'grey', 'titanium', 'graphite', 'midnight', 'starlight',
+  'natural', 'desert', 'sage', 'lavender', 'teal', 'orange', 'yellow',
+  'bronze', 'copper'
+].sort((a, b) => b.length - a.length);
+
+// Nxjerr specifika DIREKT nga titulli me regex — keto behen "konfirmim i
+// jashtem" pikerisht si metafields, sepse AI s'i merr nga kujtesa, i lexon
+// thjesht nga teksti. Eliminon halucinimin per keto lloje (jo e zvogelon —
+// e eliminon, sepse s'i kerkohet fare modelit te "kujtohet" per to).
+function extractTitleSpecs(title) {
+  if (!title) return [];
+  const specs = [];
+
+  // RAM gjendet fillimisht, qe storage te dije cilin "XXXGB" te perjashtoje
+  const ramRegexMatch = title.match(/(\d+)\s?GB\s*RAM\b/i) || title.match(/RAM\s*(\d+)\s?GB\b/i);
+  if (ramRegexMatch) specs.push({ key: 'RAM', value: `${ramRegexMatch[1]}GB` });
+
+  // Storage: gjej TE GJITHA rastet GB/TB ne titull, perjashto pozicionin e
+  // RAM-it (jo vleren numerike — dy fusha te ndryshme mund te kene rastesisht
+  // te njejtin numer), merr te paren e mbetur
+  const ramSpan = ramRegexMatch ? [ramRegexMatch.index, ramRegexMatch.index + ramRegexMatch[0].length] : null;
+  const sizeMatches = [...title.matchAll(/(\d+)\s?(GB|TB)\b/gi)];
+  const storageHit = sizeMatches.find(m => !ramSpan || m.index < ramSpan[0] || m.index >= ramSpan[1]);
+  if (storageHit) specs.push({ key: 'Storage', value: `${storageHit[1]}${storageHit[2].toUpperCase()}` });
+
+  const batteryMatch = title.match(/(\d+)\s?mAh\b/i);
+  if (batteryMatch) specs.push({ key: 'Battery', value: `${batteryMatch[1]}mAh` });
+
+  const cameraMatch = title.match(/(\d+)\s?MP\b/i);
+  if (cameraMatch) specs.push({ key: 'Camera', value: `${cameraMatch[1]}MP` });
+
+  const hzMatch = title.match(/(\d+)\s?Hz\b/i);
+  if (hzMatch) specs.push({ key: 'Refresh Rate', value: `${hzMatch[1]}Hz` });
+
+  const wattMatch = title.match(/(\d+)\s?W\b(?!h)/i); // perjashto "Wh"
+  if (wattMatch) specs.push({ key: 'Power', value: `${wattMatch[1]}W` });
+
+  const tLower = title.toLowerCase();
+  const colorHit = COLOR_KEYWORDS.find(c => tLower.includes(c));
+  if (colorHit) specs.push({ key: 'Color', value: colorHit.replace(/\b\w/g, c => c.toUpperCase()) });
+
+  return specs;
+}
+
+// Vetem specifikat numerike (jo ngjyra) konsiderohen mjaftueshem per te
+// aktivizuar hasExternalConfirmation — ngjyra s'eshte vete burim halucinimi
+// hardware, eshte thjesht detaj per ta perfshire saktë ne pershkrim.
+function hasVolatileTitleSpec(titleSpecs) {
+  return titleSpecs.some(s => s.key !== 'Color');
+}
+
 // Generic fallback
 function isGenericProduct(product) { return true; }
 
@@ -797,12 +891,21 @@ async function generateProductCopy(product, targetLang, glossary, cleanBody, ima
   const techElectronics = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && isTechElectronicsProduct(product);
   const isGeneric = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && !techElectronics;
 
-  // Konfirmim i jashtem: titulli ka specifika te shitesit, OSE metafields kane
-  // te dhena specifikash reale. Nese asnje nuk eshte e vertete, STEP A (recall
-  // nga memoria) çaktivizohet me poshte ne sharedRules — shih EXTERNAL CONFIRMATION STATUS.
-  const hasExternalConfirmation = hasMerchantSpecsInTitle(product.title) || hasSpecMetafields(metafields);
-  const confirmedSpecsBlock = metafields.length > 0
-    ? `\nCONFIRMED MERCHANT DATA (Shopify metafields — treat as ground truth, same priority as title override):\n${metafields.slice(0, 15).map(mf => `- ${mf.key}: ${mf.value}`).join('\n')}\n`
+  // Konfirmim i jashtem: titulli ka specifika te shitesit (— ose |), OSE
+  // titulli ka specifika te nxjerra direkt me regex (GB/TB/mAh/MP/Hz/W/RAM),
+  // OSE metafields kane te dhena specifikash reale. Nese asnje nuk eshte e
+  // vertete, STEP A (recall nga memoria) çaktivizohet me poshte ne sharedRules
+  // per specifika VOLATILE — shih EXTERNAL CONFIRMATION STATUS.
+  const titleSpecs = extractTitleSpecs(product.title);
+  const hasExternalConfirmation = hasMerchantSpecsInTitle(product.title) ||
+    hasSpecMetafields(metafields) || hasVolatileTitleSpec(titleSpecs);
+
+  const allConfirmedSpecs = [
+    ...titleSpecs,
+    ...metafields.slice(0, 15).map(mf => ({ key: mf.key, value: mf.value }))
+  ];
+  const confirmedSpecsBlock = allConfirmedSpecs.length > 0
+    ? `\nCONFIRMED DATA (extracted from title or Shopify metafields — treat as ground truth, same priority as title override):\n${allConfirmedSpecs.map(s => `- ${s.key}: ${s.value}`).join('\n')}\n`
     : '';
 
   console.log(`[category] homeKitchen:${homeKitchen} beautyHealth:${beautyHealth} sportFitness:${sportFitness} fashionApparel:${fashionApparel} techElectronics:${techElectronics} externalConfirmation:${hasExternalConfirmation} product:"${product.title}"`);
@@ -948,7 +1051,7 @@ DESCRIPTION RULES:
 CATEGORY KNOWLEDGE RULE:
 
 EXTERNAL CONFIRMATION STATUS: ${hasExternalConfirmation ? 'CONFIRMED — see CONFIRMED MERCHANT DATA below or merchant title for real spec data.' : 'NOT CONFIRMED — no merchant-provided specs exist for this product.'}
-${!hasExternalConfirmation ? 'Because there is no external confirmation, STEP A\'s permission to write an exact number from memory is SUSPENDED for this product, even if you recognize the brand and model with high confidence. Treat this product as STEP B: use "up to" / qualitative framing for every numeric spec. Do not write an exact mAh, Hz, MP, or chip generation number unless it appears in the title or in CONFIRMED MERCHANT DATA.' : ''}
+${!hasExternalConfirmation ? `Because there is no external confirmation, STEP A's permission to write an exact number from memory is SUSPENDED for VOLATILE specs (RAM, storage, battery mAh, screen Hz, camera MP, screen size, chip generation number, or any measurement that differs between similar models and is easy to confuse) — use "up to" / qualitative framing for these instead, even if you recognize the brand and model with high confidence. This suspension does NOT apply to STABLE IDENTIFIERS tied to release timing rather than hardware configuration — the current OS version (e.g. "iOS 26", "Android 16") or a platform feature/brand name (e.g. "Apple Intelligence", "Galaxy AI") may be stated directly if you are confident, since these carry far lower cross-model confusion risk than hardware measurements. If unsure about a stable identifier too, omit it rather than guess.` : ''}
 
 You are an ecommerce expert with deep product knowledge across all categories. Apply this logic:
 
@@ -1823,23 +1926,31 @@ app.post('/bulk-localize-all', async (req, res) => {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.write('{"results":[');
     let first = true;
+    function writeResult(obj) {
+      // Sinkron — pa 'await' brenda — pra e sigurt edhe kur disa produkte
+      // po perpunohen njekohesisht (event loop i Node s'e nderpret kete blloku)
+      if (!first) res.write(',');
+      res.write(JSON.stringify(obj));
+      first = false;
+    }
 
-    for (const { product, missingLocales } of toTranslate) {
+    async function processProductLocales(product, missingLocales) {
       const bulkPid = normalizeProductId(product.id);
       for (const lang of missingLocales) {
         try {
           const result = await localizeProduct(shop, token, bulkPid, lang.targetLang, lang.locale, tone, glossary);
-          if (!first) res.write(',');
-          res.write(JSON.stringify({ success: true, product_id: bulkPid, locale: lang.locale, ...result }));
-          first = false;
+          writeResult({ success: true, product_id: bulkPid, locale: lang.locale, ...result });
         } catch (err) {
-          if (!first) res.write(',');
-          res.write(JSON.stringify({ product_id: bulkPid, product: product.title, locale: lang.locale, success: false, error: err.message }));
-          first = false;
+          writeResult({ product_id: bulkPid, product: product.title, locale: lang.locale, success: false, error: err.message });
         }
         await new Promise(resolve => setTimeout(resolve, 300));
       }
     }
+
+    console.log(`[bulk] Duke perpunuar me konkurrence ${BULK_CONCURRENCY} produkte njekohesisht`);
+    await runWithConcurrency(toTranslate, BULK_CONCURRENCY, ({ product, missingLocales }) =>
+      processProductLocales(product, missingLocales)
+    );
 
     res.write(']}');
     res.end();
