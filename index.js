@@ -769,6 +769,37 @@ function detectGateViolation(text, targetLang) {
   return null;
 }
 
+// Shtresa e trete dhe e fundit, DETERMINISTIKE — nuk varet fare nga bindja e
+// modelit. Pas retry-it (suksesshem ose jo), nese ndonje numer specifikash
+// MBETET pa "deri ne", e fut programatikisht para tij. Provuar live: Galaxy
+// S26 Ultra retry e rregulloi emrin e çipit por JO numrat (6.9", 120Hz, 200MP,
+// 5000mAh, 45W mbeten te pa-hedge-uara) — kjo eshte garancia qe i zevendeson
+// shpresat me kontroll mekanik per dimensionin numerik specifikisht. Emrat e
+// çipave NUK trajtohen ketu (s'ka kuptim "up to Snapdragon 8 Gen 4") — ato
+// mbeten vetem ne dore te retry-it.
+function forceHedgeSpecNumbers(text, targetLang) {
+  if (!text) return text;
+  const hedgeDisplay = UP_TO_HEDGES[targetLang]?.display || 'up to';
+  const localHedge = UP_TO_HEDGES[targetLang]?.match;
+  const hedgeWords = ['up to', localHedge].filter(Boolean)
+    .map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  const hedgeRegex = new RegExp(hedgeWords.join('|'), 'i');
+
+  const specPattern = /\d+(?:[.,]\d+)?\s*(mah|gb|tb|"|inch(?:es)?|hz|mp|h\b|hours?|w\b|watts?|g\b|grams?|%)/gi;
+  let result = '';
+  let lastIndex = 0;
+  let match;
+  while ((match = specPattern.exec(text)) !== null) {
+    const before = text.slice(Math.max(0, match.index - 25), match.index);
+    result += text.slice(lastIndex, match.index);
+    if (!hedgeRegex.test(before)) result += `${hedgeDisplay} `;
+    result += match[0];
+    lastIndex = match.index + match[0].length;
+  }
+  result += text.slice(lastIndex);
+  return result;
+}
+
 // Regjistron shkeljen ne Supabase per matje reale (jo vetem console.log) —
 // kerkon tabelen 'gate_violations' (shih SQL e dhene ne pergjigje). Nese
 // tabela mungon, dështon ne heshtje me warning, s'e nderpret gjenerimin.
@@ -1657,6 +1688,14 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
       }
       logGateViolation(shop, product, targetLang, firstViolation, !stillViolating);
     }
+
+    // Shtresa e fundit deterministike: pavaresisht nese retry-i sipër ekzistoi
+    // fare, e zgjidhi, ose dështoi pjesërisht, ÇDO numer specifikash i mbetur
+    // pa "deri ne" detyrohet mekanikisht ketu. Garanci, jo shprese.
+    if (!isTranslation && !hasExternalConfirmation) {
+      parsed.description = forceHedgeSpecNumbers(parsed.description, targetLang);
+    }
+
     return parsed;
   } catch (apiErr) {
     console.error(`${isTranslation ? 'Gemini' : 'Claude'} API failed:`, apiErr.response?.data || apiErr.message);
