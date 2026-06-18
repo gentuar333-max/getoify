@@ -750,6 +750,43 @@ function hasUnhedgedSpecNumber(text, targetLang) {
   return false;
 }
 
+// Zbulon nje emer çipi/procesori me numer brezi konkret (A18, M3 Pro,
+// Snapdragon 8 Elite, Dimensity 9300, Exynos 2400, Tensor G4) — i njejti
+// rrezik konfuzioni si Hz/mAh, por keto jane string emrash jo numer+njesi,
+// pra hasUnhedgedSpecNumber s'i kap. Nese gjendet ndonje, modeli ka shkruar
+// brez specifik pa konfirmim — duhej te shkruante "Apple silicon chip" ose
+// "octa-core processor" pa numrin e brezit, sic e beri sakte rasti iPhone 17 Pro.
+function hasUnconfirmedChipName(text) {
+  if (!text) return false;
+  const chipPattern = /\b(a\d{1,2}\s*(pro|bionic)?\b|m\d\s*(pro|max|ultra)?\b|snapdragon\s*\d+[\w\s+]*|dimensity\s*\d+|exynos\s*\d+|tensor\s*g\d+)/i;
+  return chipPattern.test(text);
+}
+
+// Kontrolli i kombinuar — perdoret nga rrjeta e sigurise me poshte
+function detectGateViolation(text, targetLang) {
+  if (hasUnhedgedSpecNumber(text, targetLang)) return 'unhedged_number';
+  if (hasUnconfirmedChipName(text)) return 'chip_name';
+  return null;
+}
+
+// Regjistron shkeljen ne Supabase per matje reale (jo vetem console.log) —
+// kerkon tabelen 'gate_violations' (shih SQL e dhene ne pergjigje). Nese
+// tabela mungon, dështon ne heshtje me warning, s'e nderpret gjenerimin.
+async function logGateViolation(shop, product, targetLang, violationType, retryFixed) {
+  try {
+    await supabase.from('gate_violations').insert({
+      shop: shop || 'test',
+      product_id: String(product?.id || ''),
+      product_title: product?.title || '',
+      target_lang: targetLang,
+      violation_type: violationType,
+      retry_fixed: retryFixed
+    });
+  } catch (e) {
+    console.warn('[gate-violation] Logging ne Supabase deshtoi (tabela mungon?):', e.message);
+  }
+}
+
 // Ngjyrat e njohura — listuara nga me e gjata te me e shkurtra qe te mos
 // kapet pjeserisht (p.sh. "space gray" para "gray")
 const COLOR_KEYWORDS = [
@@ -880,7 +917,7 @@ function isHomeKitchenProduct(product) {
   return HOME_KITCHEN_TITLE_KEYWORDS.some(k => title.includes(k));
 }
 
-async function generateProductCopy(product, targetLang, glossary, cleanBody, imageUrl, metafields = []) {
+async function generateProductCopy(product, targetLang, glossary, cleanBody, imageUrl, metafields = [], shop = null) {
   const category = product.product_type || '';
   const tags = (product.tags || '').split(',').slice(0, 5).join(', ');
   const hasImage = !!imageUrl;
@@ -1462,6 +1499,7 @@ Respond ONLY in this exact JSON format, no extra text, no markdown backticks:
     : sharedRules; // fallback — never breaks if markers shift
 
   let isTranslation = false;
+  let firstViolation = null;
 
   if (hasImage && !cleanBody) {
     // GJENERIM I PARE me imazh — Claude Sonnet 4.6 (vizion), STEP A/B/C te plota
@@ -1588,19 +1626,20 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
       rawText = await callSonnet(userContent);
 
       // Rrjeta e sigurise mekanike: nese s'ka konfirmim te jashtem dhe Sonnet
-      // prape shkroi numra te "zhveshur" (shkeli EXTERNAL CONFIRMATION STATUS
-      // ne favor te STEP A "MANDATORY" — shih rastin MacBook Neo), provo NJE
-      // here te dyte me korrigjim te forte te shtuar, ne vend qe pergjigja e
-      // gabuar te shkoje direkt te shitesi pa kontroll.
+      // prape shkroi numra te "zhveshur" OSE emer çipi me brez specifik (shkeli
+      // EXTERNAL CONFIRMATION STATUS ne favor te STEP A "MANDATORY" — shih
+      // rastin MacBook Neo), provo NJE here te dyte me korrigjim te forte te
+      // shtuar, ne vend qe pergjigja e gabuar te shkoje direkt te shitesi.
       if (!hasExternalConfirmation) {
         let firstParsed;
         try { firstParsed = extractJson(rawText); } catch { firstParsed = null; }
 
-        if (firstParsed?.description && hasUnhedgedSpecNumber(firstParsed.description, targetLang)) {
-          console.warn(`[gate-violation] Sonnet shkroi numra te pakonfirmuar per "${product.title}" (${targetLang}) — duke provuar korrigjim`);
+        firstViolation = firstParsed?.description ? detectGateViolation(firstParsed.description, targetLang) : null;
+        if (firstViolation) {
+          console.warn(`[gate-violation] Sonnet shkeli gate-in (${firstViolation}) per "${product.title}" (${targetLang}) — duke provuar korrigjim`);
           const correction = {
             type: 'text',
-            text: `Your previous response violated a critical rule: it stated exact numeric specs (RAM, storage, screen size, battery, etc.) as confirmed facts, even though there is NO external confirmation for this product (no title override, no metafields). Rewrite the ENTIRE response. Every single numeric spec MUST use "up to" / "${UP_TO_HEDGES[targetLang]?.display || 'up to'}" framing, or be omitted entirely if it cannot be phrased that way. Respond ONLY with the corrected JSON, same format as before.`
+            text: `Your previous response violated a critical rule: it stated exact numeric specs (RAM, storage, screen size, battery, etc.) OR a specific chip/processor generation name (e.g. "A18", "Snapdragon 8 Elite") as confirmed facts, even though there is NO external confirmation for this product (no title override, no metafields). Rewrite the ENTIRE response. Every single numeric spec MUST use "up to" / "${UP_TO_HEDGES[targetLang]?.display || 'up to'}" framing or be omitted. Any chip/processor MUST be described generically (e.g. "Apple silicon chip", "octa-core processor") WITHOUT the generation number, unless it cannot be phrased that way, in which case omit it. Respond ONLY with the corrected JSON, same format as before.`
           };
           rawText = await callSonnet([...userContent, correction]);
         }
@@ -1610,8 +1649,13 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
     const parsed = extractJson(rawText);
     if (!parsed) throw new Error(`No JSON in ${isTranslation ? 'Gemini' : 'Claude'} response`);
     if (!parsed.title || !parsed.description) throw new Error('Missing title or description');
-    if (!isTranslation && !hasExternalConfirmation && hasUnhedgedSpecNumber(parsed.description, targetLang)) {
-      console.warn(`[gate-violation] Vazhdoi pas korrigjimit per "${product.title}" — duke ruajtur prape, shiko logs per monitorim`);
+
+    if (!isTranslation && !hasExternalConfirmation && firstViolation) {
+      const stillViolating = detectGateViolation(parsed.description, targetLang);
+      if (stillViolating) {
+        console.warn(`[gate-violation] Vazhdoi pas korrigjimit (${stillViolating}) per "${product.title}" — duke ruajtur prape, shiko logs per monitorim`);
+      }
+      logGateViolation(shop, product, targetLang, firstViolation, !stillViolating);
     }
     return parsed;
   } catch (apiErr) {
@@ -1678,7 +1722,7 @@ async function localizeProduct(shop, token, productId, targetLang, locale, tone,
     console.log(`[image] "${product.title}" has image + no body — routing to Sonnet 4.6`);
   }
 
-  let translated = await generateProductCopy(product, targetLang, glossary, cleanBody, imageUrl, metafields);
+  let translated = await generateProductCopy(product, targetLang, glossary, cleanBody, imageUrl, metafields, shop);
 
   // Perkthej metafields
   const translatedMetafields = [];
@@ -1710,7 +1754,7 @@ async function localizeProduct(shop, token, productId, targetLang, locale, tone,
       let bodyForShopify = translated.description;
       if (localeKey !== primaryKey) {
         const primaryLang = LOCALE_MAP[primaryKey] || primaryLocale;
-        const primaryCopy = await generateProductCopy(product, primaryLang, glossary, '', imageUrl, metafields);
+        const primaryCopy = await generateProductCopy(product, primaryLang, glossary, '', imageUrl, metafields, shop);
         bodyForShopify = primaryCopy.description;
       }
       const bodyUpdated = await updateShopifyProductBodyIfEmpty(shop, token, pid, bodyForShopify);
