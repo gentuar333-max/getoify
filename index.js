@@ -727,27 +727,41 @@ const UP_TO_HEDGES = {
   Swedish: { match: 'upp till', display: 'upp till' }
 };
 
-// Zbulon nje numer specifikash teknike (mAh, GB/TB, ", Hz, MP, h/ore, W) qe
-// NUK eshte i paraprire nga nje fjale "deri ne" brenda ~25 karaktereve para tij.
-// Perdoret VETEM kur hasExternalConfirmation eshte false — nese gjendet numer
-// i "zhveshur", modeli e shkeli gate-in (EXTERNAL CONFIRMATION STATUS ne
-// sharedRules) PAVARESISHT instruksionit ne prompt — shih diskutimin per
-// MacBook Neo: Sonnet 4.6 i bindur nga STEP A "MANDATORY" qe vjen menjehere
-// pas paralajmerimit, ne vend te tij. Kjo eshte rrjeta e sigurise mekanike.
+// Gjen TE GJITHA rastet e specifikave ne tekst — numer+njesi (mAh, GB/TB, ",
+// Hz, MP, h/ore, W, g, %) OSE aperture kamere (f/1.4, f/1.7). Nje funksion i
+// vetem qe e perdorin te dyja hasUnhedgedSpecNumber dhe forceHedgeSpecNumbers,
+// qe te mos mbahen dy kopje te regex-it ne sinkron dore (aperture u shtua pas
+// rastit real S26 Ultra: "f/1.7" — specifikim i S25 Ultra, jo S26 — qe s'u
+// kap fare nga lista e meparshme e njesive).
+function findSpecMatches(text) {
+  if (!text) return [];
+  const matches = [];
+  const numberUnitPattern = /\d+(?:[.,]\d+)?\s*(mah|gb|tb|"|inch(?:es)?|hz|mp|h\b|hours?|w\b|watts?|g\b|grams?|%)/gi;
+  const aperturePattern = /f\/\d+(?:\.\d+)?/gi;
+  let m;
+  while ((m = numberUnitPattern.exec(text)) !== null) matches.push({ index: m.index, text: m[0] });
+  while ((m = aperturePattern.exec(text)) !== null) matches.push({ index: m.index, text: m[0] });
+  matches.sort((a, b) => a.index - b.index);
+  return matches;
+}
+
+// Zbulon nje numer specifikash teknike qe NUK eshte i paraprire nga nje fjale
+// "deri ne" brenda ~25 karaktereve para tij. Perdoret VETEM kur
+// hasExternalConfirmation eshte false — nese gjendet numer i "zhveshur",
+// modeli e shkeli gate-in (EXTERNAL CONFIRMATION STATUS ne sharedRules)
+// PAVARESISHT instruksionit ne prompt — shih diskutimin per MacBook Neo:
+// Sonnet 4.6 i bindur nga STEP A "MANDATORY" qe vjen menjehere pas
+// paralajmerimit, ne vend te tij. Kjo eshte rrjeta e sigurise mekanike.
 function hasUnhedgedSpecNumber(text, targetLang) {
   if (!text) return false;
   const localHedge = UP_TO_HEDGES[targetLang]?.match;
   const hedgeWords = ['up to', localHedge].filter(Boolean)
     .map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
   const hedgeRegex = new RegExp(hedgeWords.join('|'), 'i');
-
-  const specPattern = /\d+(?:[.,]\d+)?\s*(mah|gb|tb|"|inch(?:es)?|hz|mp|h\b|hours?|w\b|watts?|g\b|grams?|%)/gi;
-  let match;
-  while ((match = specPattern.exec(text)) !== null) {
-    const before = text.slice(Math.max(0, match.index - 25), match.index);
-    if (!hedgeRegex.test(before)) return true;
-  }
-  return false;
+  return findSpecMatches(text).some(m => {
+    const before = text.slice(Math.max(0, m.index - 25), m.index);
+    return !hedgeRegex.test(before);
+  });
 }
 
 // Zbulon nje emer çipi/procesori me numer brezi konkret (A18, M3 Pro,
@@ -776,7 +790,10 @@ function detectGateViolation(text, targetLang) {
 // 5000mAh, 45W mbeten te pa-hedge-uara) — kjo eshte garancia qe i zevendeson
 // shpresat me kontroll mekanik per dimensionin numerik specifikisht. Emrat e
 // çipave NUK trajtohen ketu (s'ka kuptim "up to Snapdragon 8 Gen 4") — ato
-// mbeten vetem ne dore te retry-it.
+// mbeten vetem ne dore te retry-it. SHENIM: hedge-i e zgjidh besimin e rreme,
+// JO vleren e gabuar nese modeli ka kujtuar specifika te gjeneratres se
+// kaluar (shih rasti aperture f/1.7 vs realja f/1.4) — per kete duhet burim
+// i jashtem, jo vetem riformulim.
 function forceHedgeSpecNumbers(text, targetLang) {
   if (!text) return text;
   const hedgeDisplay = UP_TO_HEDGES[targetLang]?.display || 'up to';
@@ -785,16 +802,15 @@ function forceHedgeSpecNumbers(text, targetLang) {
     .map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
   const hedgeRegex = new RegExp(hedgeWords.join('|'), 'i');
 
-  const specPattern = /\d+(?:[.,]\d+)?\s*(mah|gb|tb|"|inch(?:es)?|hz|mp|h\b|hours?|w\b|watts?|g\b|grams?|%)/gi;
+  const matches = findSpecMatches(text);
   let result = '';
   let lastIndex = 0;
-  let match;
-  while ((match = specPattern.exec(text)) !== null) {
-    const before = text.slice(Math.max(0, match.index - 25), match.index);
-    result += text.slice(lastIndex, match.index);
+  for (const m of matches) {
+    const before = text.slice(Math.max(0, m.index - 25), m.index);
+    result += text.slice(lastIndex, m.index);
     if (!hedgeRegex.test(before)) result += `${hedgeDisplay} `;
-    result += match[0];
-    lastIndex = match.index + match[0].length;
+    result += m.text;
+    lastIndex = m.index + m.text.length;
   }
   result += text.slice(lastIndex);
   return result;
@@ -1793,7 +1809,7 @@ async function localizeProduct(shop, token, productId, targetLang, locale, tone,
       let bodyForShopify = translated.description;
       if (localeKey !== primaryKey) {
         const primaryLang = LOCALE_MAP[primaryKey] || primaryLocale;
-        const primaryCopy = await generateProductCopy(product, primaryLang, glossary, '', imageUrl, metafields, shop);
+        const primaryCopy = await generateProductCopy(product, primaryLang, glossary, translated.description, imageUrl, metafields, shop);
         bodyForShopify = primaryCopy.description;
       }
       const bodyUpdated = await updateShopifyProductBodyIfEmpty(shop, token, pid, bodyForShopify);
