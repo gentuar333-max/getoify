@@ -741,7 +741,7 @@ function hasUnhedgedSpecNumber(text, targetLang) {
     .map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
   const hedgeRegex = new RegExp(hedgeWords.join('|'), 'i');
 
-  const specPattern = /\d+(?:[.,]\d+)?\s*(mah|gb|tb|"|inch(?:es)?|hz|mp|h\b|hours?|w\b|watts?)/gi;
+  const specPattern = /\d+(?:[.,]\d+)?\s*(mah|gb|tb|"|inch(?:es)?|hz|mp|h\b|hours?|w\b|watts?|g\b|grams?|%)/gi;
   let match;
   while ((match = specPattern.exec(text)) !== null) {
     const before = text.slice(Math.max(0, match.index - 25), match.index);
