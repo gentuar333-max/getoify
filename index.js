@@ -1143,14 +1143,33 @@ async function generateProductCopy(product, targetLang, glossary, cleanBody, ima
   let hasExternalConfirmation = hasMerchantSpecsInTitle(product.title) ||
     hasSpecMetafields(metafields) || hasVolatileTitleSpec(titleSpecs);
 
-  // Tavily: vetem per telefona/laptop/PC (grup i konfirmuar me probleme
-  // halucinimi) dhe vetem kur s'ka konfirmim tjeter — keshtu nuk humbin
-  // thirrje Tavily per produkte qe tashmë kane specs nga titulli/metafields.
+  // ─── TAVILY WEB SEARCH (para cdo gjeje tjeter) ────────────────────────────
+  // Tavily kerkohet PARA se te ndertohet prompt-i i Sonnet — ky eshte qellimi:
+  // Sonnet merr te dhena REALE nga web, jo nga kujtesa e trajnimit. Sekuenca
+  // eshte e garantuar nga "await": searchProductSpecs() bllokon ekzekutimin
+  // deri sa Tavily pergjigjet (max 8s), vetem pastaj ndertohet confirmedSpecsBlock,
+  // vetem pastaj ndertohet userContent, vetem pastaj thirret Sonnet.
+  //
+  // KUSHTI I TREFISHTË — te gjitha duhet te jene te verteta:
+  // 1. !hasExternalConfirmation — tashmë kemi specs (titulli/metafields): Tavily ANASHKALOHET
+  //    (do te shpenzojme 0.1 cent per te gjetur dicka qe e kemi)
+  // 2. !cleanBody — produkti ka tashme pershkrim (perkthim): Tavily ANASHKALOHET
+  //    (cleanBody = pershkrim ekzistues → route direkt te Gemini perkthim, jo gjenerim)
+  // 3. needsTavilySearch(product) — vetem telefona/laptop/PC: Tavily ANASHKALOHET
+  //    per te gjitha grupet e tjera (fashion, supplements, earbuds, watches etj)
+  //    qe kane dale mire ne testime pa kete shtrese shtese kostoje
   let tavilySpecs = [];
   if (!hasExternalConfirmation && !cleanBody && needsTavilySearch(product)) {
+    console.log(`[tavily] Duke kerkuar specs per "${product.title}" — Sonnet pret...`);
     tavilySpecs = await searchProductSpecs(product.title);
-    if (tavilySpecs.length > 0) hasExternalConfirmation = true;
+    if (tavilySpecs.length > 0) {
+      hasExternalConfirmation = true;
+      console.log(`[tavily] ${tavilySpecs.length} spec(e) te konfirmuara → Sonnet mund te shkruaje numra si fakte`);
+    } else {
+      console.log(`[tavily] Asnje spec e gjetur → gate aktiv, Sonnet duhet te perdore "deri ne"`);
+    }
   }
+  // ──────────────────────────────────────────────────────────────────────────
 
   const allConfirmedSpecs = [
     ...titleSpecs,
