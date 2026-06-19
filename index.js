@@ -608,6 +608,50 @@ async function translateFieldWithGemini(text, fieldKey, targetLang) {
   return translated;
 }
 
+// Perkthen nje pershkrim produkti te plote DREJTPERDREJT ne Gemini per
+// gjuhen primare (body_html). NUK kalon neper generateProductCopy —
+// kjo eliminon 100% mundësine qe primaryCopy te bjerë rastesisht te
+// Sonnet (p.sh. nese translated.description eshte bosh nga nje fallback,
+// OSE nese ndonje kusht tjeter e ridrejtonte te dega e gjenerimit).
+// Kjo eshte thirrje e pavarur, e lirë, e garantuar Gemini.
+async function translatePrimaryDescriptionWithGemini(description, targetLang, glossary) {
+  if (!description?.trim()) return description;
+  const glossaryNote = glossary
+    ? `Glossary (keep these terms exactly as written, never translate): ${glossary}\n`
+    : '';
+  const prompt = `You are a native ${targetLang} speaker and professional ecommerce copywriter.
+${glossaryNote}
+Translate this product description into ${targetLang}.
+Do NOT rewrite or add information. Preserve bullet points, formatting, and tone exactly.
+Keep brand names, technical specs, and numbers unchanged.
+Return ONLY the translated description, nothing else.
+
+DESCRIPTION:
+${description}`;
+
+  try {
+    const res = await axios.post(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent',
+      {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 600, temperature: 0 }
+      },
+      {
+        headers: {
+          'x-goog-api-key': process.env.GEMINI_API_KEY,
+          'content-type': 'application/json'
+        },
+        timeout: 20000
+      }
+    );
+    const result = res.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    return result || description; // fallback: mbaj origjinalin
+  } catch (e) {
+    console.warn('[primaryCopy/Gemini] Deshtoi — duke mbajtur origjinalin:', e.message);
+    return description;
+  }
+}
+
 // Brands te njohura — kur titulli permban keto, Haiku e di gjithcka nga njohurite
 // Sonnet nuk nevojitet pasi CATEGORY KNOWLEDGE + Step A e mbulon
 const KNOWN_BRANDS = [
@@ -778,6 +822,23 @@ async function searchProductSpecs(title) {
 
     const os = snippets.match(/(iOS|Android|Windows)\s*(\d+)/i);
     if (os) specs.push({ key: 'OS', value: `${os[1]} ${os[2]}` });
+
+    // Resolution: WQXGA+, 3K, QHD+, 2.8K etj — te laptopet shpesh s'eshte
+    // dimension ne inch por emer standard si "3K WQXGA+" ose "2880x1800"
+    const resName = snippets.match(/\b(WQXGA\+?|QXGA|QHD\+?|FHD\+?|3K|2\.8K|2K|4K|OLED\s*2K)\b/i);
+    if (resName) specs.push({ key: 'Display Resolution', value: resName[1].toUpperCase() });
+
+    // NPU performance: "50 TOPS", "47 TOPS" — metrik AI i reklamuar ne laptop-et 2025-2026
+    const tops = snippets.match(/(\d+)\s?TOPS/i);
+    if (tops) specs.push({ key: 'NPU Performance', value: `${tops[1]} TOPS` });
+
+    // Codename procesori: Panther Lake, Lunar Lake, Arrow Lake, Raptor Lake etj
+    const codename = snippets.match(/\b(Panther Lake|Lunar Lake|Arrow Lake|Raptor Lake|Meteor Lake|Alder Lake|Hawk Point)\b/i);
+    if (codename) specs.push({ key: 'Processor Codename', value: codename[1] });
+
+    // Process node: "Intel 18A", "3nm", "4nm", "TSMC 3nm" etj
+    const processNode = snippets.match(/\b(Intel\s+18A|Intel\s+20A|TSMC\s*\d+nm|\d+nm\s*node|\d+nm\s*process)\b/i);
+    if (processNode) specs.push({ key: 'Process Node', value: processNode[1] });
 
     console.log(`[tavily] "${title}" — gjeta ${specs.length} spec(e) te konfirmuara`);
     return specs;
@@ -1917,8 +1978,8 @@ async function localizeProduct(shop, token, productId, targetLang, locale, tone,
       let bodyForShopify = translated.description;
       if (localeKey !== primaryKey) {
         const primaryLang = LOCALE_MAP[primaryKey] || primaryLocale;
-        const primaryCopy = await generateProductCopy(product, primaryLang, glossary, translated.description, imageUrl, metafields, shop);
-        bodyForShopify = primaryCopy.description;
+        console.log(`[primaryCopy] Duke perkthyer per gjuhen primare (${primaryLang}) direkt ne Gemini`);
+        bodyForShopify = await translatePrimaryDescriptionWithGemini(translated.description, primaryLang, glossary);
       }
       const bodyUpdated = await updateShopifyProductBodyIfEmpty(shop, token, pid, bodyForShopify);
       if (bodyUpdated) {
