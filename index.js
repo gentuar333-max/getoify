@@ -805,8 +805,13 @@ async function searchProductSpecs(title) {
     const battery = snippets.match(/(\d{3,5})\s?mAh/i);
     if (battery) specs.push({ key: 'Battery', value: `${battery[1]}mAh` });
 
-    const camera = snippets.match(/(\d+)\s?MP\s*(main|primary|rear|wide)?/i);
-    if (camera) specs.push({ key: 'Main Camera', value: `${camera[1]}MP` });
+    // Kamera: mer te gjitha MP ne snippets, pastaj merr vlerën me te larte
+    // (kamera kryesore 200MP, jo ultrawide 12MP qe shpesh shfaqet e para)
+    const allMpMatches = [...snippets.matchAll(/(\d+)\s?MP/gi)];
+    if (allMpMatches.length > 0) {
+      const highestMp = allMpMatches.reduce((max, m) => Math.max(max, parseInt(m[1])), 0);
+      if (highestMp > 0) specs.push({ key: 'Main Camera', value: `${highestMp}MP` });
+    }
 
     const aperture = snippets.match(/f\/(\d+\.?\d*)\s*(aperture|lens|main|wide)/i);
     if (aperture) specs.push({ key: 'Aperture', value: `f/${aperture[1]}` });
@@ -1177,7 +1182,7 @@ async function generateProductCopy(product, targetLang, glossary, cleanBody, ima
     ...metafields.slice(0, 15).map(mf => ({ key: mf.key, value: mf.value }))
   ];
   const confirmedSpecsBlock = allConfirmedSpecs.length > 0
-    ? `\nCONFIRMED DATA (extracted from title or Shopify metafields — treat as ground truth, same priority as title override):\n${allConfirmedSpecs.map(s => `- ${s.key}: ${s.value}`).join('\n')}\n`
+    ? `\nPRODUCT SPECS (verified data — use these values directly without hedging):\n${allConfirmedSpecs.map(s => `- ${s.key}: ${s.value}`).join('\n')}\n`
     : '';
 
   console.log(`[category] homeKitchen:${homeKitchen} beautyHealth:${beautyHealth} sportFitness:${sportFitness} fashionApparel:${fashionApparel} techElectronics:${techElectronics} externalConfirmation:${hasExternalConfirmation} product:"${product.title}"`);
@@ -2246,6 +2251,12 @@ app.post('/bulk-localize-all', async (req, res) => {
   }
 });
 
+// Deduplikimi i webhook-it: Shopify e dergon webhook-un 2-3 here per
+// produkt (create + update i menjehershem + retry nese me vone se 5s).
+// Pa kete Set, çdo thirrje e re = Sonnet i ri = cache WRITE = ~3.5 cent.
+// Me kete: thirrja e dyte per të njejtin shop+product brenda 30s injorohet.
+const recentWebhooks = new Set();
+
 // Product create + update — lokalizon automatikisht
 app.post('/webhook/product-create', async (req, res) => {
   res.status(200).send('OK');
@@ -2255,6 +2266,15 @@ app.post('/webhook/product-create', async (req, res) => {
   try {
     const body = Buffer.isBuffer(rawBody) ? JSON.parse(rawBody.toString()) : rawBody;
     if (!body.title || !body.id) return;
+
+    // Deduplikim: Shop + product_id + 30 sekonda
+    const webhookKey = `${shop}:${body.id}`;
+    if (recentWebhooks.has(webhookKey)) {
+      console.log(`[webhook-dedup] Anashkaluar thirrje e dyfishte per ${webhookKey}`);
+      return;
+    }
+    recentWebhooks.add(webhookKey);
+    setTimeout(() => recentWebhooks.delete(webhookKey), 30000);
 
     // Kontrollo nese produkti ekziston tashme - perdoret edhe per limit check
     const { data: existing } = await supabase
