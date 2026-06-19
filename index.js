@@ -689,6 +689,104 @@ function isTechElectronicsProduct(product) {
   return TECH_ELECTRONICS_TITLE_KEYWORDS.some(k => title.includes(k));
 }
 
+// Grup i ngushte i produkteve ku halucinimi i specifikave eshte i
+// konfirmuar ne testim real (Galaxy S26 Ultra, MacBook Neo, Dell XPS 13).
+// NE MOD QELLIMISHT te kufizuar: vetem telefona, laptop/PC.
+// Earbuds, smartwatch, gaming etj. NUKE perfshihen — keta kane dal
+// mire ne testime dhe nuk justifikojne kosto shtese Tavily.
+const COMPLEX_TECH_KEYWORDS = [
+  // Telefona
+  'iphone', 'galaxy', 'pixel', 'oneplus', 'xiaomi', 'redmi', 'oppo',
+  'realme', 'vivo', 'huawei', 'nokia', 'sony xperia', 'motorola',
+  'smartphone', 'phone',
+  // Laptop
+  'macbook', 'thinkpad', 'xps', 'surface laptop', 'spectre', 'envy',
+  'pavilion', 'inspiron', 'omen', 'zenbook', 'vivobook', 'aspire',
+  'swift', 'spin', 'gram', 'laptop', 'notebook',
+  // PC/Desktop
+  'imac', 'mac mini', 'mac pro', 'mac studio', 'desktop', 'pc tower',
+  'all-in-one'
+];
+
+// Produkte qe NUKE duhet Tavily edhe nese permbajne fjale si "galaxy" ose
+// "surface" — janë kategori qe kanë dalë mirë ne testime pa specs komplekse
+const COMPLEX_TECH_EXCLUSIONS = [
+  'buds', 'earbuds', 'earphone', 'headphone', 'airpods',
+  'watch', 'band', 'ring',
+  'tablet', 'ipad', 'tab ',
+  'tv', 'smart tv', 'monitor', 'display',
+  'charger', 'cable', 'hub', 'dock',
+  'console', 'playstation', 'xbox', 'switch',
+  'router', 'modem', 'camera', 'gopro'
+];
+
+function needsTavilySearch(product) {
+  if (!product?.title) return false;
+  const t = product.title.toLowerCase();
+  if (COMPLEX_TECH_EXCLUSIONS.some(k => t.includes(k))) return false;
+  return COMPLEX_TECH_KEYWORDS.some(k => t.includes(k));
+}
+
+// Kerkon specs reale te produktit nepermjet Tavily dhe i kthen si nje
+// vargu specifikash te konfirmuara (te njejtin format si titleSpecs/metafields).
+// Nese Tavily deshtoi (kufiri falas u arrit, API_KEY mungon, timeout),
+// kthehet array bosh — gjenerimi vazhdon normalisht pa specs te konfirmuara.
+async function searchProductSpecs(title) {
+  if (!process.env.TAVILY_API_KEY) return [];
+  try {
+    const res = await axios.post('https://api.tavily.com/search', {
+      api_key: process.env.TAVILY_API_KEY,
+      query: `${title} official technical specifications`,
+      search_depth: 'basic',
+      max_results: 3,
+      include_answer: false
+    }, { timeout: 8000 });
+
+    const snippets = (res.data.results || [])
+      .map(r => r.content || r.snippet || '')
+      .join('\n')
+      .slice(0, 3000); // kufizoj tokenat qe shkojne ne prompt
+
+    if (!snippets.trim()) return [];
+
+    // Nxjerr specs me regex nga permbajtja e Tavily — i njejti mekanizem
+    // si extractTitleSpecs(), por aplikuar mbi tekst te gjate kerkimi
+    const specs = [];
+    const ram = snippets.match(/(\d+)\s?GB\s*(LPDDR\w*)?\s*RAM/i);
+    if (ram) specs.push({ key: 'RAM', value: `${ram[1]}GB` });
+
+    const storage = snippets.match(/(\d+)\s?(GB|TB)\s*(UFS\w*|NVMe|SSD|storage|internal)/i);
+    if (storage) specs.push({ key: 'Storage', value: `${storage[1]}${storage[2].toUpperCase()}` });
+
+    const battery = snippets.match(/(\d{3,5})\s?mAh/i);
+    if (battery) specs.push({ key: 'Battery', value: `${battery[1]}mAh` });
+
+    const camera = snippets.match(/(\d+)\s?MP\s*(main|primary|rear|wide)?/i);
+    if (camera) specs.push({ key: 'Main Camera', value: `${camera[1]}MP` });
+
+    const aperture = snippets.match(/f\/(\d+\.?\d*)\s*(aperture|lens|main|wide)/i);
+    if (aperture) specs.push({ key: 'Aperture', value: `f/${aperture[1]}` });
+
+    const hz = snippets.match(/(\d+)\s?Hz\s*(refresh|ProMotion|LTPO|display|screen)/i);
+    if (hz) specs.push({ key: 'Refresh Rate', value: `${hz[1]}Hz` });
+
+    const charging = snippets.match(/(\d+)\s?W\s*(wired|fast|Super Fast|charging)/i);
+    if (charging) specs.push({ key: 'Charging', value: `${charging[1]}W` });
+
+    const screen = snippets.match(/(\d+\.?\d*)[""]\s*(display|screen|AMOLED|OLED|IPS|Liquid)/i);
+    if (screen) specs.push({ key: 'Screen Size', value: `${screen[1]}"` });
+
+    const os = snippets.match(/(iOS|Android|Windows)\s*(\d+)/i);
+    if (os) specs.push({ key: 'OS', value: `${os[1]} ${os[2]}` });
+
+    console.log(`[tavily] "${title}" — gjeta ${specs.length} spec(e) te konfirmuara`);
+    return specs;
+  } catch (e) {
+    console.warn('[tavily] Kerkimi deshtoi:', e.message);
+    return [];
+  }
+}
+
 // Specifika qe nese gjenden si metafield, konsiderohen "konfirmim i jashtem"
 // per nje produkt tech/electronics — perdoret nga hasExternalConfirmation
 const SPEC_METAFIELD_KEYWORDS = [
@@ -981,11 +1079,21 @@ async function generateProductCopy(product, targetLang, glossary, cleanBody, ima
   // vertete, STEP A (recall nga memoria) çaktivizohet me poshte ne sharedRules
   // per specifika VOLATILE — shih EXTERNAL CONFIRMATION STATUS.
   const titleSpecs = extractTitleSpecs(product.title);
-  const hasExternalConfirmation = hasMerchantSpecsInTitle(product.title) ||
+  let hasExternalConfirmation = hasMerchantSpecsInTitle(product.title) ||
     hasSpecMetafields(metafields) || hasVolatileTitleSpec(titleSpecs);
+
+  // Tavily: vetem per telefona/laptop/PC (grup i konfirmuar me probleme
+  // halucinimi) dhe vetem kur s'ka konfirmim tjeter — keshtu nuk humbin
+  // thirrje Tavily per produkte qe tashmë kane specs nga titulli/metafields.
+  let tavilySpecs = [];
+  if (!hasExternalConfirmation && !cleanBody && needsTavilySearch(product)) {
+    tavilySpecs = await searchProductSpecs(product.title);
+    if (tavilySpecs.length > 0) hasExternalConfirmation = true;
+  }
 
   const allConfirmedSpecs = [
     ...titleSpecs,
+    ...tavilySpecs,
     ...metafields.slice(0, 15).map(mf => ({ key: mf.key, value: mf.value }))
   ];
   const confirmedSpecsBlock = allConfirmedSpecs.length > 0
