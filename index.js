@@ -1,4 +1,5 @@
 const express = require('express');
+const crypto = require('crypto');
 const dotenv = require('dotenv');
 const axios = require('axios');
 const path = require('path');
@@ -2375,22 +2376,48 @@ app.post('/webhook/product-delete', async (req, res) => {
 
 // ─── COMPLIANCE WEBHOOKS (required for Shopify App Store) ────────────────────
 
+// HMAC verification per te gjitha webhook-et e Shopify — kerkese e detyrueshme
+// per aprovim ne Shopify App Store. Shopify dergon HMAC-SHA256 header
+// 'x-shopify-hmac-sha256' me çdo webhook; nese nuk perputhet me SECRET-in
+// tone, kerkesa refuzohet me 401 (dikush tjeter po perpiqet te dergoje data).
+function verifyShopifyWebhookHmac(req) {
+  const hmacHeader = req.headers['x-shopify-hmac-sha256'];
+  if (!hmacHeader) return false;
+  const secret = process.env.SHOPIFY_API_SECRET;
+  if (!secret) return false;
+  const rawBody = Buffer.isBuffer(req.body) ? req.body : Buffer.from(JSON.stringify(req.body));
+  const digest = crypto
+    .createHmac('sha256', secret)
+    .update(rawBody)
+    .digest('base64');
+  return crypto.timingSafeEqual(Buffer.from(digest), Buffer.from(hmacHeader));
+}
+
+// Middleware per compliance webhooks — bllokon kerkesa pa HMAC te vlefshme
+function requireWebhookHmac(req, res, next) {
+  if (!verifyShopifyWebhookHmac(req)) {
+    console.warn('[hmac] Webhook HMAC verification failed — request rejected');
+    return res.status(401).send('Unauthorized');
+  }
+  next();
+}
+
 // customers/data_request — merchant asks for customer data export
-app.post('/webhook/customers/data-request', (req, res) => {
+app.post('/webhook/customers/data-request', requireWebhookHmac, (req, res) => {
   // Getoify does not store personal customer data — nothing to export
   console.log('[compliance] customers/data_request received');
   res.status(200).send('OK');
 });
 
 // customers/redact — merchant asks to delete customer data
-app.post('/webhook/customers/redact', (req, res) => {
+app.post('/webhook/customers/redact', requireWebhookHmac, (req, res) => {
   // Getoify does not store personal customer data — nothing to delete
   console.log('[compliance] customers/redact received');
   res.status(200).send('OK');
 });
 
 // shop/redact — shop uninstalled, delete all shop data
-app.post('/webhook/shop/redact', async (req, res) => {
+app.post('/webhook/shop/redact', requireWebhookHmac, async (req, res) => {
   res.status(200).send('OK');
   const rawBody = req.body;
   try {
