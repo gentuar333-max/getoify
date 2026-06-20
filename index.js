@@ -2259,7 +2259,7 @@ app.post('/bulk-localize-all', async (req, res) => {
 const recentWebhooks = new Set();
 
 // Product create + update — lokalizon automatikisht
-app.post('/webhook/product-create', async (req, res) => {
+app.post('/webhook/product-create', requireWebhookHmac, async (req, res) => {
   res.status(200).send('OK');
   const rawBody = req.body;
   const shop = req.headers['x-shopify-shop-domain'];
@@ -2374,6 +2374,26 @@ app.post('/webhook/product-delete', async (req, res) => {
   }
 });
 
+// Route bazë per compliance webhooks te regjistruara ne TOML si uri = "/webhook"
+// Shopify dergon te gjitha compliance_topics te kjo URL me X-Shopify-Topic header
+app.post('/webhook', requireWebhookHmac, (req, res) => {
+  const topic = req.headers['x-shopify-topic'] || '';
+  console.log(`[compliance] /webhook received topic: ${topic}`);
+  if (topic === 'shop/redact') {
+    res.status(200).send('OK');
+    const body = Buffer.isBuffer(req.body) ? JSON.parse(req.body.toString()) : req.body;
+    const shop = body?.myshopify_domain || req.headers['x-shopify-shop-domain'];
+    if (shop) {
+      supabase.from('translations').delete().eq('shop', shop).then(() =>
+        supabase.from('stores').delete().eq('shop', shop)
+      ).catch(e => console.error('[compliance] shop/redact error:', e.message));
+    }
+  } else {
+    // customers/data_request, customers/redact — Getoify nuk ruan te dhena personale
+    res.status(200).send('OK');
+  }
+});
+
 // ─── COMPLIANCE WEBHOOKS (required for Shopify App Store) ────────────────────
 
 // HMAC verification per te gjitha webhook-et e Shopify — kerkese e detyrueshme
@@ -2390,7 +2410,11 @@ function verifyShopifyWebhookHmac(req) {
     .createHmac('sha256', secret)
     .update(rawBody)
     .digest('base64');
-  return crypto.timingSafeEqual(Buffer.from(digest), Buffer.from(hmacHeader));
+  // timingSafeEqual hedh gabim nese gjatesit jane te ndryshme — kap para se te krahason
+  const digestBuf = Buffer.from(digest);
+  const hmacBuf = Buffer.from(hmacHeader);
+  if (digestBuf.length !== hmacBuf.length) return false;
+  return crypto.timingSafeEqual(digestBuf, hmacBuf);
 }
 
 // Middleware per compliance webhooks — bllokon kerkesa pa HMAC te vlefshme
