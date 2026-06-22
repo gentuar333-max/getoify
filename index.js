@@ -152,6 +152,22 @@ app.get('/widget-config', async (req, res) => {
 const SHOPIFY_PRODUCTS_PAGE = 250;
 const SHOPIFY_PRODUCTS_TIMEOUT_MS = 60000;
 
+// Planete e Getoify — product_limit eshte numri max i produkteve unike
+// qe mund te lokalizohen gjate periudhes se planit. Perdoret nga te gjitha
+// endpoint-et per te bllokuar tejkalimin e limitit. DUHET te jete ketu
+// (globale) sepse app.locals.PLANS lexohet nga disa endpoint — ne te kaluaren
+// kurrë nuk u caktua, prandaj if (PLANS) ishte gjithmone false dhe limitet
+// nuk funksiononin fare.
+const PLANS = {
+  free:        { label: 'Free',       product_limit: 15,   bulk_limit: 15   },
+  description: { label: 'Local',      product_limit: 50,   bulk_limit: 50   },
+  starter:     { label: 'Starter',    product_limit: 125,  bulk_limit: 125  },
+  growth:      { label: 'Growth',     product_limit: 300,  bulk_limit: 300  },
+  pro:         { label: 'Pro',        product_limit: 700,  bulk_limit: 700  },
+  enterprise:  { label: 'Enterprise', product_limit: 1400, bulk_limit: 1400 },
+};
+app.locals.PLANS = PLANS;
+
 // Sa PRODUKTE perpunohen njekohesisht ne bulk-localize-all. Lokalet brenda
 // nje produkti TE VETEM mbeten sekuenciale (shih processProductLocales) —
 // arkitektura "Sonnet nje here, Gemini per pjesen tjeter" varet nga kjo
