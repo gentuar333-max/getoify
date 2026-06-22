@@ -2477,19 +2477,24 @@ app.post('/webhook', requireWebhookHmac, (req, res) => {
 // tone, kerkesa refuzohet me 401 (dikush tjeter po perpiqet te dergoje data).
 function verifyShopifyWebhookHmac(req) {
   const hmacHeader = req.headers['x-shopify-hmac-sha256'];
-  if (!hmacHeader) return false;
+  if (!hmacHeader) {
+    console.warn('[hmac-debug] No HMAC header present');
+    return false;
+  }
   const secret = process.env.SHOPIFY_API_SECRET;
-  if (!secret) return false;
-  // req.rawBody eshte i vendosur nga verify callback ne express.json() — bytes
-  // saktesisht sic i ka nënshkruar Shopify. Buffer.from(JSON.stringify(...))
-  // nuk funksionon sepse JSON.stringify ndryshon whitespace dhe key order.
+  if (!secret) {
+    console.warn('[hmac-debug] SHOPIFY_API_SECRET is missing in env');
+    return false;
+  }
   const rawBody = req.rawBody || (Buffer.isBuffer(req.body) ? req.body : Buffer.from(JSON.stringify(req.body)));
+  console.log(`[hmac-debug] rawBody length: ${rawBody.length}, source: ${req.rawBody ? 'rawBody' : Buffer.isBuffer(req.body) ? 'buffer' : 'stringify'}, secret length: ${secret.length}`);
   const digest = crypto
     .createHmac('sha256', secret)
     .update(rawBody)
     .digest('base64');
   const digestBuf = Buffer.from(digest);
   const hmacBuf = Buffer.from(hmacHeader);
+  console.log(`[hmac-debug] computed starts: ${digest.substring(0,8)}..., header starts: ${hmacHeader.substring(0,8)}...`);
   if (digestBuf.length !== hmacBuf.length) return false;
   return crypto.timingSafeEqual(digestBuf, hmacBuf);
 }
