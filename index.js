@@ -9,8 +9,14 @@ dotenv.config({ override: false });
 
 const app = express();
 
-app.use('/webhook', express.raw({ type: 'application/json' }));
-app.use(express.json());
+// Ruaj raw bytes te req.rawBody para parsing — i vetmi menyrim i besueshëm
+// per HMAC verification te Shopify webhooks. express.raw() dhe express.json()
+// ne paralel shkaktojne konflikt: nje prej tyre merr streamin, tjetri merr
+// objekt JSON. JSON.stringify(object) nuk prodhon bytes identike me payload-in
+// origjinal (whitespace, key order) → HMAC deshton gjithmone.
+app.use(express.json({
+  verify: (req, res, buf) => { req.rawBody = buf; }
+}));
 app.use(express.static(path.join(__dirname, 'public')));
 
 const { 
@@ -2474,12 +2480,14 @@ function verifyShopifyWebhookHmac(req) {
   if (!hmacHeader) return false;
   const secret = process.env.SHOPIFY_API_SECRET;
   if (!secret) return false;
-  const rawBody = Buffer.isBuffer(req.body) ? req.body : Buffer.from(JSON.stringify(req.body));
+  // req.rawBody eshte i vendosur nga verify callback ne express.json() — bytes
+  // saktesisht sic i ka nënshkruar Shopify. Buffer.from(JSON.stringify(...))
+  // nuk funksionon sepse JSON.stringify ndryshon whitespace dhe key order.
+  const rawBody = req.rawBody || (Buffer.isBuffer(req.body) ? req.body : Buffer.from(JSON.stringify(req.body)));
   const digest = crypto
     .createHmac('sha256', secret)
     .update(rawBody)
     .digest('base64');
-  // timingSafeEqual hedh gabim nese gjatesit jane te ndryshme — kap para se te krahason
   const digestBuf = Buffer.from(digest);
   const hmacBuf = Buffer.from(hmacHeader);
   if (digestBuf.length !== hmacBuf.length) return false;
