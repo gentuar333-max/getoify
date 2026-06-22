@@ -2565,8 +2565,13 @@ app.post('/process-product', async (req, res) => {
       const plan = PLANS[planName] || PLANS.free;
       let productQuery2 = supabase.from('translations').select('product_id, created_at').eq('shop', shop);
       if (planStartedAt2) productQuery2 = productQuery2.gte('created_at', planStartedAt2);
-      const { data: productRows2 } = await productQuery2;
+      const { data: productRows2, error: limitQueryError } = await productQuery2;
+      if (limitQueryError) {
+        console.warn(`[plan-limit] Query failed for ${shop}: ${limitQueryError.message} — blocking for safety`);
+        return res.status(503).json({ error: 'Plan limit check unavailable. Please try again in a moment.' });
+      }
       const uniqueProducts = new Set((productRows2 || []).map(r => r.product_id)).size;
+      console.warn(`[plan-limit] ${shop} ${planName}: ${uniqueProducts}/${plan.product_limit} products used`);
       if (uniqueProducts >= plan.product_limit) {
         console.warn(`[plan-limit] ${shop} hit ${planName} limit (${plan.product_limit} products, ${uniqueProducts} used)`);
         return res.status(403).json({
