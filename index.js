@@ -2131,12 +2131,39 @@ app.post('/localize', async (req, res) => {
   const { shop, token, productId, targetLang, locale, tone, glossary } = req.body;
   try {
     const pid = normalizeProductId(productId);
+
+    // Kontroll limiti para gjenerimit — /localize eshte endpoint qe
+    // theret nga dashboard kur merchant klikon "Translate" per nje produkt
+    const store = await getStore(shop);
+    const PLANS = app.locals.PLANS;
+    if (PLANS && store) {
+      const planName = store.plan || 'free';
+      const plan = PLANS[planName] || PLANS.free;
+      const planStartedAt = store.plan_started_at || null;
+      let q = supabase.from('translations').select('product_id').eq('shop', shop);
+      if (planStartedAt) q = q.gte('created_at', planStartedAt);
+      const { data: rows } = await q;
+      const existingIds = new Set((rows || []).map(r => String(r.product_id)));
+      // Nese ky produkt eshte i ri (jo i perkthyer me pare) dhe kemi arritur limitin
+      if (!existingIds.has(String(pid)) && existingIds.size >= plan.product_limit) {
+        console.warn(`[plan-limit] /localize blocked for ${shop} — ${planName} limit (${plan.product_limit}, used ${existingIds.size})`);
+        return res.status(403).json({
+          error: `Plan limit reached. Your ${plan.label} plan supports ${plan.product_limit} products. Upgrade to continue.`,
+          upgrade_url: `${process.env.APP_URL}/pricing?shop=${shop}`,
+          plan: planName,
+          limit: plan.product_limit,
+          used: existingIds.size
+        });
+      }
+    }
+
     const result = await localizeProduct(shop, token, pid, targetLang, locale, tone, glossary);
     res.json({ success: true, product_id: pid, ...result });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
+
 
 app.post('/bulk-localize-collections', async (req, res) => {
   const { shop, token, glossary } = req.body;
