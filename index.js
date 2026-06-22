@@ -1937,6 +1937,32 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
 
 async function localizeProduct(shop, token, productId, targetLang, locale, tone, glossary) {
   const pid = normalizeProductId(productId);
+
+  // Kontroll i fundit i limitit — brenda localizeProduct() per te bllokuar
+  // çdo rruge (poll, webhook, /localize, /process-product) pavarësisht.
+  const PLANS = app.locals.PLANS;
+  if (PLANS) {
+    try {
+      const store = await getStore(shop);
+      if (store) {
+        const planName = store.plan || 'free';
+        const plan = PLANS[planName] || PLANS.free;
+        const planStartedAt = store.plan_started_at || null;
+        let q = supabase.from('translations').select('product_id').eq('shop', shop);
+        if (planStartedAt) q = q.gte('created_at', planStartedAt);
+        const { data: rows } = await q;
+        const existingIds = new Set((rows || []).map(r => String(r.product_id)));
+        if (!existingIds.has(String(pid)) && existingIds.size >= plan.product_limit) {
+          console.warn(`[plan-limit] localizeProduct blocked: ${shop} ${planName} limit ${plan.product_limit}, used ${existingIds.size}, product ${pid}`);
+          throw new Error(`PLAN_LIMIT: Your ${plan.label} plan supports ${plan.product_limit} products. Upgrade at ${process.env.APP_URL}/pricing?shop=${shop}`);
+        }
+      }
+    } catch(limitErr) {
+      if (limitErr.message.startsWith('PLAN_LIMIT')) throw limitErr;
+      console.warn('[plan-limit] check failed silently:', limitErr.message);
+    }
+  }
+
   const productRes = await axios.get(
     `https://${shop}/admin/api/2024-01/products/${pid}.json`,
     { headers: { 'X-Shopify-Access-Token': token } }

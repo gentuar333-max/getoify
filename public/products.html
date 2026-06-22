@@ -432,7 +432,16 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ shop, token: activeToken, productId: String(productId), productTitle })
       });
-      if (!res.ok) throw new Error('Server error');
+      if (!res.ok) {
+  const errData = await res.json().catch(() => ({}));
+  if (res.status === 403) {
+    alert(errData.error || 'Plan limit reached. Upgrade your plan to translate more products.');
+    btn.textContent = 'Translate';
+    btn.disabled = false;
+    return;
+  }
+  throw new Error('Server error');
+}
       // Poll every 3s up to 30s for translation to complete
       let attempts = 0;
       const poll = setInterval(async () => {
