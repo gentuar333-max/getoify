@@ -2653,12 +2653,10 @@ async function pollNewProducts() {
         const planStartedAt = store.plan_started_at || null;
         const plan = PLANS[planName] || PLANS.free;
         planLimit = plan.product_limit;
-        let productQuery = supabase.from('translations').select('product_id, created_at').eq('shop', shop).limit(10000);
-        if (planStartedAt) productQuery = productQuery.gte('created_at', planStartedAt);
-        const { data: productRows } = await productQuery;
-        uniqueProducts = new Set((productRows || []).map(r => r.product_id)).size;
+        uniqueProducts = await getLocalizedProductCount(shop, planStartedAt);
+        console.warn(`[poll] ${shop} ${planName}: ${uniqueProducts}/${planLimit} products used`);
         if (uniqueProducts >= planLimit) {
-          console.log(`[poll] Skipping ${shop} — ${planName} limit reached (${planLimit} products, ${uniqueProducts} used)`);
+          console.warn(`[poll] Skipping ${shop} — ${planName} limit reached (${planLimit}, used ${uniqueProducts})`);
           continue;
         }
       }
