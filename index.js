@@ -1152,6 +1152,12 @@ function isHomeKitchenProduct(product) {
 }
 
 async function generateProductCopy(product, targetLang, glossary, cleanBody, imageUrl, metafields = [], shop = null) {
+
+  // KILL SWITCH GLOBAL — vendos GENERATION_PAUSED=true te Vercel Environment
+  // Variables per te ndaluar ÇDO gjenerim menjëherë, pavarësisht rrugës.
+  if (process.env.GENERATION_PAUSED === 'true') {
+    throw new Error('PLAN_LIMIT: Generation is paused. Set GENERATION_PAUSED=false in Vercel to resume.');
+  }
   const category = product.product_type || '';
   const tags = (product.tags || '').split(',').slice(0, 5).join(', ');
   const hasImage = !!imageUrl;
@@ -2769,14 +2775,46 @@ async function autoResetWebhooks() {
 
 // TEST ENDPOINT — remove after testing
 app.post('/test-prompt', async (req, res) => {
-  const { title, lang } = req.body;
+  const { title, lang, shop } = req.body;
+
+  // Kontroll limiti edhe per test-prompt — kjo ishte rruga e vetme e mbetur
+  // e pabllokuar. Pa shop, nuk mund te kontrollojme; nese shop eshte dhene,
+  // bllokohet si cdo rruge tjeter.
+  if (shop && app.locals.PLANS) {
+    try {
+      const store = await getStore(shop);
+      if (store) {
+        const planName = store.plan || 'free';
+        const plan = app.locals.PLANS[planName] || app.locals.PLANS.free;
+        const planStartedAt = store.plan_started_at || null;
+        let q = supabase.from('translations').select('product_id').eq('shop', shop).limit(10000);
+        if (planStartedAt) q = q.gte('created_at', planStartedAt);
+        const { data: rows } = await q;
+        const uniqueCount = new Set((rows || []).map(r => String(r.product_id))).size;
+        if (uniqueCount >= plan.product_limit) {
+          return res.status(403).json({
+            error: `Plan limit reached (${uniqueCount}/${plan.product_limit}). Upgrade to continue.`,
+            limit: plan.product_limit,
+            used: uniqueCount
+          });
+        }
+      }
+    } catch(limitErr) {
+      if (limitErr.message?.startsWith('PLAN_LIMIT')) {
+        return res.status(403).json({ error: limitErr.message });
+      }
+      console.warn('[test-prompt] limit check failed:', limitErr.message);
+    }
+  }
+
   const product = { title, product_type: '', tags: '', body_html: '' };
   try {
-    const result = await generateProductCopy(
-      product, lang, 'checkout, Shopify', '', null
-    );
+    const result = await generateProductCopy(product, lang, 'checkout, Shopify', '', null, [], shop);
     res.json(result);
   } catch(e) {
+    if (e.message?.startsWith('PLAN_LIMIT')) {
+      return res.status(403).json({ error: e.message });
+    }
     res.status(500).json({ error: e.message });
   }
 });
