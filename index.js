@@ -174,6 +174,29 @@ const PLANS = {
 };
 app.locals.PLANS = PLANS;
 
+// Funksioni ndihmës per COUNT(DISTINCT product_id) — perdor Supabase RPC
+// per te shmangur problemin e limitit te rreshtave (default 1000, max 10000).
+// Me SQL DISTINCT, kjo eshte me e sakt dhe me performante se deduplication
+// ne JavaScript pas fetch-imit te mijera rreshtave.
+async function getLocalizedProductCount(shop, planStartedAt) {
+  try {
+    const { data, error } = await supabase.rpc('get_localized_product_count', {
+      p_shop: shop,
+      p_started_at: planStartedAt || null
+    });
+    if (error) throw error;
+    return typeof data === 'number' ? data : parseInt(data || '0', 10);
+  } catch(e) {
+    console.warn('[plan-count] RPC failed, fallback to query:', e.message);
+    // Fallback: query me limit te larte
+    let q = supabase.from('translations').select('product_id').eq('shop', shop).limit(50000);
+    if (planStartedAt) q = q.gte('created_at', planStartedAt);
+    const { data: rows } = await q;
+    return new Set((rows || []).map(r => String(r.product_id))).size;
+  }
+}
+
+
 // Sa PRODUKTE perpunohen njekohesisht ne bulk-localize-all. Lokalet brenda
 // nje produkti TE VETEM mbeten sekuenciale (shih processProductLocales) —
 // arkitektura "Sonnet nje here, Gemini per pjesen tjeter" varet nga kjo
@@ -2379,12 +2402,9 @@ app.post('/webhook/product-create', requireWebhookHmac, async (req, res) => {
         const planName = storeData?.plan || 'free';
         const planStartedAt = storeData?.plan_started_at || null;
         const plan = PLANS[planName] || PLANS.free;
-        let productQuery = supabase.from('translations').select('product_id, created_at').eq('shop', shop).limit(10000);
-        if (planStartedAt) productQuery = productQuery.gte('created_at', planStartedAt);
-        const { data: productRows } = await productQuery;
-        const uniqueProducts = new Set((productRows || []).map(r => r.product_id)).size;
+        const uniqueProducts = await getLocalizedProductCount(shop, planStartedAt);
         if (uniqueProducts >= plan.product_limit) {
-          console.warn(`[plan-limit] Webhook blocked (new product) for ${shop} — ${planName} limit (${plan.product_limit} products, ${uniqueProducts} used)`);
+          console.warn(`[plan-limit] Webhook blocked for ${shop} — ${planName} limit (${plan.product_limit}, used ${uniqueProducts})`);
           return;
         }
       }
@@ -2563,23 +2583,16 @@ app.post('/process-product', async (req, res) => {
     const glossary = store.glossary || 'checkout, Shopify';
     const savedLocales = store.selected_locales || [];
 
-    // Hard plan limit check — count translated products for this shop
+    // Hard plan limit check — COUNT(DISTINCT) via Supabase RPC
     const PLANS = app.locals.PLANS;
     if (PLANS) {
       const planName = store.plan || 'free';
       const planStartedAt2 = store.plan_started_at || null;
       const plan = PLANS[planName] || PLANS.free;
-      let productQuery2 = supabase.from('translations').select('product_id, created_at').eq('shop', shop).limit(10000);
-      if (planStartedAt2) productQuery2 = productQuery2.gte('created_at', planStartedAt2);
-      const { data: productRows2, error: limitQueryError } = await productQuery2;
-      if (limitQueryError) {
-        console.warn(`[plan-limit] Query failed for ${shop}: ${limitQueryError.message} — blocking for safety`);
-        return res.status(503).json({ error: 'Plan limit check unavailable. Please try again in a moment.' });
-      }
-      const uniqueProducts = new Set((productRows2 || []).map(r => r.product_id)).size;
+      const uniqueProducts = await getLocalizedProductCount(shop, planStartedAt2);
       console.warn(`[plan-limit] ${shop} ${planName}: ${uniqueProducts}/${plan.product_limit} products used`);
       if (uniqueProducts >= plan.product_limit) {
-        console.warn(`[plan-limit] ${shop} hit ${planName} limit (${plan.product_limit} products, ${uniqueProducts} used)`);
+        console.warn(`[plan-limit] ${shop} hit ${planName} limit (${plan.product_limit}, used ${uniqueProducts})`);
         return res.status(403).json({
           error: `Plan limit reached. Your ${plan.label} plan supports ${plan.product_limit} products.`,
           upgrade_url: `${process.env.APP_URL}/pricing`,
