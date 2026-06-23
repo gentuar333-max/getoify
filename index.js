@@ -2507,13 +2507,13 @@ function verifyShopifyWebhookHmac(req) {
     console.warn('[hmac-debug] No HMAC header present');
     return false;
   }
-  const secret = process.env.SHOPIFY_API_SECRET;
+  const secret = (process.env.SHOPIFY_API_SECRET || '').trim();
   if (!secret) {
     console.warn('[hmac-debug] SHOPIFY_API_SECRET is missing in env');
     return false;
   }
   const rawBody = req.rawBody || (Buffer.isBuffer(req.body) ? req.body : Buffer.from(JSON.stringify(req.body)));
-  console.warn(`[hmac-debug] rawBody length: ${rawBody.length}, source: ${req.rawBody ? 'rawBody' : Buffer.isBuffer(req.body) ? 'buffer' : 'stringify'}, secret length: ${secret.length}`);
+  console.warn(`[hmac-debug] rawBody length: ${rawBody.length}, source: ${req.rawBody ? 'rawBody' : Buffer.isBuffer(req.body) ? 'buffer' : 'stringify'}, secret length: ${secret.length}, secret[0]: '${secret.charCodeAt(0)}', secret[-1]: '${secret.charCodeAt(secret.length-1)}'`);
   const digest = crypto
     .createHmac('sha256', secret)
     .update(rawBody)
