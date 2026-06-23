@@ -1954,7 +1954,7 @@ async function localizeProduct(shop, token, productId, targetLang, locale, tone,
         const planName = store.plan || 'free';
         const plan = PLANS[planName] || PLANS.free;
         const planStartedAt = store.plan_started_at || null;
-        let q = supabase.from('translations').select('product_id').eq('shop', shop);
+        let q = supabase.from('translations').select('product_id').eq('shop', shop).limit(10000);
         if (planStartedAt) q = q.gte('created_at', planStartedAt);
         const { data: rows } = await q;
         const existingIds = new Set((rows || []).map(r => String(r.product_id)));
@@ -2172,7 +2172,7 @@ app.post('/localize', async (req, res) => {
       const planName = store.plan || 'free';
       const plan = PLANS[planName] || PLANS.free;
       const planStartedAt = store.plan_started_at || null;
-      let q = supabase.from('translations').select('product_id').eq('shop', shop);
+      let q = supabase.from('translations').select('product_id').eq('shop', shop).limit(10000);
       if (planStartedAt) q = q.gte('created_at', planStartedAt);
       const { data: rows } = await q;
       const existingIds = new Set((rows || []).map(r => String(r.product_id)));
@@ -2373,7 +2373,7 @@ app.post('/webhook/product-create', requireWebhookHmac, async (req, res) => {
         const planName = storeData?.plan || 'free';
         const planStartedAt = storeData?.plan_started_at || null;
         const plan = PLANS[planName] || PLANS.free;
-        let productQuery = supabase.from('translations').select('product_id, created_at').eq('shop', shop);
+        let productQuery = supabase.from('translations').select('product_id, created_at').eq('shop', shop).limit(10000);
         if (planStartedAt) productQuery = productQuery.gte('created_at', planStartedAt);
         const { data: productRows } = await productQuery;
         const uniqueProducts = new Set((productRows || []).map(r => r.product_id)).size;
@@ -2563,7 +2563,7 @@ app.post('/process-product', async (req, res) => {
       const planName = store.plan || 'free';
       const planStartedAt2 = store.plan_started_at || null;
       const plan = PLANS[planName] || PLANS.free;
-      let productQuery2 = supabase.from('translations').select('product_id, created_at').eq('shop', shop);
+      let productQuery2 = supabase.from('translations').select('product_id, created_at').eq('shop', shop).limit(10000);
       if (planStartedAt2) productQuery2 = productQuery2.gte('created_at', planStartedAt2);
       const { data: productRows2, error: limitQueryError } = await productQuery2;
       if (limitQueryError) {
@@ -2634,7 +2634,7 @@ async function pollNewProducts() {
         const planStartedAt = store.plan_started_at || null;
         const plan = PLANS[planName] || PLANS.free;
         planLimit = plan.product_limit;
-        let productQuery = supabase.from('translations').select('product_id, created_at').eq('shop', shop);
+        let productQuery = supabase.from('translations').select('product_id, created_at').eq('shop', shop).limit(10000);
         if (planStartedAt) productQuery = productQuery.gte('created_at', planStartedAt);
         const { data: productRows } = await productQuery;
         uniqueProducts = new Set((productRows || []).map(r => r.product_id)).size;
