@@ -241,6 +241,84 @@ app.get('/language-switcher', (req, res) => res.sendFile(path.join(__dirname, 'p
 app.get('/google6e865cb2268111cc.html', (req, res) => res.send('google-site-verification: google6e865cb2268111cc.html'));
 app.get('/privacy', (req, res) => res.sendFile(path.join(__dirname, 'public', 'privacy.html')));
 app.get('/terms', (req, res) => res.sendFile(path.join(__dirname, 'public', 'terms.html')));
+
+// ─── SHOPIFY BILLING API ─────────────────────────────────────────────────────
+const PLAN_PRICES = {
+  free:        { monthly: 0,   yearly: 0,   label: 'Free'       },
+  description: { monthly: 9,   yearly: 8,   label: 'Local'      },
+  starter:     { monthly: 19,  yearly: 15,  label: 'Starter'    },
+  growth:      { monthly: 49,  yearly: 39,  label: 'Growth'     },
+  pro:         { monthly: 99,  yearly: 79,  label: 'Pro'        },
+  enterprise:  { monthly: 199, yearly: 159, label: 'Enterprise' },
+};
+
+app.get('/checkout', async (req, res) => {
+  const { plan, billing, shop } = req.query;
+  if (!plan || !shop) return res.status(400).send('Missing plan or shop');
+  const store = await getStore(shop);
+  if (!store) return res.redirect('/auth?shop=' + encodeURIComponent(shop));
+  const token = store.access_token;
+  const planConfig = PLAN_PRICES[plan];
+  if (!planConfig) return res.status(400).send('Invalid plan');
+  const isYearly = billing === 'yearly';
+  const price = isYearly ? planConfig.yearly : planConfig.monthly;
+  if (price === 0) {
+    await supabase.from('stores').update({ plan: 'free', plan_started_at: new Date().toISOString(), billing_id: null }).eq('shop', shop);
+    return res.redirect(`/dashboard?shop=${shop}&activated=free`);
+  }
+  try {
+    const chargeRes = await axios.post(
+      `https://${shop}/admin/api/2024-01/recurring_application_charges.json`,
+      { recurring_application_charge: {
+        name: `Getoify ${planConfig.label}${isYearly ? ' Annual' : ''}`,
+        price: price.toFixed(2),
+        return_url: `${process.env.APP_URL}/billing/callback?plan=${plan}&billing=${billing}&shop=${encodeURIComponent(shop)}`,
+        trial_days: 0, test: false
+      }},
+      { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
+    );
+    console.log(`[billing] Charge created for ${shop} plan=${plan} $${price}`);
+    res.redirect(chargeRes.data.recurring_application_charge.confirmation_url);
+  } catch(err) {
+    console.error('[billing] Create charge failed:', err.response?.data || err.message);
+    res.redirect(`/pricing?shop=${shop}&error=billing_failed`);
+  }
+});
+
+app.get('/billing/callback', async (req, res) => {
+  const { plan, billing, shop, charge_id } = req.query;
+  if (!charge_id || !shop) return res.redirect(`/pricing?shop=${shop}&error=invalid_callback`);
+  const store = await getStore(shop);
+  if (!store) return res.redirect('/auth?shop=' + encodeURIComponent(shop));
+  const token = store.access_token;
+  try {
+    const chargeRes = await axios.get(
+      `https://${shop}/admin/api/2024-01/recurring_application_charges/${charge_id}.json`,
+      { headers: { 'X-Shopify-Access-Token': token } }
+    );
+    const charge = chargeRes.data.recurring_application_charge;
+    if (charge.status === 'accepted') {
+      await axios.post(
+        `https://${shop}/admin/api/2024-01/recurring_application_charges/${charge_id}/activate.json`,
+        {}, { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
+      );
+      await supabase.from('stores').update({
+        plan, plan_started_at: new Date().toISOString(),
+        billing_id: String(charge_id), billing_cycle: billing || 'monthly'
+      }).eq('shop', shop);
+      console.log(`[billing] Activated: ${shop} → ${plan}`);
+      res.redirect(`/dashboard?shop=${shop}&activated=${plan}`);
+    } else if (charge.status === 'declined') {
+      res.redirect(`/pricing?shop=${shop}&error=declined`);
+    } else {
+      res.redirect(`/pricing?shop=${shop}&error=pending`);
+    }
+  } catch(err) {
+    console.error('[billing] Callback error:', err.response?.data || err.message);
+    res.redirect(`/pricing?shop=${shop}&error=callback_failed`);
+  }
+});
+
 app.get('/shopify-translation-app', (req, res) => res.sendFile(path.join(__dirname, 'public', 'shopify-translation-app.html')));
 app.get('/vs/langify', (req, res) => res.sendFile(path.join(__dirname, 'public', 'vs', 'langify.html')));
 
@@ -1216,6 +1294,7 @@ async function generateProductCopy(product, targetLang, glossary, cleanBody, ima
   //    per te gjitha grupet e tjera (fashion, supplements, earbuds, watches etj)
   //    qe kane dale mire ne testime pa kete shtrese shtese kostoje
   let tavilySpecs = [];
+  let tavilySearchedButEmpty = false;
   if (!hasExternalConfirmation && !cleanBody && needsTavilySearch(product)) {
     console.log(`[tavily] Duke kerkuar specs per "${product.title}" — Sonnet pret...`);
     tavilySpecs = await searchProductSpecs(product.title);
@@ -1223,7 +1302,8 @@ async function generateProductCopy(product, targetLang, glossary, cleanBody, ima
       hasExternalConfirmation = true;
       console.log(`[tavily] ${tavilySpecs.length} spec(e) te konfirmuara → Sonnet mund te shkruaje numra si fakte`);
     } else {
-      console.log(`[tavily] Asnje spec e gjetur → gate aktiv, Sonnet duhet te perdore "deri ne"`);
+      tavilySearchedButEmpty = true;
+      console.log(`[tavily] Asnje spec e gjetur → NO-SPECS mode: Sonnet duhet te shkruaje VETEM marketing gjuhe pa numra`);
     }
   }
   // ──────────────────────────────────────────────────────────────────────────
@@ -1380,7 +1460,15 @@ DESCRIPTION RULES:
 CATEGORY KNOWLEDGE RULE:
 
 EXTERNAL CONFIRMATION STATUS: ${hasExternalConfirmation ? 'CONFIRMED — see CONFIRMED MERCHANT DATA below or merchant title for real spec data.' : 'NOT CONFIRMED — no merchant-provided specs exist for this product.'}
-${!hasExternalConfirmation ? `Because there is no external confirmation, STEP A's permission to write an exact number from memory is SUSPENDED for VOLATILE specs (RAM, storage, battery mAh, screen Hz, camera MP, screen size, chip generation number, or any measurement that differs between similar models and is easy to confuse) — use "up to" / qualitative framing for these instead, even if you recognize the brand and model with high confidence. This suspension does NOT apply to STABLE IDENTIFIERS tied to release timing rather than hardware configuration — the current OS version (e.g. "iOS 26", "Android 16") or a platform feature/brand name (e.g. "Apple Intelligence", "Galaxy AI") may be stated directly if you are confident, since these carry far lower cross-model confusion risk than hardware measurements. If unsure about a stable identifier too, omit it rather than guess.` : ''}
+${tavilySearchedButEmpty ? `
+⛔ NO-SPECS MODE ACTIVE: An external search was performed for this product but returned ZERO verified specifications. This means the product either does not exist yet, is too new, or its specs are unverifiable. In this case you MUST:
+- Write ZERO numeric specifications (no RAM, no storage, no battery mAh, no screen size in inches, no camera MP, no Hz, no watts, no weight)
+- Write ZERO chip/processor model names or generation numbers
+- Write ZERO OS version numbers
+- Write ONLY marketing-focused copy: design language, intended use case, target audience, brand positioning, what problem it solves
+- DO NOT use "up to" hedging — simply omit all specs entirely
+- If you cannot write a meaningful description without specs, write about the brand's reputation, the product category's benefits, and the experience of using this type of product
+This rule overrides STEP A, STEP B, and STEP C entirely.` : (!hasExternalConfirmation ? `Because there is no external confirmation, STEP A's permission to write an exact number from memory is SUSPENDED for VOLATILE specs (RAM, storage, battery mAh, screen Hz, camera MP, screen size, chip generation number, or any measurement that differs between similar models and is easy to confuse) — use "up to" / qualitative framing for these instead, even if you recognize the brand and model with high confidence. This suspension does NOT apply to STABLE IDENTIFIERS tied to release timing rather than hardware configuration — the current OS version (e.g. "iOS 26", "Android 16") or a platform feature/brand name (e.g. "Apple Intelligence", "Galaxy AI") may be stated directly if you are confident, since these carry far lower cross-model confusion risk than hardware measurements. If unsure about a stable identifier too, omit it rather than guess.` : '')}
 
 You are an ecommerce expert with deep product knowledge across all categories. Apply this logic:
 
