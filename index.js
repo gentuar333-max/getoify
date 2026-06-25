@@ -591,12 +591,12 @@ app.get('/status', async (req, res) => {
       ...row,
       product_id: normalizeProductId(row.product_id)
     }));
-    // Count only products translated after plan started
-    const relevantTranslations = planStartedAt
-      ? translations.filter(t => new Date(t.created_at) >= new Date(planStartedAt))
-      : translations;
-    const uniqueProducts = new Set(relevantTranslations.map(t => t.product_id)).size;
-    const allUniqueProducts = new Set(translations.map(t => t.product_id)).size;
+
+    // Perdor RPC per COUNT(DISTINCT) saktesisht — jo JavaScript Set
+    // qe kufizohet nga Supabase default row limit
+    const uniqueProducts = await getLocalizedProductCount(shop, planStartedAt);
+    const allUniqueProducts = await getLocalizedProductCount(shop, null);
+
     res.json({ total: allUniqueProducts, period_used: uniqueProducts, total_records: translations.length, plan_limit: plan.product_limit, translations });
   } catch (error) {
     res.status(500).json({ error: error.message });
