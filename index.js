@@ -252,6 +252,25 @@ const PLAN_PRICES = {
   enterprise:  { monthly: 199, yearly: 159, label: 'Enterprise' },
 };
 
+// Funksion ndihmës per dergimin e email notifikimeve me Resend
+// Thirret kur merchant paguan plan te ri ose arrin limitin
+async function sendNotification(subject, html) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const to = process.env.NOTIFY_EMAIL || 'contact@premiumartisan.fr';
+  if (!apiKey) return; // Nese RESEND_API_KEY nuk eshte vendosur, kaperceje
+  try {
+    await axios.post('https://api.resend.com/emails', {
+      from: 'Getoify <notifications@getoify.com>',
+      to,
+      subject,
+      html
+    }, { headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' } });
+    console.log(`[notify] Email sent: ${subject}`);
+  } catch(e) {
+    console.warn('[notify] Email failed:', e.response?.data || e.message);
+  }
+}
+
 app.get('/checkout', async (req, res) => {
   const { plan, billing, shop } = req.query;
   if (!plan || !shop) return res.status(400).send('Missing plan or shop');
@@ -307,6 +326,16 @@ app.get('/billing/callback', async (req, res) => {
         billing_id: String(charge_id), billing_cycle: billing || 'monthly'
       }).eq('shop', shop);
       console.log(`[billing] Activated: ${shop} → ${plan}`);
+      const planConfig = PLAN_PRICES[plan] || {};
+      const price = isYearly ? planConfig.yearly : planConfig.monthly;
+      await sendNotification(
+        `New subscription: ${shop} → ${planConfig.label || plan}`,
+        `<h2>New Getoify subscription</h2>
+         <p><b>Store:</b> ${shop}</p>
+         <p><b>Plan:</b> ${planConfig.label || plan} ($${price}/${billing || 'month'})</p>
+         <p><b>Charge ID:</b> ${charge_id}</p>
+         <p><b>Time:</b> ${new Date().toISOString()}</p>`
+      );
       res.redirect(`/dashboard?shop=${shop}&activated=${plan}`);
     } else if (charge.status === 'declined') {
       res.redirect(`/pricing?shop=${shop}&error=declined`);
@@ -2681,6 +2710,15 @@ app.post('/process-product', async (req, res) => {
       console.warn(`[plan-limit] ${shop} ${planName}: ${uniqueProducts}/${plan.product_limit} products used`);
       if (uniqueProducts >= plan.product_limit) {
         console.warn(`[plan-limit] ${shop} hit ${planName} limit (${plan.product_limit}, used ${uniqueProducts})`);
+      await sendNotification(
+        `Limit reached: ${shop} (${planName})`,
+        `<h2>Merchant hit plan limit</h2>
+         <p><b>Store:</b> ${shop}</p>
+         <p><b>Plan:</b> ${planName} (limit: ${plan.product_limit} products)</p>
+         <p><b>Used:</b> ${uniqueProducts} products</p>
+         <p><b>Time:</b> ${new Date().toISOString()}</p>
+         <p>This merchant may be ready to upgrade.</p>`
+      );
         return res.status(403).json({
           error: `Plan limit reached. Your ${plan.label} plan supports ${plan.product_limit} products.`,
           upgrade_url: `${process.env.APP_URL}/pricing`,
