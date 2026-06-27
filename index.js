@@ -305,7 +305,7 @@ app.get('/checkout', async (req, res) => {
         name: `Getoify ${planConfig.label}${isYearly ? ' Annual' : ''}`,
         price: price.toFixed(2),
         return_url: `${process.env.APP_URL}/billing/callback?plan=${plan}&billing=${billing}&shop=${encodeURIComponent(shop)}`,
-        trial_days: 0, test: false
+        trial_days: 0, test: process.env.BILLING_TEST_MODE === 'true'
       }},
       { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
     );
