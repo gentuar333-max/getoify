@@ -164,15 +164,28 @@ const SHOPIFY_PRODUCTS_TIMEOUT_MS = 60000;
 // (globale) sepse app.locals.PLANS lexohet nga disa endpoint — ne te kaluaren
 // kurrë nuk u caktua, prandaj if (PLANS) ishte gjithmone false dhe limitet
 // nuk funksiononin fare.
+// Gjuhet e suportuara nga Getoify — merchant zgjedh nga keto
+const SUPPORTED_LOCALES = {
+  'fr': 'French',
+  'de': 'German',
+  'it': 'Italian',
+  'es': 'Spanish',
+  'nl': 'Dutch',
+  'pt-BR': 'Portuguese (Brazil)',
+  'pt-PT': 'Portuguese (Portugal)',
+  'pl': 'Polish',
+};
+
 const PLANS = {
-  free:        { label: 'Free',       product_limit: 15,   bulk_limit: 15   },
-  description: { label: 'Local',      product_limit: 50,   bulk_limit: 50   },
-  starter:     { label: 'Starter',    product_limit: 125,  bulk_limit: 125  },
-  growth:      { label: 'Growth',     product_limit: 300,  bulk_limit: 300  },
-  pro:         { label: 'Pro',        product_limit: 700,  bulk_limit: 700  },
-  enterprise:  { label: 'Enterprise', product_limit: 1400, bulk_limit: 1400 },
+  free:        { label: 'Free',       product_limit: 15,   bulk_limit: 15,   language_limit: 2  },
+  description: { label: 'Local',      product_limit: 50,   bulk_limit: 50,   language_limit: 1  },
+  starter:     { label: 'Starter',    product_limit: 125,  bulk_limit: 125,  language_limit: 1  },
+  growth:      { label: 'Growth',     product_limit: 300,  bulk_limit: 300,  language_limit: 2  },
+  pro:         { label: 'Pro',        product_limit: 700,  bulk_limit: 700,  language_limit: 3  },
+  enterprise:  { label: 'Enterprise', product_limit: 1400, bulk_limit: 1400, language_limit: 4  },
 };
 app.locals.PLANS = PLANS;
+app.locals.SUPPORTED_LOCALES = SUPPORTED_LOCALES;
 
 // Funksioni ndihmës per COUNT(DISTINCT product_id) — perdor Supabase RPC
 // per te shmangur problemin e limitit te rreshtave (default 1000, max 10000).
@@ -662,17 +675,53 @@ app.post('/save-locales', async (req, res) => {
   const { shop, selected_locales } = req.body;
   if (!shop || !selected_locales) return res.status(400).json({ error: 'Missing data' });
   try {
+    // Kontroll limiti i gjuhëve sipas planit
+    const PLANS = app.locals.PLANS;
+    if (PLANS) {
+      const store = await getStore(shop);
+      const planName = store?.plan || 'free';
+      const plan = PLANS[planName] || PLANS.free;
+      const languageLimit = plan.language_limit || 8;
+      if (Array.isArray(selected_locales) && selected_locales.length > languageLimit) {
+        return res.status(403).json({
+          error: `Your ${plan.label} plan supports up to ${languageLimit} language${languageLimit === 1 ? '' : 's'}. Upgrade to add more.`,
+          language_limit: languageLimit,
+          plan: planName
+        });
+      }
+    }
     const { error } = await supabase
       .from('stores')
       .update({ selected_locales })
       .eq('shop', shop);
     if (error) throw error;
     res.json({ ok: true });
-    // Widget config përditësohet automatikisht — widget.js e lexon nga /widget-config
   } catch(e) {
     res.status(500).json({ error: e.message });
   }
 });
+
+// Endpoint per te marre gjuhet e disponueshme dhe limitin e planit
+app.get('/plan-languages', async (req, res) => {
+  const { shop } = req.query;
+  if (!shop) return res.status(400).json({ error: 'Missing shop' });
+  try {
+    const store = await getStore(shop);
+    const PLANS = app.locals.PLANS;
+    const planName = store?.plan || 'free';
+    const plan = PLANS ? (PLANS[planName] || PLANS.free) : { language_limit: 2, label: 'Free' };
+    res.json({
+      plan: planName,
+      plan_label: plan.label,
+      language_limit: plan.language_limit || 8,
+      selected_locales: store?.selected_locales || [],
+      supported_locales: app.locals.SUPPORTED_LOCALES || {}
+    });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 
 async function getStore(shop) {
   const { data, error } = await supabase.from('stores').select('*').eq('shop', shop).single();
