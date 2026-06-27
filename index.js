@@ -167,6 +167,7 @@ const SHOPIFY_PRODUCTS_TIMEOUT_MS = 60000;
 // Gjuhet e suportuara nga Getoify — merchant zgjedh nga keto
 const SUPPORTED_LOCALES = {
   // Europë Perëndimore (tregjet kryesore)
+  'en': 'English',
   'fr': 'French',
   'de': 'German',
   'it': 'Italian',
