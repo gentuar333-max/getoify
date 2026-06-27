@@ -166,6 +166,7 @@ const SHOPIFY_PRODUCTS_TIMEOUT_MS = 60000;
 // nuk funksiononin fare.
 // Gjuhet e suportuara nga Getoify — merchant zgjedh nga keto
 const SUPPORTED_LOCALES = {
+  // Europë Perëndimore (tregjet kryesore)
   'fr': 'French',
   'de': 'German',
   'it': 'Italian',
@@ -174,6 +175,18 @@ const SUPPORTED_LOCALES = {
   'pt-BR': 'Portuguese (Brazil)',
   'pt-PT': 'Portuguese (Portugal)',
   'pl': 'Polish',
+  // Skandinavia (ecommerce i fortë)
+  'sv': 'Swedish',
+  'da': 'Danish',
+  'nb': 'Norwegian',
+  // Europë Lindore (në rritje)
+  'cs': 'Czech',
+  'ro': 'Romanian',
+  'hu': 'Hungarian',
+  // Tregje të mëdha globale
+  'ar': 'Arabic',
+  'ja': 'Japanese',
+  'ko': 'Korean',
 };
 
 const PLANS = {
@@ -951,20 +964,47 @@ const COMPLEX_TECH_KEYWORDS = [
   'swift', 'spin', 'gram', 'laptop', 'notebook',
   // PC/Desktop
   'imac', 'mac mini', 'mac pro', 'mac studio', 'desktop', 'pc tower',
-  'all-in-one'
+  'all-in-one',
+  // Earbuds / Headphones
+  'airpods', 'buds', 'earbuds', 'earphone', 'headphone', 'headset',
+  'galaxy buds', 'pixel buds', 'freebuds', 'soundsport', 'quietcomfort',
+  // Smartwatch / Wearables
+  'apple watch', 'galaxy watch', 'pixel watch', 'smartwatch', 'watch ultra',
+  'fitbit', 'garmin', 'amazfit', 'band', 'smart band',
+  // Tablet
+  'ipad', 'galaxy tab', 'surface pro', 'tab ', 'tablet', 'matebook',
+  'lenovo tab', 'kindle fire',
+  // TV / Monitor
+  'smart tv', 'oled tv', 'qled', 'nanocell', 'frameless tv',
+  'monitor', 'display', '4k tv', '8k tv', 'gaming monitor',
+  // Charger / Power
+  'charger', 'power bank', 'magsafe', 'gan charger', 'wireless charger',
+  // Console / Gaming
+  'playstation', 'xbox', 'nintendo switch', 'steam deck', 'gaming console',
+  // Camera
+  'gopro', 'action cam', 'mirrorless', 'dslr', 'sony a', 'fujifilm',
+  'nikon z', 'canon eos', 'insta360',
+  // Router / Network
+  'router', 'mesh wifi', 'wifi 6', 'wifi 7', 'modem',
+  // Smart Home
+  'echo dot', 'echo show', 'homepod', 'nest hub', 'smart speaker',
+  // E-reader
+  'kindle', 'kobo', 'e-reader', 'ebook reader',
+  // Drone
+  'dji', 'drone', 'quadcopter',
+  // Projector
+  'projector', 'beamer',
+  // Gaming Peripherals
+  'gaming keyboard', 'gaming mouse', 'gaming headset', 'mechanical keyboard',
 ];
 
-// Produkte qe NUKE duhet Tavily edhe nese permbajne fjale si "galaxy" ose
-// "surface" — janë kategori qe kanë dalë mirë ne testime pa specs komplekse
+// Produkte qe kane fjale teknike por NUK kane specs numerike te verifikueshme
+// Keto ANULOHEN nga Tavily sepse do te kthente rezultate te paqarta
 const COMPLEX_TECH_EXCLUSIONS = [
-  'buds', 'earbuds', 'earphone', 'headphone', 'airpods',
-  'watch', 'band', 'ring',
-  'tablet', 'ipad', 'tab ',
-  'tv', 'smart tv', 'monitor', 'display',
-  'charger', 'cable', 'hub', 'dock',
-  'console', 'playstation', 'xbox', 'switch',
-  'router', 'modem', 'camera', 'gopro'
+  'case', 'cover', 'skin', 'sticker', 'sleeve',  // aksesorë pa specs
+  'cable', 'hub', 'dock', 'adapter', 'stand',     // periferi simple
 ];
+
 
 function needsTavilySearch(product) {
   if (!product?.title) return false;
