@@ -1036,7 +1036,7 @@ async function searchProductSpecs(title) {
       search_depth: 'basic',
       max_results: 3,
       include_answer: false
-    }, { timeout: 8000 });
+    }, { timeout: 4000 });
 
     const snippets = (res.data.results || [])
       .map(r => r.content || r.snippet || '')
