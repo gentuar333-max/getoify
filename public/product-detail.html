@@ -145,7 +145,7 @@
             </div>
             <div class="field-row" style="flex-direction:column;gap:6px">
               <div class="field-lbl">Description</div>
-              <div class="field-val desc" style="white-space:pre-line">${(t.translated_description || '—').replace(/• /g, '\n• ').replace(/^\n/, '')}</div>
+              <div class="field-val desc" style="white-space:pre-line">${(t.translated_description || '—').replace(/\n\n/g, '\n').replace(/\n•/g, '\n•').trim()}</div>
             </div>
           </div>
 

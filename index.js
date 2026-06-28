@@ -1115,8 +1115,8 @@ async function searchProductSpecs(title) {
     const weight = snippets.match(/(\d+)\s?g\s*(weight|weighs|heavy|light)/i);
     if (weight) specs.push({ key: 'Weight', value: `${weight[1]}g` });
 
-    // Chipset — Exynos, Snapdragon, Dimensity, Tensor, Apple M/A-series
-    const chipset = snippets.match(/\b(Exynos\s*\d+\w*|Snapdragon\s*[\d\w\s]+?(?=[\s,\.])|Dimensity\s*\d+\w*|Tensor\s*G?\d+|Apple\s*M\d[\w]*|Helio\s*\w+|Kirin\s*\d+)\b/i);
+    // Chipset — Exynos, Snapdragon, Dimensity, Tensor, Apple M/A-series (iPhone + Mac)
+    const chipset = snippets.match(/\b(A\d{1,2}\s*(?:Pro|Bionic|Fusion)?|Exynos\s*\d+\w*|Snapdragon\s*[\d\w\s]+?(?=[\s,\.])|Dimensity\s*\d+\w*|Tensor\s*G?\d+|Apple\s*M\d[\w]*|Helio\s*\w+|Kirin\s*\d+)\b/i);
     if (chipset) specs.push({ key: 'Chipset', value: chipset[1].trim() });
 
     // 5G connectivity
