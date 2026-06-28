@@ -1034,9 +1034,9 @@ async function searchProductSpecs(title) {
       api_key: process.env.TAVILY_API_KEY,
       query: `${title} full specifications IP rating OIS battery mAh`,
       search_depth: 'basic',
-      max_results: 3,
+      max_results: 5,
       include_answer: false
-    }, { timeout: 4000 });
+    }, { timeout: 8000 });
 
     const snippets = (res.data.results || [])
       .map(r => r.content || r.snippet || '')
@@ -1115,8 +1115,8 @@ async function searchProductSpecs(title) {
     const weight = snippets.match(/(\d+)\s?g\s*(weight|weighs|heavy|light)/i);
     if (weight) specs.push({ key: 'Weight', value: `${weight[1]}g` });
 
-    // Chipset — Exynos, Snapdragon, Dimensity, Tensor, Apple M/A-series (iPhone + Mac)
-    const chipset = snippets.match(/\b(A\d{1,2}\s*(?:Pro|Bionic|Fusion)?|Exynos\s*\d+\w*|Snapdragon\s*[\d\w\s]+?(?=[\s,\.])|Dimensity\s*\d+\w*|Tensor\s*G?\d+|Apple\s*M\d[\w]*|Helio\s*\w+|Kirin\s*\d+)\b/i);
+    // Chipset — Exynos, Snapdragon, Dimensity, Tensor, Apple M/A-series
+    const chipset = snippets.match(/\b(Exynos\s*\d+\w*|Snapdragon\s*[\d\w\s]+?(?=[\s,\.])|Dimensity\s*\d+\w*|Tensor\s*G?\d+|Apple\s*M\d[\w]*|Helio\s*\w+|Kirin\s*\d+)\b/i);
     if (chipset) specs.push({ key: 'Chipset', value: chipset[1].trim() });
 
     // 5G connectivity
@@ -1463,15 +1463,8 @@ async function generateProductCopy(product, targetLang, glossary, cleanBody, ima
       hasExternalConfirmation = true;
       console.log(`[tavily] ${tavilySpecs.length} spec(e): ${tavilySpecs.map(s => `${s.key}=${s.value}`).join(', ')}`);
     } else {
-      // NO-SPECS mode vetem per produkte pa brand te njohur —
-      // iPhone, Samsung etj. kane specs te besueshme ne training data te Sonnet
-      // dhe duhet te shkruaje me hedging "up to", jo zero specs
-      if (!titleHasKnownBrand(product)) {
-        tavilySearchedButEmpty = true;
-        console.log(`[tavily] Asnje spec + brand i panjohur → NO-SPECS mode`);
-      } else {
-        console.log(`[tavily] Asnje spec nga Tavily por brand i njohur → hedged specs nga Sonnet`);
-      }
+      tavilySearchedButEmpty = true;
+      console.log(`[tavily] Asnje spec e gjetur → NO-SPECS mode: Sonnet duhet te shkruaje VETEM marketing gjuhe pa numra`);
     }
   }
   // ──────────────────────────────────────────────────────────────────────────
@@ -1697,16 +1690,14 @@ This rule overrides Step A, Step B, and all category knowledge — merchant spec
 DESCRIPTION RULES:
 - Opening sentence: always start with what the customer GETS or FEELS, not what the product IS.
   WRONG: "Yogurt is a fermented dairy product..." RIGHT: "Smooth and creamy — ideal for breakfast, cooking, or a quick snack."
-- Write 1-2 opening sentences MAX — SHORT and grounded. Lead with the product's KEY DIFFERENTIATOR (main confirmed spec, target use, or brand promise). Never write "The large screen provides..." or vague statements — always anchor to a real spec or concrete benefit. Examples of GOOD intros: "Run all-day on a single charge." / "48MP precision in every shot." / "The A18 Pro chip handles what others can't."
+- Write 1-2 opening sentences MAX — SHORT and grounded. Lead with the product's main benefit or key spec, not with poetry.
 - Sensory/emotional words are allowed ONLY if they add real meaning. FORBIDDEN: "Découvrez", "Explorez", "Entdecken Sie", "nuage", "honore", "incontournable", "rituel", "magie", "transforme" — these are empty metaphors.
 - Preferred words for ${targetLang}: ${langCfg.sensoryWords}
 - AVOID: ${langCfg.avoidWords}
 - ${langCfg.avoidNote}
 - Address the customer using "${langCfg.tone}"
-- Then write exactly 4 bullet points starting with •, each on its own line separated by a SINGLE \n (not double \n\n), in this order:
+- Then write exactly 4 bullet points starting with •, each on its own line separated by \\n, in this order:
   ${langCfg.bulletOrder}
-- The intro sentence and first bullet are separated by a SINGLE \n — NO blank line between them
-- Format: "Intro sentence.\n• Bullet 1\n• Bullet 2\n• Bullet 3\n• Bullet 4"
 - ONE spec per bullet — NEVER combine multiple specs in one bullet.
   WRONG: "• Écran 6,9", 120Hz, 200MP, 5000mAh" (4 specs in 1 bullet — FORBIDDEN)
   RIGHT: "• Écran 6,9" Dynamic AMOLED 2X — 120Hz\\n• [next spec]\\n• [next spec]\\n• [next spec]"
@@ -2087,11 +2078,9 @@ PRIORITY SPECS for micellar water / eau micellaire:
 ` : ''}
 
 META TITLE RULES (max 60 chars):
-- Format: "[Product Name] [key spec]" — ALWAYS include one key spec, never just the product name alone
-- Key spec examples: "with 5000mAh Battery", "48MP Camera", "A18 Pro Chip", "120Hz Display", "IP68"
-- Main keyword first, spec second
+- Main keyword first
+- Include one key spec if it fits
 - No punctuation at the end
-- WRONG: "iPhone 16 Pro Max" (no spec) — RIGHT: "iPhone 16 Pro Max with A18 Pro Chip"
 
 META DESCRIPTION RULES (exactly 140-160 chars — use the full space):
 - Start with an action verb in ${targetLang}
