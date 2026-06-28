@@ -193,12 +193,12 @@ const SUPPORTED_LOCALES = {
 };
 
 const PLANS = {
-  free:        { label: 'Free',       product_limit: 15,   bulk_limit: 15,   language_limit: 2  },
+  free:        { label: 'Free',       product_limit: 15,   bulk_limit: 15,   language_limit: 1  },
   description: { label: 'Local',      product_limit: 50,   bulk_limit: 50,   language_limit: 1  },
-  starter:     { label: 'Starter',    product_limit: 125,  bulk_limit: 125,  language_limit: 1  },
-  growth:      { label: 'Growth',     product_limit: 300,  bulk_limit: 300,  language_limit: 2  },
-  pro:         { label: 'Pro',        product_limit: 700,  bulk_limit: 700,  language_limit: 3  },
-  enterprise:  { label: 'Enterprise', product_limit: 1400, bulk_limit: 1400, language_limit: 4  },
+  starter:     { label: 'Starter',    product_limit: 125,  bulk_limit: 125,  language_limit: 2  },
+  growth:      { label: 'Growth',     product_limit: 300,  bulk_limit: 300,  language_limit: 5  },
+  pro:         { label: 'Pro',        product_limit: 700,  bulk_limit: 700,  language_limit: 10 },
+  enterprise:  { label: 'Enterprise', product_limit: 1400, bulk_limit: 1400, language_limit: 20 },
 };
 app.locals.PLANS = PLANS;
 app.locals.SUPPORTED_LOCALES = SUPPORTED_LOCALES;
