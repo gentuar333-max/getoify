@@ -1047,8 +1047,9 @@ async function searchProductSpecs(title) {
     const storage = snippets.match(/(\d+)\s?(GB|TB)\s*(UFS\w*|NVMe|SSD|storage|internal)/i);
     if (storage) specs.push({ key: 'Storage', value: `${storage[1]}${storage[2].toUpperCase()}` });
 
-    const battery = snippets.match(/(\d{3,5})\s?mAh/i);
-    if (battery) specs.push({ key: 'Battery', value: `${battery[1]}mAh` });
+    // Battery — kap "5000mAh", "5,000 mAh", "5.000 mAh"
+    const battery = snippets.match(/(\d[\d,\.]{2,5})\s?mAh/i);
+    if (battery) specs.push({ key: 'Battery', value: `${battery[1].replace(/[,\.]/g, '')}mAh` });
 
     // Kamera: mer te gjitha MP ne snippets, pastaj merr vlerën me te larte
     // (kamera kryesore 200MP, jo ultrawide 12MP qe shpesh shfaqet e para)
@@ -1061,14 +1062,15 @@ async function searchProductSpecs(title) {
     const aperture = snippets.match(/f\/(\d+\.?\d*)\s*(aperture|lens|main|wide)/i);
     if (aperture) specs.push({ key: 'Aperture', value: `f/${aperture[1]}` });
 
-    const hz = snippets.match(/(\d+)\s?Hz\s*(refresh|ProMotion|LTPO|display|screen)/i);
+    // Hz — flex: captures 120Hz regardless of what follows
+    const hz = snippets.match(/(\d{2,4})\s?Hz/i);
     if (hz) specs.push({ key: 'Refresh Rate', value: `${hz[1]}Hz` });
 
     const charging = snippets.match(/(\d+)\s?W\s*(wired|fast|Super Fast|charging)/i);
     if (charging) specs.push({ key: 'Charging', value: `${charging[1]}W` });
 
     const screen = snippets.match(/(\d+\.?\d*)[""]\s*(display|screen|AMOLED|OLED|IPS|Liquid)/i);
-    if (screen) specs.push({ key: 'Screen Size', value: `${screen[1]}"` });
+    if (screenVal && parseFloat(screenVal) > 3) specs.push({ key: 'Screen Size', value: `${screenVal}"` });
 
     const os = snippets.match(/(iOS|Android|Windows)\s*(\d+)/i);
     if (os) specs.push({ key: 'OS', value: `${os[1]} ${os[2]}` });
@@ -1105,6 +1107,21 @@ async function searchProductSpecs(title) {
     // Weight
     const weight = snippets.match(/(\d+)\s?g\s*(weight|weighs|heavy|light)/i);
     if (weight) specs.push({ key: 'Weight', value: `${weight[1]}g` });
+
+    // Chipset — Exynos, Snapdragon, Dimensity, Tensor, Apple M/A-series
+    const chipset = snippets.match(/\b(Exynos\s*\d+\w*|Snapdragon\s*[\d\w\s]+?(?=[\s,\.])|Dimensity\s*\d+\w*|Tensor\s*G?\d+|Apple\s*M\d[\w]*|Helio\s*\w+|Kirin\s*\d+)\b/i);
+    if (chipset) specs.push({ key: 'Chipset', value: chipset[1].trim() });
+
+    // 5G connectivity
+    if (/\b5G\b/i.test(snippets)) specs.push({ key: '5G', value: 'Yes' });
+
+    // WiFi 6/6E/7
+    const wifi = snippets.match(/\b(Wi-Fi\s*[67]E?|WiFi\s*[67])\b/i);
+    if (wifi) specs.push({ key: 'WiFi', value: wifi[1] });
+
+    // Bluetooth version
+    const bt = snippets.match(/Bluetooth\s*(\d+\.?\d*)/i);
+    if (bt) specs.push({ key: 'Bluetooth', value: `Bluetooth ${bt[1]}` });
 
     console.log(`[tavily] "${title}" — gjeta ${specs.length} spec(e) te konfirmuara`);
     return specs;
