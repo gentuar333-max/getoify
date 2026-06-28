@@ -188,6 +188,8 @@ const SUPPORTED_LOCALES = {
   'ar': 'Arabic',
   'ja': 'Japanese',
   'ko': 'Korean',
+  'tr': 'Turkish',
+  'id': 'Indonesian',
 };
 
 const PLANS = {
