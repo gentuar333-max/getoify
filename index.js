@@ -1025,9 +1025,9 @@ async function searchProductSpecs(title) {
   try {
     const res = await axios.post('https://api.tavily.com/search', {
       api_key: process.env.TAVILY_API_KEY,
-      query: `${title} official technical specifications`,
+      query: `${title} full specifications IP rating OIS battery mAh`,
       search_depth: 'basic',
-      max_results: 3,
+      max_results: 5,
       include_answer: false
     }, { timeout: 8000 });
 
@@ -1089,6 +1089,22 @@ async function searchProductSpecs(title) {
     // Process node: "Intel 18A", "3nm", "4nm", "TSMC 3nm" etj
     const processNode = snippets.match(/\b(Intel\s+18A|Intel\s+20A|TSMC\s*\d+nm|\d+nm\s*node|\d+nm\s*process)\b/i);
     if (processNode) specs.push({ key: 'Process Node', value: processNode[1] });
+
+    // IP rating: IP67, IP68, IP69 — rezistencë ndaj ujit dhe pluhurit
+    const ip = snippets.match(/\b(IP\d{2}[KX]?)\b/i);
+    if (ip) specs.push({ key: 'Water Resistance', value: ip[1].toUpperCase() });
+
+    // OIS — Optical Image Stabilization
+    const ois = snippets.match(/\b(OIS|Optical Image Stabilization)\b/i);
+    if (ois) specs.push({ key: 'OIS', value: 'Yes' });
+
+    // Wireless charging
+    const wireless = snippets.match(/(\d+)\s?W\s*(wireless|Qi|MagSafe|charging)/i);
+    if (wireless) specs.push({ key: 'Wireless Charging', value: `${wireless[1]}W` });
+
+    // Weight
+    const weight = snippets.match(/(\d+)\s?g\s*(weight|weighs|heavy|light)/i);
+    if (weight) specs.push({ key: 'Weight', value: `${weight[1]}g` });
 
     console.log(`[tavily] "${title}" — gjeta ${specs.length} spec(e) te konfirmuara`);
     return specs;
