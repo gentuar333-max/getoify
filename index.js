@@ -1034,7 +1034,7 @@ async function searchProductSpecs(title) {
       api_key: process.env.TAVILY_API_KEY,
       query: `${title} full specifications IP rating OIS battery mAh`,
       search_depth: 'basic',
-      max_results: 5,
+      max_results: 3,
       include_answer: false
     }, { timeout: 8000 });
 
@@ -1463,8 +1463,15 @@ async function generateProductCopy(product, targetLang, glossary, cleanBody, ima
       hasExternalConfirmation = true;
       console.log(`[tavily] ${tavilySpecs.length} spec(e): ${tavilySpecs.map(s => `${s.key}=${s.value}`).join(', ')}`);
     } else {
-      tavilySearchedButEmpty = true;
-      console.log(`[tavily] Asnje spec e gjetur → NO-SPECS mode: Sonnet duhet te shkruaje VETEM marketing gjuhe pa numra`);
+      // NO-SPECS mode vetem per produkte pa brand te njohur —
+      // iPhone, Samsung etj. kane specs te besueshme ne training data te Sonnet
+      // dhe duhet te shkruaje me hedging "up to", jo zero specs
+      if (!titleHasKnownBrand(product)) {
+        tavilySearchedButEmpty = true;
+        console.log(`[tavily] Asnje spec + brand i panjohur → NO-SPECS mode`);
+      } else {
+        console.log(`[tavily] Asnje spec nga Tavily por brand i njohur → hedged specs nga Sonnet`);
+      }
     }
   }
   // ──────────────────────────────────────────────────────────────────────────
