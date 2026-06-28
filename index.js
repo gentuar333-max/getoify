@@ -1601,11 +1601,12 @@ DESCRIPTION RULES:
 - AVOID: ${langCfg.avoidWords}
 - ${langCfg.avoidNote}
 - Address the customer using "${langCfg.tone}"
-- Then write exactly 4 bullet points starting with •, in this order:
+- Then write exactly 4 bullet points starting with •, each on its own line separated by \\n, in this order:
   ${langCfg.bulletOrder}
 - ONE spec per bullet — NEVER combine multiple specs in one bullet.
   WRONG: "• Écran 6,9", 120Hz, 200MP, 5000mAh" (4 specs in 1 bullet — FORBIDDEN)
-  RIGHT: "• Écran 6,9" Dynamic AMOLED 2X — 120Hz" then separate bullets for each other spec
+  RIGHT: "• Écran 6,9" Dynamic AMOLED 2X — 120Hz\\n• [next spec]\\n• [next spec]\\n• [next spec]"
+- Each bullet MUST start with • and be separated from the next by \\n (newline character)
 - Each bullet MUST contain a number, measurement, or confirmed technical fact. Poetry bullets are FORBIDDEN.
   EXCEPTION for unknown/generic products (Step C): if no number is confirmed, write the most specific functional or sensory fact available — never invent a number.
 - RATIO: 80% technical facts, 20% tone. Not the reverse.
