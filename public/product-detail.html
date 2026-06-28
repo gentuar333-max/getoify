@@ -47,7 +47,7 @@
     .field-row:first-child { padding-top: 0; }
     .field-lbl { font-size: 12px; color: var(--ink-muted); font-weight: 500; flex-shrink: 0; min-width: 140px; }
     .field-val { font-size: 12px; color: var(--ink); text-align: right; line-height: 1.5; }
-    .field-val.desc { text-align: left; color: var(--ink-mid); font-size: 12px; line-height: 1.6; }
+    .field-val.desc { text-align: left; color: var(--ink-mid); font-size: 12px; line-height: 1.8; white-space: pre-line; }
     .char { font-size: 10px; color: var(--ink-faint); margin-left: 6px; }
     .char.ok { color: var(--green); }
     .char.warn { color: var(--amber, #C9A96E); }
@@ -145,7 +145,7 @@
             </div>
             <div class="field-row" style="flex-direction:column;gap:6px">
               <div class="field-lbl">Description</div>
-              <div class="field-val desc">${t.translated_description || '—'}</div>
+              <div class="field-val desc" style="white-space:pre-line">${(t.translated_description || '—').replace(/• /g, '\n• ').replace(/^\n/, '')}</div>
             </div>
           </div>
 
