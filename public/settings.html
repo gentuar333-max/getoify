@@ -329,7 +329,7 @@
 
   // --- Language selection ---
   let selectedLangs = [];
-  let currentPlanLocaleLimit = 2; // default free
+  let currentPlanLocaleLimit = 1; // default free
   let planLoaded = false;
 
   function toggleLang(card) {
@@ -386,12 +386,12 @@
 
   // --- Usage data ---
   const PLAN_CONFIG = {
-    free:    { label: 'Free',    limit: 15,   locales: 2, desc: 'You are on the Free plan. Upgrade to unlock more products and languages.', features: ['15 products', '2 languages', 'AI description generation', 'Auto-sync new products'] },
-    starter: { label: 'Starter', limit: 125,  locales: 1, desc: 'Starter plan — 125 products, 1 language.', features: ['125 products', '1 language', 'AI description generation', 'Brand voice & glossary', 'Auto-sync new products'] },
-    growth:  { label: 'Growth',  limit: 300,  locales: 2, desc: 'Growth plan — 300 products, 2 languages.', features: ['300 products', '2 languages', 'Everything in Starter', 'Priority processing', 'Email support'] },
-    pro:     { label: 'Pro',     limit: 700,  locales: 3, desc: 'Pro plan — 700 products, 3 languages.', features: ['700 products × 3 languages', 'Up to 2,100 translations', 'Full translation history', 'Auto-sync new products'] },
-    enterprise: { label: 'Enterprise', limit: 1400, locales: 4, desc: 'Enterprise plan — 1,400 products, 4 languages.', features: ['1,400 products × 4 languages', 'Up to 5,600 translations', 'Priority support', 'Auto-sync new products'] },
-    description: { label: 'Local Starter', limit: 500, locales: 0, desc: 'Local Starter — AI descriptions only, no translation.', features: ['500 products', 'AI description generation', 'No translation (1 language)', 'Auto-sync new products'] }
+    free:        { label: 'Free',        limit: 15,   locales: 1,  desc: 'Free plan — 15 products, 1 language. Upgrade to unlock more.', features: ['15 products', '1 language', 'AI description generation', 'Auto-sync new products'] },
+    starter:     { label: 'Starter',     limit: 125,  locales: 2,  desc: 'Starter plan — 125 products, 2 languages.', features: ['125 products', '2 languages', 'AI description generation', 'Brand voice & glossary', 'Auto-sync new products'] },
+    growth:      { label: 'Growth',      limit: 300,  locales: 5,  desc: 'Growth plan — 300 products, 5 languages.', features: ['300 products', '5 languages', 'Everything in Starter', 'Priority processing', 'Email support'] },
+    pro:         { label: 'Pro',         limit: 700,  locales: 10, desc: 'Pro plan — 700 products, 10 languages.', features: ['700 products × 10 languages', 'Up to 7,000 translations', 'Full translation history', 'Auto-sync new products'] },
+    enterprise:  { label: 'Enterprise',  limit: 1400, locales: 20, desc: 'Enterprise plan — 1,400 products, 20 languages.', features: ['1,400 products × 20 languages', 'Up to 28,000 translations', 'Priority support', 'Auto-sync new products'] },
+    description: { label: 'Local',       limit: 50,   locales: 1,  desc: 'Local plan — AI descriptions only, no translation.', features: ['50 products', 'AI description generation', 'No translation (1 language)', 'Auto-sync new products'] }
   };
 
   async function manageSubscription() {

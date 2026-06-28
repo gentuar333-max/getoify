@@ -469,7 +469,7 @@
       btn.innerHTML = '<i class="ti ti-player-play"></i>Run bulk translate'; btn.disabled = false; }
   }
 
-  const PLAN_LANG_LIMITS = { free: 1, starter: 2, growth: 5, pro: 10, enterprise: 20 };
+  const PLAN_LANG_LIMITS = { free: 1, description: 1, starter: 2, growth: 5, pro: 10, enterprise: 20 };
   let userPlan = 'free'; let selectedLangs = [];
 
   async function checkLanguageSetup() {
