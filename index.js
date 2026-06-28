@@ -2757,15 +2757,19 @@ function verifyShopifyWebhookHmac(req) {
   }
   const rawBody = req.rawBody || (Buffer.isBuffer(req.body) ? req.body : Buffer.from(JSON.stringify(req.body)));
   console.warn(`[hmac-debug] rawBody length: ${rawBody.length}, source: ${req.rawBody ? 'rawBody' : Buffer.isBuffer(req.body) ? 'buffer' : 'stringify'}, secret length: ${secret.length}, secret[0]: '${secret.charCodeAt(0)}', secret[-1]: '${secret.charCodeAt(secret.length-1)}'`);
-  const digest = crypto
-    .createHmac('sha256', secret)
-    .update(rawBody)
-    .digest('base64');
-  const digestBuf = Buffer.from(digest);
+
+  // Provoj 3 variante per te gjetur cilin pret Shopify
+  const digestBuf = crypto.createHmac('sha256', secret).update(rawBody).digest('base64');
+  const digestStr = crypto.createHmac('sha256', secret).update(rawBody.toString('utf8'), 'utf8').digest('base64');
+  const digestBin = crypto.createHmac('sha256', secret).update(rawBody.toString('binary'), 'binary').digest('base64');
+
+  console.warn(`[hmac-debug] computed[0:8]: ${digestBuf.substring(0,8)}, header[0:8]: ${hmacHeader.substring(0,8)}, match: ${digestBuf === hmacHeader}`);
+  console.warn(`[hmac-debug] str-variant match: ${digestStr === hmacHeader}, bin-variant match: ${digestBin === hmacHeader}`);
+  const digest = digestBuf;
+  const digestBufBytes = Buffer.from(digest);
   const hmacBuf = Buffer.from(hmacHeader);
-  console.warn(`[hmac-debug] computed[0:8]: ${digest.substring(0,8)}, header[0:8]: ${hmacHeader.substring(0,8)}, match: ${digest === hmacHeader}`);
-  if (digestBuf.length !== hmacBuf.length) return false;
-  return crypto.timingSafeEqual(digestBuf, hmacBuf);
+  if (digestBufBytes.length !== hmacBuf.length) return false;
+  return crypto.timingSafeEqual(digestBufBytes, hmacBuf);
 }
 
 // Middleware per compliance webhooks — bllokon kerkesa pa HMAC te vlefshme
