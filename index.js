@@ -1460,7 +1460,7 @@ async function generateProductCopy(product, targetLang, glossary, cleanBody, ima
     tavilySpecs = await searchProductSpecs(product.title);
     if (tavilySpecs.length > 0) {
       hasExternalConfirmation = true;
-      console.log(`[tavily] ${tavilySpecs.length} spec(e) te konfirmuara → Sonnet mund te shkruaje numra si fakte`);
+      console.log(`[tavily] ${tavilySpecs.length} spec(e): ${tavilySpecs.map(s => `${s.key}=${s.value}`).join(', ')}`);
     } else {
       tavilySearchedButEmpty = true;
       console.log(`[tavily] Asnje spec e gjetur → NO-SPECS mode: Sonnet duhet te shkruaje VETEM marketing gjuhe pa numra`);
@@ -1552,7 +1552,7 @@ async function generateProductCopy(product, targetLang, glossary, cleanBody, ima
       sensoryWords: 'precision, clarity, craftsmanship, quality, performance',
       avoidWords: 'cutting-edge, stunning, sleek, vibrant, reliable, dependable, practical, seamless, next-level, game-changing, powerful, robust, immersive, advanced, innovative, revolutionary, exceptional, ultimate, premium, superior, effortless, intelligent',
       avoidNote: 'Replace marketing adjectives with the real spec — use exact chip name, screen size, MP count instead of vague words like reliable, vibrant, powerful',
-      bulletOrder: '1) Processor + nm node → 2) Screen inches + Hz + tech → 3) Camera MP + aperture → 4) Battery mAh + charge W'
+      bulletOrder: '1) Processor/Chipset + core count → 2) Screen size inches + Hz + display tech → 3) Camera MP + aperture + OIS if confirmed → 4) Battery mAh + charge W + IP rating if confirmed (e.g. IP67/IP68) + 5G if confirmed'
     }
   };
 
