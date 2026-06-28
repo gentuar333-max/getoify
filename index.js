@@ -249,11 +249,12 @@ async function runWithConcurrency(items, limit, worker) {
 }
 
 const LOCALE_MAP = {
-  'fr': 'French', 'de': 'German', 'it': 'Italian', 'es': 'Spanish',
-  'nl': 'Dutch', 'pt': 'Portuguese', 'pl': 'Polish', 'sv': 'Swedish',
-  'da': 'Danish', 'fi': 'Finnish', 'nb': 'Norwegian', 'ja': 'Japanese',
-  'zh': 'Chinese', 'ar': 'Arabic', 'hi': 'Hindi', 'id': 'Indonesian',
-  'en': 'English'
+  'en': 'English', 'fr': 'French', 'de': 'German', 'it': 'Italian',
+  'es': 'Spanish', 'nl': 'Dutch', 'pt-PT': 'Portuguese', 'pt-BR': 'Brazilian Portuguese',
+  'pt': 'Portuguese', 'pl': 'Polish', 'sv': 'Swedish', 'da': 'Danish',
+  'nb': 'Norwegian', 'cs': 'Czech', 'ro': 'Romanian', 'hu': 'Hungarian',
+  'ar': 'Arabic', 'ja': 'Japanese', 'ko': 'Korean', 'tr': 'Turkish',
+  'id': 'Indonesian', 'fi': 'Finnish', 'zh': 'Chinese', 'hi': 'Hindi'
 };
 
 // Static pages
@@ -1545,6 +1546,94 @@ async function generateProductCopy(product, targetLang, glossary, cleanBody, ima
       avoidWords: 'robust, solid, hållbar, effektiv, funktionell',
       avoidNote: 'Avoid repeating "robust" or "hållbar" — use "kvalitativ", "tillverkad för att hålla"',
       bulletOrder: '1) Specifikationer → 2) Funktion → 3) Design/Känsla → 4) Skötsel/Garanti'
+    },
+    Danish: {
+      tone: 'du',
+      cta: null,
+      sensoryWords: 'aroma, varme, nydelse, smag, kvalitet, håndværk',
+      avoidWords: 'robust, solid, holdbar, effektiv, funktionel',
+      avoidNote: 'Avoid repeating "robust" or "holdbar" — use "kvalitetsrig", "lavet til at holde"',
+      bulletOrder: '1) Specifikationer → 2) Funktion → 3) Design/Følelse → 4) Pleje/Garanti'
+    },
+    Norwegian: {
+      tone: 'du',
+      cta: null,
+      sensoryWords: 'aroma, varme, nytelse, smak, kvalitet, håndverk',
+      avoidWords: 'robust, solid, holdbar, effektiv, funksjonell',
+      avoidNote: 'Avoid repeating "robust" or "holdbar" — use "kvalitetsrik", "laget for å vare"',
+      bulletOrder: '1) Spesifikasjoner → 2) Funksjon → 3) Design/Følelse → 4) Vedlikehold/Garanti'
+    },
+    Czech: {
+      tone: 'Vy',
+      cta: null,
+      sensoryWords: 'vůně, teplo, potěšení, chuť, kvalita, řemeslo',
+      avoidWords: 'robustní, solidní, trvanlivý, efektivní, funkční',
+      avoidNote: 'Avoid repeating "robustní" or "trvanlivý" — use "kvalitní", "vyrobeno pro dlouhou životnost"',
+      bulletOrder: '1) Specifikace → 2) Funkce → 3) Design/Emoce → 4) Péče/Záruka'
+    },
+    Romanian: {
+      tone: 'dumneavoastră',
+      cta: null,
+      sensoryWords: 'aromă, căldură, plăcere, gust, calitate, meșteșug',
+      avoidWords: 'robust, solid, durabil, eficient, funcțional',
+      avoidNote: 'Avoid repeating "robust" or "durabil" — use "de calitate", "conceput pentru a dura"',
+      bulletOrder: '1) Specificații → 2) Mecanism → 3) Design/Emoție → 4) Îngrijire/Garanție'
+    },
+    Hungarian: {
+      tone: 'Ön',
+      cta: null,
+      sensoryWords: 'illat, meleg, öröm, íz, minőség, kézművesség',
+      avoidWords: 'robusztus, szilárd, tartós, hatékony, funkcionális',
+      avoidNote: 'Avoid repeating "robusztus" or "tartós" — use "minőségi", "hosszú élettartamra tervezve"',
+      bulletOrder: '1) Specifikációk → 2) Funkció → 3) Design/Érzelem → 4) Karbantartás/Garancia'
+    },
+    Arabic: {
+      tone: 'أنت',
+      cta: 'اشترِ الآن',
+      sensoryWords: 'عطر، دفء، متعة، جودة، حرفية',
+      avoidWords: 'متين، صلب، دائم، فعّال، عملي',
+      avoidNote: 'Use rich descriptive language. Keep numbers and specs in Western numerals.',
+      bulletOrder: '1) المواصفات (السعة/الحجم) → 2) الآلية (كيف يعمل) → 3) التصميم/الشعور → 4) الرعاية/الضمان'
+    },
+    Japanese: {
+      tone: 'です・ます',
+      cta: '今すぐ購入',
+      sensoryWords: '香り、温かさ、品質、職人技、精緻さ',
+      avoidWords: '丈夫、頑丈、耐久性、効率的、機能的',
+      avoidNote: 'Use polite です・ます form. Emphasize craftsmanship and quality over technical specs.',
+      bulletOrder: '1) 仕様（容量/サイズ） → 2) 機能（どのように働くか） → 3) デザイン/感覚 → 4) お手入れ/保証'
+    },
+    Korean: {
+      tone: '합쇼체',
+      cta: '지금 구매하기',
+      sensoryWords: '향기, 따뜻함, 품질, 장인정신, 정밀함',
+      avoidWords: '견고한, 내구성, 효율적, 기능적',
+      avoidNote: 'Use formal 합쇼체 form. Emphasize quality and design.',
+      bulletOrder: '1) 사양 (용량/크기) → 2) 기능 (작동 방식) → 3) 디자인/감성 → 4) 관리/보증'
+    },
+    Turkish: {
+      tone: 'siz',
+      cta: 'Şimdi satın al',
+      sensoryWords: 'aroma, sıcaklık, keyif, kalite, ustalık',
+      avoidWords: 'sağlam, dayanıklı, verimli, işlevsel',
+      avoidNote: 'Avoid repeating "sağlam" or "dayanıklı" — use "kaliteli", "uzun ömürlü tasarlanmış"',
+      bulletOrder: '1) Özellikler → 2) İşlev → 3) Tasarım/Duygu → 4) Bakım/Garanti'
+    },
+    Indonesian: {
+      tone: 'Anda',
+      cta: 'Beli sekarang',
+      sensoryWords: 'aroma, kehangatan, kenikmatan, kualitas, keahlian',
+      avoidWords: 'kokoh, solid, tahan lama, efisien, fungsional',
+      avoidNote: 'Avoid repeating "kokoh" or "tahan lama" — use "berkualitas", "dirancang untuk bertahan"',
+      bulletOrder: '1) Spesifikasi → 2) Fungsi → 3) Desain/Perasaan → 4) Perawatan/Garansi'
+    },
+    'Brazilian Portuguese': {
+      tone: 'você',
+      cta: 'Compre agora',
+      sensoryWords: 'aroma, calor, prazer, sabor, qualidade, artesanal',
+      avoidWords: 'robusto, sólido, durável, eficiente, funcional',
+      avoidNote: 'Use Brazilian Portuguese expressions, not European. Avoid "durável" — use "feito para durar"',
+      bulletOrder: '1) Especificações → 2) Mecanismo → 3) Design/Emoção → 4) Cuidados/Garantia'
     },
     English: {
       tone: 'you',
