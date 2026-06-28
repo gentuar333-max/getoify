@@ -1698,6 +1698,8 @@ DESCRIPTION RULES:
 - Address the customer using "${langCfg.tone}"
 - Then write exactly 4 bullet points starting with •, each on its own line separated by a SINGLE \n (not double \n\n), in this order:
   ${langCfg.bulletOrder}
+- The intro sentence and first bullet are separated by a SINGLE \n — NO blank line between them
+- Format: "Intro sentence.\n• Bullet 1\n• Bullet 2\n• Bullet 3\n• Bullet 4"
 - ONE spec per bullet — NEVER combine multiple specs in one bullet.
   WRONG: "• Écran 6,9", 120Hz, 200MP, 5000mAh" (4 specs in 1 bullet — FORBIDDEN)
   RIGHT: "• Écran 6,9" Dynamic AMOLED 2X — 120Hz\\n• [next spec]\\n• [next spec]\\n• [next spec]"
