@@ -1690,13 +1690,13 @@ This rule overrides Step A, Step B, and all category knowledge — merchant spec
 DESCRIPTION RULES:
 - Opening sentence: always start with what the customer GETS or FEELS, not what the product IS.
   WRONG: "Yogurt is a fermented dairy product..." RIGHT: "Smooth and creamy — ideal for breakfast, cooking, or a quick snack."
-- Write 1-2 opening sentences MAX — SHORT and grounded. Lead with the product's main benefit or key spec, not with poetry.
+- Write 1-2 opening sentences MAX — SHORT and grounded. Lead with the product's KEY DIFFERENTIATOR (main confirmed spec, target use, or brand promise). Never write "The large screen provides..." or vague statements — always anchor to a real spec or concrete benefit. Examples of GOOD intros: "Run all-day on a single charge." / "48MP precision in every shot." / "The A18 Pro chip handles what others can't."
 - Sensory/emotional words are allowed ONLY if they add real meaning. FORBIDDEN: "Découvrez", "Explorez", "Entdecken Sie", "nuage", "honore", "incontournable", "rituel", "magie", "transforme" — these are empty metaphors.
 - Preferred words for ${targetLang}: ${langCfg.sensoryWords}
 - AVOID: ${langCfg.avoidWords}
 - ${langCfg.avoidNote}
 - Address the customer using "${langCfg.tone}"
-- Then write exactly 4 bullet points starting with •, each on its own line separated by \\n, in this order:
+- Then write exactly 4 bullet points starting with •, each on its own line separated by a SINGLE \n (not double \n\n), in this order:
   ${langCfg.bulletOrder}
 - ONE spec per bullet — NEVER combine multiple specs in one bullet.
   WRONG: "• Écran 6,9", 120Hz, 200MP, 5000mAh" (4 specs in 1 bullet — FORBIDDEN)
@@ -2078,9 +2078,11 @@ PRIORITY SPECS for micellar water / eau micellaire:
 ` : ''}
 
 META TITLE RULES (max 60 chars):
-- Main keyword first
-- Include one key spec if it fits
+- Format: "[Product Name] [key spec]" — ALWAYS include one key spec, never just the product name alone
+- Key spec examples: "with 5000mAh Battery", "48MP Camera", "A18 Pro Chip", "120Hz Display", "IP68"
+- Main keyword first, spec second
 - No punctuation at the end
+- WRONG: "iPhone 16 Pro Max" (no spec) — RIGHT: "iPhone 16 Pro Max with A18 Pro Chip"
 
 META DESCRIPTION RULES (exactly 140-160 chars — use the full space):
 - Start with an action verb in ${targetLang}
