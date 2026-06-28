@@ -837,14 +837,20 @@ async function translatePrimaryDescriptionWithGemini(description, targetLang, gl
   const glossaryNote = glossary
     ? `Glossary (keep these terms exactly as written, never translate): ${glossary}\n`
     : '';
-  const prompt = `You are a native ${targetLang} speaker and professional ecommerce copywriter.
+  const prompt = `You are a native ${targetLang} speaker and professional ecommerce translator.
 ${glossaryNote}
 Translate this product description into ${targetLang}.
-Do NOT rewrite or add information. Preserve bullet points, formatting, and tone exactly.
-Keep brand names, technical specs, and numbers unchanged.
-Return ONLY the translated description, nothing else.
 
-DESCRIPTION:
+STRICT RULES — violating any of these is a critical error:
+1. TRANSLATE ONLY — do not add ANY information not present in the source text
+2. If the source says "5000mAh battery" → translate exactly "5000mAh battery", do NOT add "24 hours battery life" or any other specification
+3. If the source says "octa-core processor" → do NOT add the chip name (e.g. "Exynos") if it is not in the source
+4. NEVER invent battery life in hours, screen brightness, weight, storage size, or any other numeric spec that is not explicitly stated in the source
+5. Preserve bullet points (•) and line breaks exactly as in the source
+6. Keep brand names, model names, numbers and units exactly as written
+7. Return ONLY the translated text, nothing else — no explanations, no additions
+
+DESCRIPTION TO TRANSLATE:
 ${description}`;
 
   try {
@@ -2068,14 +2074,21 @@ Do NOT invent specifications that are not visible or stated.`;
     // s'nevojitet, dhe e njejta translationRules (rregullat e tonit/SEO per
     // gjuhe) perdoret pavaresisht se cili provider e ekzekuton.
     isTranslation = true;
-    const contextBlock = `You are a native ${targetLang} speaker and professional ecommerce copywriter.
+    const contextBlock = `You are a native ${targetLang} speaker and professional ecommerce translator.
 
 Glossary (keep these terms exactly as written, never translate): ${glossary || 'checkout, Shopify'}
 Target language: ${targetLang}
 
-The merchant has written this product description. Translate it faithfully into ${targetLang}.
-Do NOT rewrite, do NOT add information, do NOT change the structure or style.
-Preserve bullet points, formatting, and tone exactly.
+Translate this product description faithfully into ${targetLang}.
+
+STRICT RULES — violating any of these is a critical error:
+1. TRANSLATE ONLY — do not add ANY information not present in the source text
+2. NEVER add battery life in hours, screen brightness, weight, storage, or any numeric spec not in the source
+3. If source says "5000mAh battery" → translate only that, do NOT add "24 hours autonomy"
+4. If source says "octa-core" → do NOT add chip name not in source
+5. Preserve ALL bullet points (•) and line breaks exactly as in source
+6. Keep all numbers, units, model names exactly as written
+7. Return ONLY the translated text — no explanations, no additions
 
 TITLE: ${product.title}
 DESCRIPTION: ${cleanBody}
