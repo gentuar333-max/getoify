@@ -181,7 +181,30 @@
     }
   }
 
-  if (shop && productId) loadData();
+  if (shop && productId) {
+    loadData();
+
+    // Live polling — rifreshon çdo 6 sekonda derisa të gjitha gjuhët të jenë "done"
+    let detailPolling = setInterval(async () => {
+      try {
+        const res = await fetch('/product-translations?shop=' + shop + '&productId=' + productId);
+        const data = await res.json();
+        const translations = data.translations || [];
+        const allDone = translations.length > 0 && translations.every(t => t.status === 'done');
+        loadData();
+        // Ndalo polling kur të gjitha janë gati
+        if (allDone) { clearInterval(detailPolling); detailPolling = null; }
+      } catch(e) {}
+    }, 6000);
+
+    // Ndalo kur faqja nuk është aktive
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && detailPolling) { clearInterval(detailPolling); detailPolling = null; }
+      else if (!document.hidden && !detailPolling) {
+        detailPolling = setInterval(async () => { loadData(); }, 6000);
+      }
+    });
+  }
 </script>
 </body>
 </html>

@@ -478,6 +478,53 @@
   });
 
   loadData();
+
+  // Live polling — përditëson vetëm statusin e rreshtave çdo 8 sekonda
+  // pa bërë reload të listës së produkteve (shumë i shpejtë)
+  let livePolling = null;
+
+  function startLivePolling() {
+    if (livePolling) return;
+    livePolling = setInterval(async () => {
+      try {
+        const res = await fetch('/status?shop=' + shop);
+        const data = await res.json();
+        const newMap = {};
+        data.translations.forEach(t => {
+          const pid = String(t.product_id);
+          if (!newMap[pid]) newMap[pid] = [];
+          if (!newMap[pid].includes(t.locale)) newMap[pid].push(t.locale);
+        });
+
+        // Kontrollo nëse ka ndryshime
+        let hasChanges = false;
+        for (const pid of Object.keys(newMap)) {
+          const oldCount = (translatedMap[pid] || []).length;
+          const newCount = newMap[pid].length;
+          if (newCount !== oldCount) { hasChanges = true; break; }
+        }
+
+        if (hasChanges) {
+          translatedMap = newMap;
+          renderTable();
+          updateStats();
+        }
+      } catch(e) {}
+    }, 8000);
+  }
+
+  function stopLivePolling() {
+    if (livePolling) { clearInterval(livePolling); livePolling = null; }
+  }
+
+  // Fillo polling automatikisht
+  startLivePolling();
+
+  // Ndalo polling kur faqja nuk është aktive (kursen API calls)
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) stopLivePolling();
+    else startLivePolling();
+  });
 </script>
 </body>
 </html>
