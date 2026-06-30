@@ -395,18 +395,10 @@
   };
 
   async function manageSubscription() {
-    try {
-      const res = await fetch('/customer-portal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shop })
-      });
-      const data = await res.json();
-      if (data.url) window.location.href = data.url;
-      else showToast('Portal not available', false);
-    } catch(e) {
-      showToast('Connection error', false);
-    }
+    // Subscription tani menaxhohet permes Shopify Billing API — merchant mund
+    // te ndryshoje plan nga /pricing, ose te anulloje duke ç'instaluar app-in
+    // (Shopify e anullon automatikisht RecurringApplicationCharge ne ate rast).
+    window.location.href = '/pricing?shop=' + shop;
   }
 
   async function loadPlan() {

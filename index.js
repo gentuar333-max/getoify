@@ -70,10 +70,13 @@ const { normalizeProductId } = require('./lib/product-id');
 const { fetchAllRows } = require('./lib/supabase-pagination');
 const { localizeCollection, bulkLocalizeCollections } = require('./lib/localize-collection');
 const { localizeArticle, bulkLocalizeBlogs } = require('./lib/localize-blog');
-const registerStripe = require('./lib/stripe');
-registerStripe(app, { supabase });
-const registerShopifyBilling = require('./lib/shopify-billing');
-registerShopifyBilling(app, { supabase });
+// Stripe dhe lib/shopify-billing.js u hoqen — kishin /checkout dhe /billing/callback
+// te vet qe konfliktonin (Express perdor handler-in e PARE te regjistruar per
+// te njejtin path) me /checkout dhe /billing/callback e ndertuara me poshte ne
+// kete file. Stripe ishte registruar I PARI dhe interceptonte CDO kerkese
+// /checkout, duke ridrejtuar merchant te checkout.stripe.com — kjo eshte
+// shkaku i sakte i refuzimit nga Shopify (1.2.1 off-platform billing).
+// Tani /checkout dhe /billing/callback me poshte jane TE VETMET handlers.
 
 // ─── WIDGET SCRIPTTAG ─────────────────────────────────────────────────────
 
@@ -300,6 +303,28 @@ async function sendNotification(subject, html) {
     console.warn('[notify] Email failed:', e.response?.data || e.message);
   }
 }
+
+// /plan — perdoret nga settings.html (loadPlan) per te shfaqur planin aktual.
+// Zevendeson /plan e vjeter te lib/stripe.js — tani lexon direkt nga stores
+// (plan, billing_cycle) qe perditesohen nga /billing/callback me poshte.
+app.get('/plan', async (req, res) => {
+  const { shop } = req.query;
+  if (!shop) return res.status(400).json({ error: 'Missing shop' });
+  try {
+    const { data: store } = await supabase
+      .from('stores')
+      .select('plan, billing_cycle, billing_id')
+      .eq('shop', shop)
+      .single();
+    res.json({
+      plan: store?.plan || 'free',
+      billing_cycle: store?.billing_cycle || null,
+      has_subscription: !!store?.billing_id
+    });
+  } catch(e) {
+    res.json({ plan: 'free', billing_cycle: null, has_subscription: false });
+  }
+});
 
 app.get('/checkout', async (req, res) => {
   const { plan, billing, shop } = req.query;
