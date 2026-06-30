@@ -357,6 +357,10 @@
     margin: 0 auto;
   }
 
+  .diff-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
   .feature-card {
     background: var(--cream);
     padding: 40px 36px;
@@ -723,6 +727,7 @@
   @media (max-width: 768px) {
     .value-cards { grid-template-columns: 1fr; }
     .features-grid { grid-template-columns: 1fr; }
+    .diff-grid { grid-template-columns: 1fr; }
     .certs-grid { grid-template-columns: 1fr; }
     .footer-grid { grid-template-columns: 1fr 1fr; }
     .partner-divider { display: none; }
@@ -919,7 +924,7 @@
 
 <!-- UNIQUE DIFFERENTIATORS -->
 <section style="padding:90px 5%;background:#ffffff;">
-  <div class="features-grid" style="max-width:1060px;margin:0 auto;">
+  <div class="features-grid diff-grid" style="max-width:1060px;margin:0 auto;">
     <div class="feature-card">
       <span class="feature-tag">Only Getoify</span>
       <div class="feature-name">Writes descriptions from scratch.</div>
@@ -929,6 +934,11 @@
       <span class="feature-tag">No lock-in</span>
       <div class="feature-name">Your translations stay — even if you leave.</div>
       <div class="feature-desc">Weglot stores translations on its own servers. Cancel and everything disappears. Getoify writes directly to Shopify. Your content is yours, permanently.</div>
+    </div>
+    <div class="feature-card">
+      <span class="feature-tag">Truly automatic</span>
+      <div class="feature-name">Not just automated — zero manual steps, ever.</div>
+      <div class="feature-desc">Click-to-generate tools still need someone to click. Translation tools need content that already exists. Getoify needs neither: add a product, and within 2 minutes it's live in 20 languages, with SEO metadata, with no action from you.</div>
     </div>
   </div>
 </section>
