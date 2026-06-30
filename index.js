@@ -337,10 +337,37 @@ app.get('/checkout', async (req, res) => {
   const isYearly = billing === 'yearly';
   const price = isYearly ? planConfig.yearly : planConfig.monthly;
   if (price === 0) {
+    // Downgrade ne Free — anullo charge aktiv nese ekziston, perndryshe
+    // Shopify vazhdon te faturoje merchantin per planin e vjeter
+    if (store.billing_id) {
+      try {
+        await axios.delete(
+          `https://${shop}/admin/api/2024-01/recurring_application_charges/${store.billing_id}.json`,
+          { headers: { 'X-Shopify-Access-Token': token } }
+        );
+        console.log(`[billing] Cancelled charge ${store.billing_id} for ${shop} (downgrade to free)`);
+      } catch(cancelErr) {
+        console.warn('[billing] Cancel on downgrade failed (may already be cancelled):', cancelErr.response?.data || cancelErr.message);
+      }
+    }
     await supabase.from('stores').update({ plan: 'free', plan_started_at: new Date().toISOString(), billing_id: null }).eq('shop', shop);
     return res.redirect(`/dashboard?shop=${shop}&activated=free`);
   }
   try {
+    // REST RecurringApplicationCharge s'mund te "update"-ohet — per upgrade/downgrade
+    // mes planeve me pagese, charge-i aktiv duhet anulluar PARA se te krijohet nje i ri.
+    // Pa kete, merchant qe ben upgrade perfundon me DY charges aktive njekohesisht.
+    if (store.billing_id) {
+      try {
+        await axios.delete(
+          `https://${shop}/admin/api/2024-01/recurring_application_charges/${store.billing_id}.json`,
+          { headers: { 'X-Shopify-Access-Token': token } }
+        );
+        console.log(`[billing] Cancelled previous charge ${store.billing_id} for ${shop} before creating new one`);
+      } catch(cancelErr) {
+        console.warn('[billing] Cancel previous charge failed (may already be inactive):', cancelErr.response?.data || cancelErr.message);
+      }
+    }
     const chargeRes = await axios.post(
       `https://${shop}/admin/api/2024-01/recurring_application_charges.json`,
       { recurring_application_charge: {
@@ -382,7 +409,12 @@ app.get('/billing/callback', async (req, res) => {
       }).eq('shop', shop);
       console.log(`[billing] Activated: ${shop} → ${plan}`);
       const planConfig = PLAN_PRICES[plan] || {};
-      const price = isYearly ? planConfig.yearly : planConfig.monthly;
+      // isYearly NUK eshte deklaruar ne kete scope (vetem ne /checkout) — kjo
+      // shkaktonte ReferenceError ketu, e cila e bllokonte CDO aktivizim plani
+      // pas pageses se sukseshme (catch block → error=callback_failed, plani
+      // s'regjistrohej kurre edhe pse Shopify e faturoi merchantin).
+      const isYearlyCb = (billing || 'monthly') === 'yearly';
+      const price = isYearlyCb ? planConfig.yearly : planConfig.monthly;
       await sendNotification(
         `New subscription: ${shop} → ${planConfig.label || plan}`,
         `<h2>New Getoify subscription</h2>
