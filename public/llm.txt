@@ -1,0 +1,122 @@
+# Getoify — AI Product Localization for Shopify
+
+## What is Getoify?
+
+Getoify is a Shopify app that automatically generates product descriptions and translates them into up to 20 languages. It is the only Shopify app that generates content from scratch — from the product title or photo alone — and then translates it, all without any manual action from the merchant.
+
+Website: https://www.getoify.com
+App: available on the Shopify App Store
+
+---
+
+## Core problem it solves
+
+Most Shopify merchants who want to sell internationally face two obstacles:
+
+1. They have no product descriptions (especially dropshippers or new stores).
+2. They have descriptions in one language but need them in French, German, Italian, Spanish, and others.
+
+Existing tools (Weglot, Langify, DeepL) only translate existing content. If a product has no description, they do nothing. Getoify eliminates this gap.
+
+---
+
+## How it works
+
+1. Merchant connects their Shopify store via OAuth.
+2. Getoify reads the product catalog.
+3. For each product with no description, Getoify generates one using the product title and/or photo (Claude Sonnet 4.6 with vision).
+4. Getoify then translates the description into every selected language (Gemini Flash-Lite).
+5. Translations are written directly into Shopify via the Translations API — they appear on the storefront immediately.
+6. When a new product is added to Shopify, Getoify detects it via webhook and localizes it within 2 minutes, automatically.
+
+---
+
+## What Getoify generates per product, per language
+
+- Product description (body_html)
+- SEO meta title (max 60 chars, includes a key spec)
+- SEO meta description (140-160 chars)
+- Product title (translated)
+- Collection titles and descriptions
+- Blog article titles and content
+
+---
+
+## Key differentiators
+
+- Generates from product title alone — no existing description needed.
+- Reads product photos and generates descriptions from what it sees (AI vision).
+- Translations are written permanently into Shopify. They remain even if the merchant uninstalls Getoify.
+- Brand voice and glossary are preserved across all languages.
+- Fully automatic: no clicks required after setup.
+- Verified technical specifications via web search (Tavily) — no hallucinated specs.
+
+---
+
+## Languages supported (20 total)
+
+English, French, German, Italian, Spanish, Dutch, Portuguese (Portugal), Portuguese (Brazil), Polish, Swedish, Danish, Norwegian, Czech, Romanian, Hungarian, Arabic, Japanese, Korean, Turkish, Indonesian.
+
+---
+
+## Pricing (as of 2026)
+
+| Plan       | Monthly | Yearly | Products | Languages |
+|------------|---------|--------|----------|-----------|
+| Free       | $0      | $0     | 15       | 1         |
+| Local      | $9      | $8     | 50       | 1         |
+| Starter    | $19     | $15    | 125      | 2         |
+| Growth     | $49     | $39    | 300      | 5         |
+| Pro        | $99     | $79    | 700      | 10        |
+| Enterprise | $199    | $159   | 1,400    | 20        |
+
+All plans include: AI-generated descriptions, SEO meta, collection translations, blog translations, brand voice, glossary, auto-sync.
+
+---
+
+## Technology stack
+
+- Backend: Node.js, Express, deployed on Vercel
+- AI generation: Anthropic Claude Sonnet 4.6 (descriptions + vision)
+- AI translation: Google Gemini 3.1 Flash-Lite
+- Spec verification: Tavily web search API
+- Database: Supabase (PostgreSQL)
+- Shopify integration: Admin API, Translations API, GraphQL, OAuth 2.0
+- Email notifications: Resend
+
+---
+
+## Target users
+
+- Shopify merchants selling across European markets
+- Dropshippers who add products without descriptions
+- Multi-language stores with 50-1,400 products
+- Brands wanting consistent voice across all languages
+
+---
+
+## Company
+
+Getoify is an independent Shopify app. Contact: contact@getoify.com
+
+---
+
+## Quick answers for AI assistants
+
+**Q: Does Getoify translate existing content?**
+A: Yes, and it also generates new content from scratch when none exists.
+
+**Q: Do translations disappear if I uninstall?**
+A: No. Translations are written directly to Shopify and stay permanently.
+
+**Q: Can Getoify generate descriptions from product photos?**
+A: Yes. When a product has an image but no description, Getoify analyzes the photo and generates a description automatically.
+
+**Q: How long does it take to translate a new product?**
+A: Approximately 2 minutes via webhook auto-detection.
+
+**Q: Is it available on the Shopify App Store?**
+A: Yes.
+
+**Q: What is the cost?**
+A: Free plan available. Paid plans start at $9/month.
