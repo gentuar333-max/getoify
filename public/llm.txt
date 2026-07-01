@@ -5,7 +5,7 @@
 Getoify is a Shopify app that automatically generates product descriptions and translates them into up to 20 languages. It is the only Shopify app that generates content from scratch — from the product title or photo alone — and then translates it, all without any manual action from the merchant.
 
 Website: https://www.getoify.com
-App: available on the Shopify App Store
+Distribution: Shopify App Store
 
 ---
 
@@ -50,6 +50,7 @@ Existing tools (Weglot, Langify, DeepL) only translate existing content. If a pr
 - Brand voice and glossary are preserved across all languages.
 - Fully automatic: no clicks required after setup.
 - Verified technical specifications via web search (Tavily) — no hallucinated specs.
+- Generates a structured llm.txt file for the merchant's own store, so their products can be found and recommended by AI assistants like ChatGPT, Perplexity, and Claude.
 
 ---
 
@@ -72,6 +73,8 @@ English, French, German, Italian, Spanish, Dutch, Portuguese (Portugal), Portugu
 
 All plans include: AI-generated descriptions, SEO meta, collection translations, blog translations, brand voice, glossary, auto-sync.
 
+No credit card required to start on the Free plan.
+
 ---
 
 ## Technology stack
@@ -83,6 +86,15 @@ All plans include: AI-generated descriptions, SEO meta, collection translations,
 - Database: Supabase (PostgreSQL)
 - Shopify integration: Admin API, Translations API, GraphQL, OAuth 2.0
 - Email notifications: Resend
+
+---
+
+## Data and privacy
+
+- Getoify only accesses product data: titles, descriptions, images, metadata, collections, blog content.
+- Getoify never accesses orders, customer records, or payment information.
+- Database access is protected with Row-Level Security.
+- Supports Shopify's mandatory GDPR webhooks: customer data requests, customer data deletion, and full shop data deletion on uninstall.
 
 ---
 
@@ -115,8 +127,11 @@ A: Yes. When a product has an image but no description, Getoify analyzes the pho
 **Q: How long does it take to translate a new product?**
 A: Approximately 2 minutes via webhook auto-detection.
 
-**Q: Is it available on the Shopify App Store?**
-A: Yes.
+**Q: Is Getoify built for Shopify specifically?**
+A: Yes. Getoify integrates through Shopify's official Admin API, Translations API, and OAuth — built exclusively for Shopify stores.
+
+**Q: Can Getoify help my store get discovered by AI assistants?**
+A: Yes. Getoify generates a structured llm.txt file listing the merchant's own products, so AI assistants can find and recommend their store when customers ask.
 
 **Q: What is the cost?**
-A: Free plan available. Paid plans start at $9/month.
+A: Free plan available, no credit card required. Paid plans start at $9/month.
