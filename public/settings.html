@@ -284,6 +284,18 @@
           </div>
         </div>
 
+        <div class="section">
+          <div class="section-title">AI search visibility</div>
+          <div class="section-desc">Generate a structured file listing your products, so AI assistants like ChatGPT, Perplexity, and Claude can find and recommend your store.</div>
+          <div class="field-row">
+            <div><div class="field-lbl">llm.txt</div><div class="field-val">Includes your top 50 products, categories, and store info</div></div>
+            <button class="field-action" onclick="downloadLlmTxt()">Download</button>
+          </div>
+          <div class="field-row">
+            <div><div class="field-lbl">Setup</div><div class="field-val">Upload the downloaded file to your store's file manager, at the root path <code>/llm.txt</code></div></div>
+          </div>
+        </div>
+
         <div class="section danger-zone">
           <div class="section-title">Danger zone</div>
           <div class="section-desc">These actions are permanent and cannot be undone.</div>
@@ -464,6 +476,10 @@
     if (confirm('Reconnect your Shopify store? You will be redirected to Shopify.')) {
       window.location.href = '/auth?shop=' + shop;
     }
+  }
+
+  function downloadLlmTxt() {
+    window.location.href = '/generate-llm-txt?shop=' + shop;
   }
 
   function disconnect() {
