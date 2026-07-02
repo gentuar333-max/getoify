@@ -2513,6 +2513,54 @@ async function localizeProduct(shop, token, productId, targetLang, locale, tone,
     }
   }
 
+  // ─── PROCESSING LOCK ──────────────────────────────────────────────────────
+  // Mbron nga race condition mes 5 pikave hyrjeje te pavarura (webhook, poll,
+  // /localize, /process-product, bulk-localize-all). Pa kete, te gjitha
+  // kontrollojne tabelen 'translations' PARA se te fillojne, por rreshti
+  // shkruhet vetem ne FUND te funksionit (pas Tavily+Sonnet+Shopify push,
+  // 10-15s). Ne ate dritare kohore, cdo pike tjeter hyrjeje sheh gjithashtu
+  // "s'ka translation ende" dhe fillon vet gjenerimin nga zero — duke
+  // shpenzuar Tavily/Sonnet/Gemini credits te dyfishta/trefishta per te
+  // njejtin (produkt, gjuhe). INSERT (jo upsert) eshte atomik ne Postgres:
+  // unique constraint mbi (shop, product_id, locale) — e njejta qe perdor
+  // upsert-i final me poshte via onConflict — ben qe VETEM NJE thirrje
+  // konkurruese te fitoje rreshtin; te tjerat marrin gabim 23505 (duplicate
+  // key) dhe dalin menjehere, PARA se te thirret Tavily ose Sonnet fare.
+  const { error: lockError } = await supabase
+    .from('translations')
+    .insert({
+      shop, product_id: pid, locale, status: 'processing',
+      original_title: '', original_description: '', product_handle: '',
+      translated_title: '', translated_description: ''
+    });
+  if (lockError) {
+    if (lockError.code === '23505') {
+      console.log(`[lock] ${pid}/${locale} per ${shop} — tashme po procesohet nga nje thirrje tjeter, anashkalohet`);
+      return { product_id: pid, skipped: true, reason: 'already_processing' };
+    }
+    console.warn('[lock] Insert deshtoi per arsye tjeter (jo duplicate) — vazhdoj pa lock:', lockError.message);
+  }
+
+  try {
+    return await localizeProductBody(shop, token, pid, targetLang, locale, tone, glossary);
+  } catch (bodyErr) {
+    // Nese lock-u u fitua nga KJO thirrje (jo dikush tjeter) dhe gjenerimi
+    // deshtoi, fshi rreshtin 'processing' qe produkti te mund te riprovohet
+    // ne thirrjen tjeter (poll cikli tjeter, webhook retry) — perndryshe
+    // mbetet "bllokuar" perfundimisht si i papërfunduar, dhe s'lokalizohet
+    // asnjehere me.
+    if (!lockError) {
+      await supabase.from('translations')
+        .delete()
+        .eq('shop', shop).eq('product_id', pid).eq('locale', locale).eq('status', 'processing')
+        .then(() => {})
+        .catch(() => {});
+    }
+    throw bodyErr;
+  }
+}
+
+async function localizeProductBody(shop, token, pid, targetLang, locale, tone, glossary) {
   const productRes = await axios.get(
     `https://${shop}/admin/api/2024-01/products/${pid}.json`,
     { headers: { 'X-Shopify-Access-Token': token } }
