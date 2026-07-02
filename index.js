@@ -1168,6 +1168,16 @@ const COMPLEX_TECH_KEYWORDS = [
   'projector', 'beamer',
   // Gaming Peripherals
   'gaming keyboard', 'gaming mouse', 'gaming headset', 'mechanical keyboard',
+  // Robot Vacuum — suction/mapping/battery ndryshojne dukshem mes gjeneratash
+  'roomba', 'roborock', 'ecovacs', 'deebot', 'shark ion', 'shark ai',
+  'eufy robovac', 'dreame', 'robot vacuum',
+  // Massage Gun / Percussion — PPM/bateri/attachments ndryshojne mes modeleve
+  'theragun', 'massage gun', 'hypervolt', 'hyperice',
+  // E-bike / E-scooter — range/top speed/motor ndryshojne dukshem mes viteve
+  'e-bike', 'electric bike', 'electric scooter', 'ninebot', 'segway',
+  'rad power', 'e-scooter',
+  // Portable Power Station — kapaciteti Wh eshte spec-i kryesor, ndryshon 10x
+  'power station', 'jackery', 'ecoflow', 'bluetti', 'anker solix',
 ];
 
 // Produkte qe kane fjale teknike por NUK kane specs numerike te verifikueshme
