@@ -1106,7 +1106,11 @@ const TECH_ELECTRONICS_TITLE_KEYWORDS = [
   'smartphone', 'smartwatch', 'earbuds', 'headphones', 'earphone',
   'laptop', 'tablet', 'monitor', 'webcam', 'router', 'ssd', 'processor',
   'graphics card', 'gpu', 'cpu', 'console', 'playstation', 'xbox', 'switch',
-  'drone', 'action camera', 'gopro', 'smart tv', 'soundbar', 'projector'
+  'drone', 'action camera', 'gopro', 'smart tv', 'soundbar', 'projector',
+  'roomba', 'roborock', 'robot vacuum', 'theragun', 'massage gun',
+  'e-bike', 'electric scooter', 'power station', 'jackery', 'ecoflow',
+  'smart ring', 'security camera', 'video doorbell', 'peloton',
+  '3d printer', 'bluetooth speaker', 'air purifier'
 ];
 
 function isTechElectronicsProduct(product) {
@@ -1178,6 +1182,22 @@ const COMPLEX_TECH_KEYWORDS = [
   'rad power', 'e-scooter',
   // Portable Power Station — kapaciteti Wh eshte spec-i kryesor, ndryshon 10x
   'power station', 'jackery', 'ecoflow', 'bluetti', 'anker solix',
+  // Smart Ring — sensoret/bateri ndryshojne mes gjeneratash
+  'oura ring', 'smart ring',
+  // Security Camera / Doorbell — resolution/FOV/bateri ndryshojne mes modeleve
+  'ring doorbell', 'ring camera', 'ring spotlight', 'ring stick up',
+  'arlo pro', 'arlo ultra', 'wyze cam', 'eufy security', 'nest doorbell', 'nest cam',
+  // Connected Fitness Equipment — motor/incline/screen ndryshojne mes tier-ave
+  'peloton', 'nordictrack', 'concept2', 'echelon bike', 'technogym',
+  // 3D Printer — build volume/shpejtesia ndryshojne dukshem mes modeleve
+  '3d printer', 'bambu lab', 'creality', 'prusa',
+  // Portable/Bluetooth Speaker — output W/bateri ndryshojne mes linjave
+  'bluetooth speaker', 'portable speaker', 'jbl flip', 'jbl charge',
+  'jbl xtreme', 'soundlink',
+  // Electric Toothbrush — modes/bateri/presion ndryshojne mes linjave
+  'electric toothbrush', 'oral-b io', 'sonicare',
+  // Air Purifier — CADR/coverage sq ft ndryshojne dukshem mes modeleve
+  'air purifier', 'dyson purifier', 'levoit core',
 ];
 
 // Produkte qe kane fjale teknike por NUK kane specs numerike te verifikueshme
