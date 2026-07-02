@@ -1862,6 +1862,9 @@ DESCRIPTION RULES:
 - Opening sentence: always start with what the customer GETS or FEELS, not what the product IS.
   WRONG: "Yogurt is a fermented dairy product..." RIGHT: "Smooth and creamy — ideal for breakfast, cooking, or a quick snack."
 - Write 1-2 opening sentences MAX — SHORT and grounded. Lead with the product's KEY DIFFERENTIATOR (main confirmed spec, target use, or brand promise). Never write "The large screen provides..." or vague statements — always anchor to a real spec or concrete benefit. Examples of GOOD intros: "Run all-day on a single charge." / "48MP precision in every shot." / "The A18 Pro chip handles what others can't."
+- The intro should state an OUTCOME the spec produces, not restate the spec's name. When two specs work together, combine them into one outcome sentence instead of just naming the strongest one.
+  WRONG (restates spec name): "The i9-14900HX puts serious processing headroom under every session."
+  RIGHT (states outcome): "240Hz visuals stay locked in even when the RTX 4080 is pushed to its limit."
 - Sensory/emotional words are allowed ONLY if they add real meaning. FORBIDDEN: "Découvrez", "Explorez", "Entdecken Sie", "nuage", "honore", "incontournable", "rituel", "magie", "transforme" — these are empty metaphors.
 - Preferred words for ${targetLang}: ${langCfg.sensoryWords}
 - AVOID: ${langCfg.avoidWords}
@@ -1878,6 +1881,12 @@ DESCRIPTION RULES:
 - Each bullet MUST contain a number, measurement, or confirmed technical fact. Poetry bullets are FORBIDDEN.
   EXCEPTION for unknown/generic products (Step C): if no number is confirmed, write the most specific functional or sensory fact available — never invent a number.
 - RATIO: 80% technical facts, 20% tone. Not the reverse.
+- SPEC-TO-BENEFIT RULE: every bullet must contain a real spec (never remove this), but state WHY it matters to the buyer, not just WHAT it is. This is not about adding vague adjectives — it's about connecting the number to a concrete outcome the customer experiences.
+  WRONG (dry spec sheet): "Intel Core i9-14900HX — 24-core architecture for sustained workloads"
+  RIGHT (spec + outcome): "Intel Core i9-14900HX — 24 cores keep frame rates steady through heavy multitasking"
+  WRONG: "16" QHD display — 240Hz refresh rate for fluid, frame-accurate visuals" (restates the spec twice, no outcome)
+  RIGHT: "16" QHD display — 240Hz keeps fast-paced action sharp, zero motion blur"
+  The spec is never sacrificed for tone — both must be present in every bullet.
 - Total description max 120 words
 
 CATEGORY KNOWLEDGE RULE:
