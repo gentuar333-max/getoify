@@ -1102,6 +1102,7 @@ const TECH_ELECTRONICS_TYPES = [
 ];
 const TECH_ELECTRONICS_TITLE_KEYWORDS = [
   'iphone', 'galaxy', 'pixel', 'ipad', 'macbook', 'surface', 'thinkpad',
+  'legion', 'yoga', 'ideapad', 'rog', 'zephyrus', 'razer blade', 'alienware',
   'smartphone', 'smartwatch', 'earbuds', 'headphones', 'earphone',
   'laptop', 'tablet', 'monitor', 'webcam', 'router', 'ssd', 'processor',
   'graphics card', 'gpu', 'cpu', 'console', 'playstation', 'xbox', 'switch',
@@ -1129,6 +1130,10 @@ const COMPLEX_TECH_KEYWORDS = [
   'macbook', 'thinkpad', 'xps', 'surface laptop', 'spectre', 'envy',
   'pavilion', 'inspiron', 'omen', 'zenbook', 'vivobook', 'aspire',
   'swift', 'spin', 'gram', 'laptop', 'notebook',
+  'legion', 'yoga', 'ideapad', 'loq',
+  'rog', 'tuf gaming', 'zephyrus', 'strix',
+  'razer blade', 'alienware', 'msi stealth', 'msi raider',
+  'msi katana', 'msi titan', 'msi vector', 'aorus',
   // PC/Desktop
   'imac', 'mac mini', 'mac pro', 'mac studio', 'desktop', 'pc tower',
   'all-in-one',
