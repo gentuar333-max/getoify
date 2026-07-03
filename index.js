@@ -2576,6 +2576,33 @@ async function localizeProduct(shop, token, productId, targetLang, locale, tone,
   // upsert-i final me poshte via onConflict — ben qe VETEM NJE thirrje
   // konkurruese te fitoje rreshtin; te tjerat marrin gabim 23505 (duplicate
   // key) dhe dalin menjehere, PARA se te thirret Tavily ose Sonnet fare.
+  //
+  // STALE LOCK RECOVERY: webhook e ekzekuton gjenerimin brenda setImmediate()
+  // PAS res.send() — Vercel s'e garanton perfundimin e ekzekutimit ne sfond,
+  // dhe mund ta ndaloje funksionin me force (kalim kohe limiti, sidomos me 5+
+  // gjuhe njepasnjeshme). Ne ate rast, catch-i i localizeProduct kurre s'arrin
+  // te fshije lock-un — rreshti 'processing' mbetet i bllokuar PERGJITHMONE.
+  // Nese lock ekzistues eshte me i vjeter se PROCESSING_LOCK_STALE_MS, e
+  // trajtojme si ekzekutim i vdekur dhe lejojme riprovim ne vend qe produkti
+  // te mos lokalizohet kurre me.
+  const PROCESSING_LOCK_STALE_MS = 3 * 60 * 1000; // 3 min
+  const { data: existingLockRow } = await supabase
+    .from('translations')
+    .select('status, created_at')
+    .eq('shop', shop).eq('product_id', pid).eq('locale', locale)
+    .maybeSingle();
+
+  if (existingLockRow?.status === 'processing') {
+    const ageMs = Date.now() - new Date(existingLockRow.created_at).getTime();
+    if (ageMs < PROCESSING_LOCK_STALE_MS) {
+      console.log(`[lock] ${pid}/${locale} per ${shop} — tashme po procesohet (${Math.round(ageMs/1000)}s), anashkalohet`);
+      return { product_id: pid, skipped: true, reason: 'already_processing' };
+    }
+    console.warn(`[lock] ${pid}/${locale} per ${shop} — lock 'processing' i vjeter (${Math.round(ageMs/1000)}s, ekzekutim i vdekur me siguri) — riprovohet`);
+    await supabase.from('translations').delete()
+      .eq('shop', shop).eq('product_id', pid).eq('locale', locale).eq('status', 'processing');
+  }
+
   const { error: lockError } = await supabase
     .from('translations')
     .insert({
