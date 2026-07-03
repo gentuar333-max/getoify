@@ -2438,8 +2438,27 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
     let rawText = '';
     const extractJson = (text) => {
       const clean = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-      const m = clean.match(/\{[\s\S]*\}/);
-      return m ? JSON.parse(m[0]) : null;
+      // Provo parse direkt fillimisht — rasti me i shpeshte kur Sonnet respekton formatin ekzaktesisht.
+      try { return JSON.parse(clean); } catch {}
+      // Fallback: gjej blloku i PARE i balancuar {...} duke numeruar thellesine e kllapave.
+      // Rregex e vjeter /\{[\s\S]*\}/ ishte lakmuese — kapte nga { e PARE deri te } e FUNDIT
+      // ne GJITHE tekstin, prandaj cdo permbajtje shtese pas JSON-it te vlefshem
+      // (edhe nje karakter i vetem) e prishte parse-in fare ("Unexpected non-whitespace
+      // character after JSON"). Numerimi i kllapave ndalon saktesisht te blloku i pare
+      // i mbyllur, duke injoruar gjithcka pas tij.
+      const start = clean.indexOf('{');
+      if (start === -1) return null;
+      let depth = 0;
+      for (let i = start; i < clean.length; i++) {
+        if (clean[i] === '{') depth++;
+        else if (clean[i] === '}') {
+          depth--;
+          if (depth === 0) {
+            try { return JSON.parse(clean.slice(start, i + 1)); } catch { return null; }
+          }
+        }
+      }
+      return null;
     };
 
     if (isTranslation) {
@@ -2504,7 +2523,10 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
     }
 
     const parsed = extractJson(rawText);
-    if (!parsed) throw new Error(`No JSON in ${isTranslation ? 'Gemini' : 'Claude'} response`);
+    if (!parsed) {
+      console.error(`[json-parse] Deshtoi per "${product.title}" — rawText[0:300]: ${rawText.slice(0, 300)}`);
+      throw new Error(`No JSON in ${isTranslation ? 'Gemini' : 'Claude'} response`);
+    }
     if (!parsed.title || !parsed.description) throw new Error('Missing title or description');
 
     if (!isTranslation && !hasExternalConfirmation && firstViolation) {
@@ -2712,11 +2734,23 @@ async function localizeProductBody(shop, token, pid, targetLang, locale, tone, g
     translated.meta_description = (translated.description || translated.title || product.title).substring(0, 160);
   }
 
+  // Primary locale duhet marre GJITHMONE (jo vetem brenda hadNoDescription) —
+  // nevojitet per te ditur nese target locale eshte njesoj si primary locale
+  // i dyqanit. Nese po, Shopify REFUZON translationsRegister mutation me
+  // gabim "Locale cannot be the same as the shop's primary locale" — s'ka
+  // kuptim te "perkthesh" ne gjuhen qe eshte tashme primare e dyqanit.
+  let primaryLocale = null;
+  try {
+    primaryLocale = await getPrimaryLocale(shop, token);
+  } catch(e) {
+    console.warn('[primary-locale] Fetch failed, assuming target is not primary:', e.message);
+  }
+  const isTargetPrimaryLocale = !!primaryLocale && locale.split('-')[0] === primaryLocale.split('-')[0];
+
   if (hadNoDescription) {
     try {
-      const primaryLocale = await getPrimaryLocale(shop, token);
       const localeKey = locale.split('-')[0];
-      const primaryKey = primaryLocale.split('-')[0];
+      const primaryKey = (primaryLocale || 'en').split('-')[0];
       let bodyForShopify = translated.description;
       if (localeKey !== primaryKey) {
         const primaryLang = LOCALE_MAP[primaryKey] || primaryLocale;
@@ -2748,7 +2782,18 @@ async function localizeProductBody(shop, token, pid, targetLang, locale, tone, g
       }
     }
   `;
-  const pushRes = await axios.post(
+  // Nese target locale = primary locale i dyqanit, Shopify refuzon CDO
+  // translationsRegister per kete resource — anashkalohet plotesisht.
+  // body_html tashme u perditesua direkt me siper (updateShopifyProductBodyIfEmpty)
+  // kur hadNoDescription=true. Titulli mbetet i pandryshuar per gjuhen primare
+  // (Sonnet s'e ndryshon titullin origjinal). meta_title/meta_description per
+  // primary locale kerkojne mutation tjeter (Product Update, jo Translations
+  // API) — mbetet permirsim i ardhshem, s'trajtohet ketu.
+  let pushRes = null;
+  if (isTargetPrimaryLocale) {
+    console.log(`[locale] ${locale} eshte primary locale i ${shop} — anashkalohet translationsRegister`);
+  } else {
+    pushRes = await axios.post(
     `https://${shop}/admin/api/2024-01/graphql.json`,
     {
       query: mutation,
@@ -2767,7 +2812,8 @@ async function localizeProductBody(shop, token, pid, targetLang, locale, tone, g
       }
     },
     { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
-  );
+    );
+  }
 
   await supabase.from('translations').upsert({
     shop,
@@ -2783,8 +2829,10 @@ async function localizeProductBody(shop, token, pid, targetLang, locale, tone, g
     meta_description: translated.meta_description
   }, { onConflict: 'shop,product_id,locale' });
 
-  // Regjistro metafield translations te Shopify
-  if (translatedMetafields.length > 0) {
+  // Regjistro metafield translations te Shopify — anashkalohet per primary locale
+  // (i njejti kufizim si mutation-i kryesor: Shopify s'lejon "perkthim" ne
+  // gjuhen qe eshte tashme primare).
+  if (translatedMetafields.length > 0 && !isTargetPrimaryLocale) {
     for (const mf of translatedMetafields) {
       try {
         const mfResourceId = `gid://shopify/Metafield/${mf.id}`;
@@ -2815,11 +2863,11 @@ async function localizeProductBody(shop, token, pid, targetLang, locale, tone, g
     }
   }
 
-  // Log Shopify response për debugging
-  const shopifyResult = pushRes.data.data?.translationsRegister;
+  // Log Shopify response për debugging — pushRes eshte null nese isTargetPrimaryLocale
+  const shopifyResult = pushRes ? pushRes.data.data?.translationsRegister : null;
   if (shopifyResult?.userErrors?.length > 0) {
     console.error('Shopify userErrors:', JSON.stringify(shopifyResult.userErrors));
-  } else {
+  } else if (shopifyResult) {
     console.log('Shopify translations pushed OK:', shopifyResult?.translations?.length, 'fields');
   }
 
