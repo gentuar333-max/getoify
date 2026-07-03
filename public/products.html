@@ -134,7 +134,7 @@
         <div class="tb-title">Products</div>
       </div>
       <div class="tb-right">
-        <button class="btn-outline"><i class="ti ti-refresh"></i>Sync from Shopify</button>
+        <button class="btn-outline" id="sync-btn" onclick="syncFromShopify()"><i class="ti ti-refresh"></i>Sync from Shopify</button>
         <button class="btn-dark" id="translate-missing-btn" onclick="runTranslate()"><i class="ti ti-player-play"></i>Translate Missing</button>
       </div>
     </div>
@@ -208,6 +208,25 @@
   let activeFilter = 'all';
   let currentPage = 1;
   const perPage = 100;
+
+  async function syncFromShopify() {
+    const btn = document.getElementById('sync-btn');
+    const originalHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ti ti-refresh"></i>Syncing...';
+    try {
+      await loadData();
+      btn.innerHTML = '<i class="ti ti-check"></i>Synced';
+    } catch(e) {
+      console.error('Sync failed:', e);
+      btn.innerHTML = '<i class="ti ti-refresh"></i>Sync failed';
+    } finally {
+      setTimeout(() => {
+        btn.innerHTML = originalHtml;
+        btn.disabled = false;
+      }, 1500);
+    }
+  }
 
   async function loadData() {
     try {

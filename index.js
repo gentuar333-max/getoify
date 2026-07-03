@@ -326,10 +326,40 @@ app.get('/plan', async (req, res) => {
   }
 });
 
+// Zbulon nese dyqani eshte development/test store i Shopify Partners —
+// keto NUK mund te krijojne RecurringApplicationCharge me test:false, Shopify
+// e refuzon. Shopify reviewer-at GJITHMONE testojne ne dev stores — kjo eshte
+// shkaku i sakte i "billing failed when attempting to subscribe" te raportuar.
+// Default i sigurt kur s'mund te percaktohet: test:true (ne kete faze pa
+// klient pagues real, kjo eshte gjithmone zgjedhja e duhur — false negative
+// (test:true ne dyqan real) thjesht s'mbledh para njehere, false positive
+// (test:false ne dev store) e bllokon plotesisht flow-in e billing-ut).
+async function isDevelopmentStore(shop, token) {
+  try {
+    const shopRes = await axios.get(
+      `https://${shop}/admin/api/2024-01/shop.json`,
+      { headers: { 'X-Shopify-Access-Token': token } }
+    );
+    const planName = (shopRes.data.shop?.plan_name || '').toLowerCase();
+    const planDisplay = (shopRes.data.shop?.plan_display_name || '').toLowerCase();
+    return planName.includes('partner_test') || planName.includes('dev') ||
+      planName === 'staff_business' || planDisplay.includes('development') ||
+      planDisplay.includes('partner');
+  } catch(e) {
+    console.warn('[billing] Could not determine store plan type, defaulting to test:true for safety:', e.message);
+    return true;
+  }
+}
+
 app.get('/checkout', async (req, res) => {
   const { plan, billing, shop } = req.query;
   if (!plan || !shop) return res.status(400).send('Missing plan or shop');
-  const store = await getStore(shop);
+  let store;
+  try {
+    store = await getStore(shop);
+  } catch(e) {
+    return res.redirect('/auth?shop=' + encodeURIComponent(shop));
+  }
   if (!store) return res.redirect('/auth?shop=' + encodeURIComponent(shop));
   const token = store.access_token;
   const planConfig = PLAN_PRICES[plan];
@@ -368,17 +398,18 @@ app.get('/checkout', async (req, res) => {
         console.warn('[billing] Cancel previous charge failed (may already be inactive):', cancelErr.response?.data || cancelErr.message);
       }
     }
+    const isDevStore = await isDevelopmentStore(shop, token);
     const chargeRes = await axios.post(
       `https://${shop}/admin/api/2024-01/recurring_application_charges.json`,
       { recurring_application_charge: {
         name: `Getoify ${planConfig.label}${isYearly ? ' Annual' : ''}`,
         price: price.toFixed(2),
         return_url: `${process.env.APP_URL}/billing/callback?plan=${plan}&billing=${billing}&shop=${encodeURIComponent(shop)}`,
-        trial_days: 0, test: false
+        trial_days: 0, test: isDevStore
       }},
       { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
     );
-    console.log(`[billing] Charge created for ${shop} plan=${plan} $${price}`);
+    console.log(`[billing] Charge created for ${shop} plan=${plan} $${price} (test:${isDevStore})`);
     res.redirect(chargeRes.data.recurring_application_charge.confirmation_url);
   } catch(err) {
     console.error('[billing] Create charge failed:', err.response?.data || err.message);
