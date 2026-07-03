@@ -1895,6 +1895,12 @@ DESCRIPTION RULES:
 - The intro should state an OUTCOME the spec produces, not restate the spec's name. When two specs work together, combine them into one outcome sentence instead of just naming the strongest one.
   WRONG (restates spec name): "The i9-14900HX puts serious processing headroom under every session."
   RIGHT (states outcome): "240Hz visuals stay locked in even when the RTX 4080 is pushed to its limit."
+- PREFERRED PATTERN when the product serves two distinct use-cases (e.g. gaming + creative work, everyday + travel, professional + casual): use both allowed sentences as one connected pair, not two separate thoughts.
+  Sentence 1: name the two use-cases this product serves — short, general framing, no spec yet.
+  Sentence 2: name the product, then connect 2 real confirmed specs directly to the 2 outcomes named in sentence 1.
+  Example: "Built for gaming and creative work that demands full performance. The Legion Pro 7i pairs a 24-core i9-14900HX with an RTX 4080 — enough headroom for competitive frame rates or 4K video exports without slowdown."
+  Both specs named in the intro (i9-14900HX, RTX 4080 in this example) must also appear in their own bullets below — the intro previews, the bullets confirm with full detail. Never name a spec in the intro that isn't backed by a bullet.
+  NEVER add unverified superlatives to make this pattern work: no "fastest", "best-in-class", "professional-grade" unless that exact phrase is a confirmed spec, not a comparison.
 - Sensory/emotional words are allowed ONLY if they add real meaning. FORBIDDEN: "Découvrez", "Explorez", "Entdecken Sie", "nuage", "honore", "incontournable", "rituel", "magie", "transforme" — these are empty metaphors.
 - Preferred words for ${targetLang}: ${langCfg.sensoryWords}
 - AVOID: ${langCfg.avoidWords}
