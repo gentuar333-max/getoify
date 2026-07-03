@@ -506,13 +506,24 @@ app.get('/auth', (req, res) => {
 app.get('/auth/callback', async (req, res) => {
   const { shop, code } = req.query;
   try {
+    // expiring:1 kerkohet nga Shopify — token-at "non-expiring" te vjeter
+    // refuzohen tani nga Admin API ("Non-expiring access tokens are no
+    // longer accepted"). Me expiring:1, Shopify kthen access_token (skadon
+    // pas 60 min via expires_in) + refresh_token (vlen 90 dite).
     const response = await axios.post(`https://${shop}/admin/oauth/access_token`, {
       client_id: SHOPIFY_API_KEY,
       client_secret: SHOPIFY_API_SECRET,
-      code
+      code,
+      expiring: 1
     });
     const accessToken = response.data.access_token;
-    await supabase.from('stores').upsert({ shop, access_token: accessToken, token_invalid: false }, { onConflict: 'shop' });
+    const refreshToken = response.data.refresh_token || null;
+    const expiresInSec = response.data.expires_in || 3600;
+    const tokenExpiresAt = new Date(Date.now() + expiresInSec * 1000).toISOString();
+    await supabase.from('stores').upsert({
+      shop, access_token: accessToken, refresh_token: refreshToken,
+      token_expires_at: tokenExpiresAt, token_invalid: false
+    }, { onConflict: 'shop' });
     console.log('Store connected:', shop);
 
     // Regjistro webhooks automatikisht pas OAuth
@@ -928,9 +939,52 @@ app.get('/plan-languages', async (req, res) => {
 });
 
 
+// Rifreskon access_token duke perdorur refresh_token — kerkohet tani qe
+// Shopify ka kaluar te expiring tokens (60 min jete). Formati i kesaj
+// kerkese ndjek OAuth2 refresh_token grant standard; s'eshte konfirmuar
+// me shembull te sakte nga Shopify docs ne kohen e shkrimit, prandaj eshte
+// e mbeshtjelle ne try/catch qe deshtimi te mos thyej gjë — thjesht shenon
+// token_invalid dhe kerkon re-auth.
+async function refreshShopifyToken(shop, refreshToken) {
+  const res = await axios.post(`https://${shop}/admin/oauth/access_token`, {
+    client_id: SHOPIFY_API_KEY,
+    client_secret: SHOPIFY_API_SECRET,
+    grant_type: 'refresh_token',
+    refresh_token: refreshToken
+  });
+  const accessToken = res.data.access_token;
+  const newRefreshToken = res.data.refresh_token || refreshToken; // rotullohet zakonisht
+  const expiresInSec = res.data.expires_in || 3600;
+  const tokenExpiresAt = new Date(Date.now() + expiresInSec * 1000).toISOString();
+  await supabase.from('stores').update({
+    access_token: accessToken, refresh_token: newRefreshToken,
+    token_expires_at: tokenExpiresAt, token_invalid: false
+  }).eq('shop', shop);
+  console.log(`[token-refresh] Rifreskuar per ${shop}, skadon: ${tokenExpiresAt}`);
+  return accessToken;
+}
+
 async function getStore(shop) {
   const { data, error } = await supabase.from('stores').select('*').eq('shop', shop).single();
   if (error) throw new Error('Store not found: ' + shop);
+
+  // Nese token ka token_expires_at (format i ri "expiring") dhe eshte afer
+  // skadimit (< 5 min), rifreskoje PARA se te kthehet — kjo mbulon automatikisht
+  // te gjitha vendet qe thone `const store = await getStore(shop)` pa i
+  // ndryshuar ato individualisht.
+  if (data.token_expires_at && data.refresh_token) {
+    const expiresAt = new Date(data.token_expires_at).getTime();
+    const fiveMinMs = 5 * 60 * 1000;
+    if (Date.now() >= expiresAt - fiveMinMs) {
+      try {
+        const freshToken = await refreshShopifyToken(shop, data.refresh_token);
+        data.access_token = freshToken;
+      } catch(refreshErr) {
+        console.warn(`[token-refresh] Deshtoi per ${shop}, ka nevoje re-auth:`, refreshErr.response?.data || refreshErr.message);
+        await supabase.from('stores').update({ token_invalid: true }).eq('shop', shop);
+      }
+    }
+  }
   return data;
 }
 
