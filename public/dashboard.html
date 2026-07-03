@@ -105,11 +105,11 @@
     }
     .modal-overlay { position: fixed; inset: 0; background: rgba(28,27,24,0.45); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 1rem; backdrop-filter: blur(2px); }
     .modal-overlay.hidden { display: none; }
-    .modal { background: #FDFCF9; border-radius: 12px; padding: 2rem; width: 100%; max-width: 440px; box-shadow: 0 8px 32px rgba(0,0,0,0.12); }
-    .modal-title { font-size: 16px; font-weight: 500; color: var(--ink); margin-bottom: 4px; }
-    .modal-sub { font-size: 13px; color: var(--ink-faint); margin-bottom: 1.5rem; line-height: 1.5; }
+    .modal { background: #FDFCF9; border-radius: 12px; padding: 2rem; width: 100%; max-width: 440px; max-height: 90vh; box-shadow: 0 8px 32px rgba(0,0,0,0.12); display: flex; flex-direction: column; }
+    .modal-title { font-size: 16px; font-weight: 500; color: var(--ink); margin-bottom: 4px; flex-shrink: 0; }
+    .modal-sub { font-size: 13px; color: var(--ink-faint); margin-bottom: 1.5rem; line-height: 1.5; flex-shrink: 0; }
     .modal-sub strong { color: var(--ink-mid); font-weight: 500; }
-    .lang-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 1.5rem; }
+    .lang-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 1.5rem; overflow-y: auto; flex: 1; min-height: 0; padding-right: 4px; }
     .lang-card { border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: border-color 0.15s, background 0.15s; user-select: none; }
     .lang-card:hover { background: var(--cream-mid); }
     .lang-card.selected { border-color: var(--ink); background: var(--cream-mid); }
@@ -122,9 +122,9 @@
     .lang-card.selected .lang-check { background: var(--ink); border-color: var(--ink); }
     .lang-check svg { display: none; }
     .lang-card.selected .lang-check svg { display: block; }
-    .plan-note { font-size: 11px; color: var(--ink-faint); margin-bottom: 1.25rem; display: flex; align-items: center; gap: 6px; }
+    .plan-note { font-size: 11px; color: var(--ink-faint); margin-bottom: 1.25rem; display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
     .plan-badge { background: var(--cream-mid); color: var(--accent); font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px; letter-spacing: 0.06em; text-transform: uppercase; }
-    .modal-footer { display: flex; gap: 8px; }
+    .modal-footer { display: flex; gap: 8px; flex-shrink: 0; }
     .modal-btn { flex: 1; padding: 11px; border-radius: 7px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: var(--cream); color: var(--ink); transition: background 0.15s; }
     .modal-btn:hover { background: var(--cream-mid); }
     .modal-btn-primary { background: var(--ink); color: #FDFCF9; border-color: var(--ink); }
@@ -310,42 +310,6 @@
       <div class="lang-card" data-locale="id" onclick="toggleLang(this)">
         <span class="lang-flag">🇮🇩</span>
         <div class="lang-info"><div class="lang-name">Indonesian</div><div class="lang-code">ID</div></div>
-        <div class="lang-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#FDFCF9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-      </div>
-    </div>
-      <div class="lang-card" data-locale="fr" onclick="toggleLang(this)">
-        <span class="lang-flag">🇫🇷</span>
-        <div class="lang-info"><div class="lang-name">French</div><div class="lang-code">FR</div></div>
-        <div class="lang-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#FDFCF9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-      </div>
-      <div class="lang-card" data-locale="it" onclick="toggleLang(this)">
-        <span class="lang-flag">🇮🇹</span>
-        <div class="lang-info"><div class="lang-name">Italian</div><div class="lang-code">IT</div></div>
-        <div class="lang-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#FDFCF9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-      </div>
-      <div class="lang-card" data-locale="es" onclick="toggleLang(this)">
-        <span class="lang-flag">🇪🇸</span>
-        <div class="lang-info"><div class="lang-name">Spanish</div><div class="lang-code">ES</div></div>
-        <div class="lang-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#FDFCF9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-      </div>
-      <div class="lang-card" data-locale="pt" onclick="toggleLang(this)">
-        <span class="lang-flag">🇵🇹</span>
-        <div class="lang-info"><div class="lang-name">Portuguese</div><div class="lang-code">PT</div></div>
-        <div class="lang-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#FDFCF9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-      </div>
-      <div class="lang-card" data-locale="en" onclick="toggleLang(this)">
-        <span class="lang-flag">🇬🇧</span>
-        <div class="lang-info"><div class="lang-name">English</div><div class="lang-code">EN</div></div>
-        <div class="lang-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#FDFCF9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-      </div>
-      <div class="lang-card" data-locale="nl" onclick="toggleLang(this)">
-        <span class="lang-flag">🇳🇱</span>
-        <div class="lang-info"><div class="lang-name">Dutch</div><div class="lang-code">NL</div></div>
-        <div class="lang-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#FDFCF9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-      </div>
-      <div class="lang-card" data-locale="pl" onclick="toggleLang(this)">
-        <span class="lang-flag">🇵🇱</span>
-        <div class="lang-info"><div class="lang-name">Polish</div><div class="lang-code">PL</div></div>
         <div class="lang-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#FDFCF9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
       </div>
     </div>
