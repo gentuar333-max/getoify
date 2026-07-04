@@ -361,6 +361,26 @@ app.get('/checkout', async (req, res) => {
     return res.redirect('/auth?shop=' + encodeURIComponent(shop));
   }
   if (!store) return res.redirect('/auth?shop=' + encodeURIComponent(shop));
+
+  // App-i eshte konfirmuar te jete regjistruar per Shopify App Pricing
+  // (Partner Dashboard → Pricing details u plotesua). Kjo do te thote
+  // Shopify VETE e hoston faqen e zgjedhjes se planit — legacy Billing API
+  // (recurring_application_charges.json) eshte i bllokuar plotesisht per
+  // kete app dhe kthen 403 gjithmone. URL-ja e sakte, konfirmuar nga
+  // Shopify Support: admin.shopify.com/store/{store_handle}/charges/{app_handle}/pricing_plans
+  //
+  // SHOPIFY_APP_HANDLE duhet vendosur te Vercel Environment Variables —
+  // gjendet te shopify.app.toml lokal (rreshti "handle = ...") ose te
+  // Dev Dashboard settings.
+  const appHandle = process.env.SHOPIFY_APP_HANDLE;
+  if (appHandle) {
+    const storeHandle = shop.replace('.myshopify.com', '');
+    const hostedPricingUrl = `https://admin.shopify.com/store/${storeHandle}/charges/${appHandle}/pricing_plans`;
+    console.log(`[billing] Duke ridrejtuar te faqja e hostuar nga Shopify: ${hostedPricingUrl}`);
+    return res.redirect(hostedPricingUrl);
+  }
+  console.warn('[billing] SHOPIFY_APP_HANDLE mungon te env variables — s\'mund te ndertohet URL-ja e hostuar');
+
   const token = store.access_token;
   const planConfig = PLAN_PRICES[plan];
   if (!planConfig) return res.status(400).send('Invalid plan');
