@@ -398,21 +398,29 @@ app.get('/checkout', async (req, res) => {
         console.warn('[billing] Cancel previous charge failed (may already be inactive):', cancelErr.response?.data || cancelErr.message);
       }
     }
-    const isDevStore = await isDevelopmentStore(shop, token);
-    const chargeRes = await axios.post(
-      `https://${shop}/admin/api/2024-01/recurring_application_charges.json`,
-      { recurring_application_charge: {
-        name: `Getoify ${planConfig.label}${isYearly ? ' Annual' : ''}`,
-        price: price.toFixed(2),
-        return_url: `${process.env.APP_URL}/billing/callback?plan=${plan}&billing=${billing}&shop=${encodeURIComponent(shop)}`,
-        trial_days: 0, test: isDevStore
-      }},
-      { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
-    );
-    console.log(`[billing] Charge created for ${shop} plan=${plan} $${price} (test:${isDevStore})`);
-    res.redirect(chargeRes.data.recurring_application_charge.confirmation_url);
+    // KRITIKE: app-i eshte konfirmuar te jete regjistruar per Shopify App
+    // Pricing (Partner Dashboard → Pricing details u plotesua me te gjitha
+    // planet). Kjo BEN QE recurring_application_charges.json (legacy REST
+    // Billing API) te KTHEJE GJITHMONE 403 — Shopify e bllokon qellimisht
+    // kete endpoint per app-e qe perdorin App Pricing, sepse te dyja s'mund
+    // te bashkejetojne (konfirmuar: shop.json punon me te njejtin token,
+    // vetem recurring_application_charges.json deshton — izolon problemin
+    // tek endpoint-i specifik, jo tek token/auth).
+    //
+    // Shopify App Pricing e hoston VETE faqen e zgjedhjes se planit dhe
+    // NUK dergon me webhook per ndryshim plani (prapa 28 prill 2026) —
+    // ne vend te kesaj, shton URL parameters ne redirect URL-in tone kur
+    // merchant zgjedh plan, dhe konfirmimi i plote kerkon Partner API
+    // (kredenciale te ndryshme nga Admin API qe perdorim tani — nuk jane
+    // ndertuar ende ne kete kod).
+    //
+    // Deri sa te implementohet integrimi i plote Partner API, kjo thirrje
+    // ANASHKALOHET plotesisht per te mos humbur kohe ne nje kerkese te
+    // garantuar per deshtim.
+    console.warn(`[billing] Anashkalohet recurring_application_charges.json per ${shop} — app-i eshte ne Shopify App Pricing, legacy Billing API eshte i bllokuar per kete app`);
+    return res.redirect(`/pricing?shop=${shop}&error=managed_pricing`);
   } catch(err) {
-    console.error('[billing] Create charge failed:', err.response?.data || err.message);
+    console.error(`[billing] Create charge failed — status:${err.response?.status} data:${JSON.stringify(err.response?.data)} headers:${JSON.stringify(err.response?.headers)}`);
     res.redirect(`/pricing?shop=${shop}&error=billing_failed`);
   }
 });
