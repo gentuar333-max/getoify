@@ -454,8 +454,21 @@ app.get('/checkout', async (req, res) => {
 // 'pending_verification' dhe logojme per diagnoze, pa e thyer redirect-in
 // per merchant.
 app.get('/billing/welcome', async (req, res) => {
-  const { shop, plan_handle } = req.query;
-  if (!shop) return res.redirect('/');
+  // Log GJITHÇKA e marrë, PARA çdo kontrolli — kjo eshte diagnostikuese:
+  // s'dime akoma emrin e sakte te parametrit qe Shopify perdor per shop
+  // domain ne kete flow te ri (App Pricing), pra regjistrojme URL-in e
+  // plote per ta konfirmuar nga logs, jo nga hamendje.
+  console.log(`[billing-welcome] RAW query e plote: ${JSON.stringify(req.query)}`);
+  console.log(`[billing-welcome] RAW originalUrl: ${req.originalUrl}`);
+
+  // Provoj disa emra te mundshem per parametrin e shop domain-it, jo vetem 'shop'
+  const shop = req.query.shop || req.query.shop_domain || req.query.myshopify_domain || req.query.store;
+  const plan_handle = req.query.plan_handle;
+
+  if (!shop) {
+    console.warn(`[billing-welcome] Asnje variant i njohur i 'shop' parametrit s'u gjet — shiko RAW query siper per emrin e sakte`);
+    return res.redirect('/');
+  }
   console.log(`[billing-welcome] Mberrin: shop=${shop} plan_handle=${plan_handle}`);
 
   if (plan_handle) {
