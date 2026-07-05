@@ -445,6 +445,48 @@ app.get('/checkout', async (req, res) => {
   }
 });
 
+// ─── SHOPIFY APP PRICING WELCOME LINK ────────────────────────────────────────
+// Endpoint per flow-in e ri te Shopify App Pricing — pas aprovimit te planit
+// nga merchant ne faqen e hostuar nga Shopify, Shopify ridrejton ketu me
+// `plan_handle` (jo `charge_id` si legacy API) + `shop`. Perpiqemi te
+// mapojme plan_handle direkt te PLAN_PRICES pa pasur nevoje per Partner API —
+// nese handle-i perputhet, azhornojme planin menjehere. Nese jo, ruajme
+// 'pending_verification' dhe logojme per diagnoze, pa e thyer redirect-in
+// per merchant.
+app.get('/billing/welcome', async (req, res) => {
+  const { shop, plan_handle } = req.query;
+  if (!shop) return res.redirect('/');
+  console.log(`[billing-welcome] Mberrin: shop=${shop} plan_handle=${plan_handle}`);
+
+  if (plan_handle) {
+    const normalizedHandle = plan_handle.toLowerCase();
+    const matchedPlan = Object.keys(PLAN_PRICES).find(key =>
+      normalizedHandle === key || normalizedHandle.includes(key) || key.includes(normalizedHandle)
+    );
+    if (matchedPlan) {
+      await supabase.from('stores').update({
+        plan: matchedPlan, plan_started_at: new Date().toISOString()
+      }).eq('shop', shop);
+      console.log(`[billing-welcome] Plan azhornuar: ${shop} → ${matchedPlan} (nga handle "${plan_handle}")`);
+      await sendNotification(
+        `New subscription: ${shop} → ${PLAN_PRICES[matchedPlan].label}`,
+        `<h2>New Getoify subscription (App Pricing)</h2>
+         <p><b>Store:</b> ${shop}</p>
+         <p><b>Plan:</b> ${PLAN_PRICES[matchedPlan].label}</p>
+         <p><b>Plan handle received:</b> ${plan_handle}</p>
+         <p><b>Time:</b> ${new Date().toISOString()}</p>`
+      );
+    } else {
+      console.warn(`[billing-welcome] plan_handle "${plan_handle}" s'u përputh me asnjë PLAN_PRICES key — ruaj si pa-verifikuar`);
+      await supabase.from('stores').update({
+        pending_plan_handle: plan_handle
+      }).eq('shop', shop);
+    }
+  }
+
+  res.redirect(`/dashboard?shop=${shop}&activated=1`);
+});
+
 app.get('/billing/callback', async (req, res) => {
   const { plan, billing, shop, charge_id } = req.query;
   if (!charge_id || !shop) return res.redirect(`/pricing?shop=${shop}&error=invalid_callback`);
