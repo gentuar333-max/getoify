@@ -2604,8 +2604,37 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
 
   try {
     let rawText = '';
+    // Shume modele (Gemini sidomos) kthejne JSON strukturalisht te sakte, por me
+    // rresht te ri REAL (Enter, jo \n te escape-uar) brenda vleres se stringut
+    // "description" — kjo eshte e pritshme sepse prompt-i vete kerkon bullets me
+    // \n mes tyre, dhe modeli e "degjon" fjale per fjale duke shtypur Enter ne
+    // vend te dy karaktereve \ dhe n. JSON.parse() DESHTON gjithmone mbi kete,
+    // pavaresisht sa e sakte eshte struktura e kllapave/kyçeve — prandaj as
+    // JSON.parse(clean) as numerimi i kllapave s'e zgjidhnin fare kete rast.
+    // Fix: skano teksti, ndiq nese jemi brenda nje stringu (kllapa dopio TE
+    // PA-escape-uara), dhe kudo qe gjendet \n ose \r REAL brenda nje stringu,
+    // zevendesohet me \n te escape-uar (2 karaktere), qe JSON.parse ta pranoje.
+    const escapeRawNewlinesInStrings = (str) => {
+      let result = '';
+      let inString = false;
+      let prevChar = '';
+      for (let i = 0; i < str.length; i++) {
+        const ch = str[i];
+        if (ch === '"' && prevChar !== '\\') {
+          inString = !inString;
+          result += ch;
+        } else if (inString && (ch === '\n' || ch === '\r')) {
+          result += '\\n';
+        } else {
+          result += ch;
+        }
+        prevChar = ch;
+      }
+      return result;
+    };
+
     const extractJson = (text) => {
-      const clean = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      const clean = escapeRawNewlinesInStrings(text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim());
       // Provo parse direkt fillimisht — rasti me i shpeshte kur Sonnet respekton formatin ekzaktesisht.
       try { return JSON.parse(clean); } catch {}
       // Fallback: gjej blloku i PARE i balancuar {...} duke numeruar thellesine e kllapave.
@@ -2714,13 +2743,14 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
 
     return parsed;
   } catch (apiErr) {
+    // Dikur kthente product.title si "perkthim" gjatë dështimit të Gemini/Claude,
+    // duke e ruajtur si status:'done' — kjo maskonte dështimin real dhe shkaktonte
+    // pikërisht simptomën: flamuri FR shfaqej "Localized" por përmbajtja mbetej
+    // anglisht. Tani hidhet error real — localizeProductBody/localizeProduct e
+    // kap, fshin lock-un 'processing', dhe e lejon riprovim në ciklin tjetër
+    // (poll ose webhook retry), në vend që të ruajë të dhëna të gabuara si sukses.
     console.error(`${isTranslation ? 'Gemini' : 'Claude'} API failed:`, apiErr.response?.data || apiErr.message);
-    return {
-      title: product.title,
-      description: product.title,
-      meta_title: product.title.substring(0, 60),
-      meta_description: product.title.substring(0, 160)
-    };
+    throw new Error(`${isTranslation ? 'Gemini' : 'Claude'} translation failed: ${apiErr.response?.data?.error?.message || apiErr.message}`);
   }
 }
 
