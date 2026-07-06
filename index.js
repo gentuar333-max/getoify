@@ -2499,10 +2499,18 @@ Step 3 — BULLET CHECK:
 Step 4 — TONE CHECK:
 - Every verb addressed to the customer must use "${langCfg.tone}" consistently — no mixing of formal/informal
 
-Only after passing all 4 steps, write the JSON.
+Only after passing all 4 steps, write the response.
 
-Respond ONLY in this exact JSON format, no extra text, no markdown backticks:
-{"title":"...","description":"...","meta_title":"...","meta_description":"..."}`;
+Respond ONLY in this exact format, no JSON, no markdown backticks, no extra commentary before or after:
+###TITLE###
+the title here, one line
+###DESCRIPTION###
+the full description here, exactly as specified above — real line breaks between the intro and each bullet are fine and expected, do not escape anything
+###META_TITLE###
+the meta title here
+###META_DESCRIPTION###
+the meta description here
+###END###`;
 
   // Translation-mode rules — sharedRules minus CATEGORY KNOWLEDGE (STEP A/B/C +
   // category-specific spec blocks). When the merchant already wrote a description,
@@ -2604,58 +2612,30 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
 
   try {
     let rawText = '';
-    // Shume modele (Gemini sidomos) kthejne JSON strukturalisht te sakte, por me
-    // rresht te ri REAL (Enter, jo \n te escape-uar) brenda vleres se stringut
-    // "description" — kjo eshte e pritshme sepse prompt-i vete kerkon bullets me
-    // \n mes tyre, dhe modeli e "degjon" fjale per fjale duke shtypur Enter ne
-    // vend te dy karaktereve \ dhe n. JSON.parse() DESHTON gjithmone mbi kete,
-    // pavaresisht sa e sakte eshte struktura e kllapave/kyçeve — prandaj as
-    // JSON.parse(clean) as numerimi i kllapave s'e zgjidhnin fare kete rast.
-    // Fix: skano teksti, ndiq nese jemi brenda nje stringu (kllapa dopio TE
-    // PA-escape-uara), dhe kudo qe gjendet \n ose \r REAL brenda nje stringu,
-    // zevendesohet me \n te escape-uar (2 karaktere), qe JSON.parse ta pranoje.
-    const escapeRawNewlinesInStrings = (str) => {
-      let result = '';
-      let inString = false;
-      let prevChar = '';
-      for (let i = 0; i < str.length; i++) {
-        const ch = str[i];
-        if (ch === '"' && prevChar !== '\\') {
-          inString = !inString;
-          result += ch;
-        } else if (inString && (ch === '\n' || ch === '\r')) {
-          result += '\\n';
-        } else {
-          result += ch;
-        }
-        prevChar = ch;
-      }
-      return result;
-    };
-
+    // Format i ri me shenues (###TITLE### etj) ne vend te JSON — eliminon
+    // teresisht klasen e gabimeve qe kishim me JSON.parse() (newline real,
+    // thonjeza te pa-escape-uara, apostrofa brenda description-it). Modeli
+    // shkruan tekst te lire mes shenuesve, ne s'kerkojme fare qe te
+    // escape-oje asgje — thjesht presim ku fillon dhe mbaron cdo fushe.
     const extractJson = (text) => {
-      const clean = escapeRawNewlinesInStrings(text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim());
-      // Provo parse direkt fillimisht — rasti me i shpeshte kur Sonnet respekton formatin ekzaktesisht.
-      try { return JSON.parse(clean); } catch {}
-      // Fallback: gjej blloku i PARE i balancuar {...} duke numeruar thellesine e kllapave.
-      // Rregex e vjeter /\{[\s\S]*\}/ ishte lakmuese — kapte nga { e PARE deri te } e FUNDIT
-      // ne GJITHE tekstin, prandaj cdo permbajtje shtese pas JSON-it te vlefshem
-      // (edhe nje karakter i vetem) e prishte parse-in fare ("Unexpected non-whitespace
-      // character after JSON"). Numerimi i kllapave ndalon saktesisht te blloku i pare
-      // i mbyllur, duke injoruar gjithcka pas tij.
-      const start = clean.indexOf('{');
-      if (start === -1) return null;
-      let depth = 0;
-      for (let i = start; i < clean.length; i++) {
-        if (clean[i] === '{') depth++;
-        else if (clean[i] === '}') {
-          depth--;
-          if (depth === 0) {
-            try { return JSON.parse(clean.slice(start, i + 1)); } catch { return null; }
-          }
+      const clean = text.replace(/```[a-z]*\n?/g, '').trim();
+      const getSection = (startMarker, endMarkers) => {
+        const startIdx = clean.indexOf(startMarker);
+        if (startIdx === -1) return null;
+        const contentStart = startIdx + startMarker.length;
+        let endIdx = clean.length;
+        for (const marker of endMarkers) {
+          const idx = clean.indexOf(marker, contentStart);
+          if (idx !== -1 && idx < endIdx) endIdx = idx;
         }
-      }
-      return null;
+        return clean.slice(contentStart, endIdx).trim();
+      };
+      const title = getSection('###TITLE###', ['###DESCRIPTION###', '###META_TITLE###', '###META_DESCRIPTION###', '###END###']);
+      const description = getSection('###DESCRIPTION###', ['###META_TITLE###', '###META_DESCRIPTION###', '###END###']);
+      const meta_title = getSection('###META_TITLE###', ['###META_DESCRIPTION###', '###END###']);
+      const meta_description = getSection('###META_DESCRIPTION###', ['###END###']);
+      if (!title || !description) return null;
+      return { title, description, meta_title: meta_title || '', meta_description: meta_description || '' };
     };
 
     if (isTranslation) {
@@ -2712,7 +2692,7 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
           console.warn(`[gate-violation] Sonnet shkeli gate-in (${firstViolation}) per "${product.title}" (${targetLang}) — duke provuar korrigjim`);
           const correction = {
             type: 'text',
-            text: `Your previous response violated a critical rule: it stated exact numeric specs (RAM, storage, screen size, battery, etc.) OR a specific chip/processor generation name (e.g. "A18", "Snapdragon 8 Elite") as confirmed facts, even though there is NO external confirmation for this product (no title override, no metafields). Rewrite the ENTIRE response. Every single numeric spec MUST use "up to" / "${UP_TO_HEDGES[targetLang]?.display || 'up to'}" framing or be omitted. Any chip/processor MUST be described generically (e.g. "Apple silicon chip", "octa-core processor") WITHOUT the generation number, unless it cannot be phrased that way, in which case omit it. Respond ONLY with the corrected JSON, same format as before.`
+            text: `Your previous response violated a critical rule: it stated exact numeric specs (RAM, storage, screen size, battery, etc.) OR a specific chip/processor generation name (e.g. "A18", "Snapdragon 8 Elite") as confirmed facts, even though there is NO external confirmation for this product (no title override, no metafields). Rewrite the ENTIRE response. Every single numeric spec MUST use "up to" / "${UP_TO_HEDGES[targetLang]?.display || 'up to'}" framing or be omitted. Any chip/processor MUST be described generically (e.g. "Apple silicon chip", "octa-core processor") WITHOUT the generation number, unless it cannot be phrased that way, in which case omit it. Respond ONLY with the corrected version, same ###TITLE###/###DESCRIPTION###/###META_TITLE###/###META_DESCRIPTION###/###END### format as before.`
           };
           rawText = await callSonnet([...userContent, correction]);
         }
@@ -2722,7 +2702,7 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
     const parsed = extractJson(rawText);
     if (!parsed) {
       console.error(`[json-parse] Deshtoi per "${product.title}" — rawText[0:300]: ${rawText.slice(0, 300)}`);
-      throw new Error(`No JSON in ${isTranslation ? 'Gemini' : 'Claude'} response`);
+      throw new Error(`No ###TITLE###/###DESCRIPTION### markers found in ${isTranslation ? 'Gemini' : 'Claude'} response`);
     }
     if (!parsed.title || !parsed.description) throw new Error('Missing title or description');
 
