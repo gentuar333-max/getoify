@@ -3577,6 +3577,33 @@ app.post('/process-product', async (req, res) => {
   }
 });
 
+// Pastrues global, i pavarur, per rreshta 'processing' te ngecur — thirret
+// PARA pollNewProducts(), jo brenda saj. Nuk prek logjiken ekzistuese te
+// pollNewProducts() apo /bulk-localize-all fare — thjesht fshin rreshtat e
+// vjeter 'processing' NE TE GJITHA shops, para se ato dy te lexojne
+// databazen. Pasi rreshti eshte fshire, logjika e TYRE ekzistuese (needsLocalize,
+// missingLocales) e sheh vetvetiu "s'ka rresht" dhe riprovon normalisht —
+// pa pasur nevoje te ndryshohet asnje rresht i filtrimit te tyre.
+async function cleanupStaleProcessingLocks() {
+  const STALE_MS = 3 * 60 * 1000; // 3 min — njesoj si PROCESSING_LOCK_STALE_MS
+  const cutoff = new Date(Date.now() - STALE_MS).toISOString();
+  try {
+    const { data: staleRows, error } = await supabase
+      .from('translations')
+      .delete()
+      .eq('status', 'processing')
+      .lt('created_at', cutoff)
+      .select('shop, product_id, locale');
+    if (error) { console.warn('[cleanup] Fshirja e locks te ngecur deshtoi:', error.message); return; }
+    if (staleRows?.length > 0) {
+      console.log(`[cleanup] Fshiu ${staleRows.length} rresht(a) 'processing' te ngecur (>3 min):`,
+        staleRows.map(r => `${r.shop}/${r.product_id}/${r.locale}`).join(', '));
+    }
+  } catch(e) {
+    console.warn('[cleanup] Gabim:', e.message);
+  }
+}
+
 async function pollNewProducts() {
   console.log('Polling for new products...');
   try {
@@ -3691,6 +3718,7 @@ app.post('/webhook/collection-create', async (req, res) => {
 // Vercel Cron endpoint — called every 5 minutes by vercel.json crons config
 // setInterval does not work on Vercel serverless — use this instead
 app.get('/poll', async (req, res) => {
+  await cleanupStaleProcessingLocks();
   await pollNewProducts();
   res.json({ ok: true, time: new Date().toISOString() });
 });
