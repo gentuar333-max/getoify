@@ -502,9 +502,6 @@
   loadData();
   checkLanguageSetup();
   checkTokenStatus();
-
-  const autorun = new URLSearchParams(window.location.search).get('autorun');
-  if (autorun === '1' && token) { setTimeout(() => runBulk(), 2000); }
 </script>
 </body>
 </html>

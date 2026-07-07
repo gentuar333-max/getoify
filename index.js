@@ -634,7 +634,7 @@ app.get('/auth/callback', async (req, res) => {
     // Instalo widget ScriptTag automatikisht
 installScriptTag(shop, accessToken).catch(e => console.error('[widget] OAuth install error:', e.message));
 
-res.redirect('/dashboard?shop=' + shop + '&token=' + accessToken + '&autorun=1');
+res.redirect('/dashboard?shop=' + shop + '&token=' + accessToken);
   } catch (error) {
     console.error('OAuth callback error:', error.message);
     res.redirect('/?error=oauth_failed&shop=' + (req.query.shop || ''));
