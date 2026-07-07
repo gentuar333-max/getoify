@@ -1900,7 +1900,7 @@ async function generateProductCopy(product, targetLang, glossary, cleanBody, ima
       // NO-SPECS mode vetem per produkte pa brand te njohur —
       // iPhone, Samsung etj. kane specs te besueshme ne training data te Sonnet
       // dhe duhet te shkruaje me hedging "up to", jo zero specs
-      if (!titleHasKnownBrand(product)) {
+      if (!titleHasKnownBrand(product.title)) {
         tavilySearchedButEmpty = true;
         console.log(`[tavily] Asnje spec + brand i panjohur → NO-SPECS mode`);
       } else {
