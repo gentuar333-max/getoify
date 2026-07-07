@@ -1298,7 +1298,16 @@ const KNOWN_BRANDS = [
   'theragun', 'therabody', 'hyperice', 'hypervolt', 'achedaway',
   'peloton', 'bowflex', 'concept2', 'technogym', 'whoop', 'oura',
   // Other major
-  'ikea', 'lego', 'stanley', 'yeti', 'hydroflask'
+  'ikea', 'lego', 'stanley', 'yeti', 'hydroflask',
+  // Robot Vacuum
+  'roomba', 'roborock', 'ecovacs', 'deebot', 'shark', 'eufy', 'dreame',
+  // E-bike / Power Station / Security
+  'ninebot', 'segway', 'jackery', 'ecoflow', 'bluetti',
+  'ring', 'arlo', 'wyze', 'nest',
+  // 3D Printer / Toothbrush
+  'bambu lab', 'creality', 'prusa', 'oral-b', 'sonicare',
+  // Connected Fitness (besides peloton, above)
+  'nordictrack', 'echelon'
 ];
 
 function titleHasKnownBrand(title) {
