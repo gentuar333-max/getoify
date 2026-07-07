@@ -1368,7 +1368,7 @@ function isTechElectronicsProduct(product) {
 const COMPLEX_TECH_KEYWORDS = [
   // Telefona
   'iphone', 'galaxy', 'pixel', 'oneplus', 'xiaomi', 'redmi', 'oppo',
-  'realme', 'vivo', 'huawei', 'nokia', 'sony xperia', 'motorola',
+  'realme', 'vivo', 'huawei', 'nokia', 'sony xperia', 'motorola', 'honor',
   'smartphone', 'phone',
   // Laptop
   'macbook', 'thinkpad', 'xps', 'surface laptop', 'spectre', 'envy',
