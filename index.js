@@ -3006,6 +3006,28 @@ async function localizeProductBody(shop, token, pid, targetLang, locale, tone, g
   }
   const isTargetPrimaryLocale = !!primaryLocale && locale.split('-')[0] === primaryLocale.split('-')[0];
 
+  // Kontroll shtese: target locale duhet te jete i konfiguruar te vete
+  // Shopify (Settings → Languages), jo vetem i zgjedhur te Getoify. Keto
+  // jane dy sisteme te ndryshme — merchant mund te zgjedhe FR te Getoify
+  // pa e shtuar ende FR te gjuhet e dyqanit, dhe Shopify e refuzon
+  // translationsRegister me "Locale is not a valid locale for the shop".
+  let isTargetLocaleConfigured = true;
+  try {
+    const allLocalesQuery = `query { shopLocales { locale } }`;
+    const allLocalesRes = await axios.post(
+      `https://${shop}/admin/api/2024-01/graphql.json`,
+      { query: allLocalesQuery },
+      { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
+    );
+    const configuredLocales = (allLocalesRes.data.data?.shopLocales || []).map(l => l.locale);
+    isTargetLocaleConfigured = configuredLocales.some(l => l.split('-')[0] === locale.split('-')[0]);
+    if (!isTargetLocaleConfigured) {
+      console.warn(`[locale] ${locale} s'eshte konfiguruar te gjuhet e ${shop} (Settings → Languages) — anashkalohet translationsRegister`);
+    }
+  } catch(e) {
+    console.warn('[locale] Fetch i gjuheve te konfiguruara deshtoi, vazhdon normalisht:', e.message);
+  }
+
   if (hadNoDescription) {
     try {
       const localeKey = locale.split('-')[0];
@@ -3051,6 +3073,8 @@ async function localizeProductBody(shop, token, pid, targetLang, locale, tone, g
   let pushRes = null;
   if (isTargetPrimaryLocale) {
     console.log(`[locale] ${locale} eshte primary locale i ${shop} — anashkalohet translationsRegister`);
+  } else if (!isTargetLocaleConfigured) {
+    console.log(`[locale] ${locale} s'eshte konfiguruar te ${shop} — anashkalohet translationsRegister`);
   } else {
     pushRes = await axios.post(
     `https://${shop}/admin/api/2024-01/graphql.json`,
