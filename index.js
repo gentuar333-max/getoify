@@ -1628,7 +1628,7 @@ const UP_TO_HEDGES = {
 function findSpecMatches(text) {
   if (!text) return [];
   const matches = [];
-  const numberUnitPattern = /\d+(?:[.,]\d+)?\s*(mah|gb|tb|"|inch(?:es)?|hz|mp|h\b|hours?|w\b|watts?|g\b|grams?|%)/gi;
+  const numberUnitPattern = /\d+(?:[.,]\d+)?\s*(mah|gb|tb|"|inch(?:es)?|hz|mp|h\b|hours?|w\b|watts?|g\b|grams?|%|rpm)/gi;
   const aperturePattern = /f\/\d+(?:\.\d+)?/gi;
   let m;
   while ((m = numberUnitPattern.exec(text)) !== null) matches.push({ index: m.index, text: m[0] });
