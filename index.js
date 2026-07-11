@@ -2281,7 +2281,8 @@ CLOTHING (t-shirts, hoodies, jackets, dresses):
 - Bullet 4: care instructions (e.g. "Lavage machine 30°C — ne pas sécher au sèche-linge")
 - ALWAYS mention: material %, fit type, wash care
 
-BAGS & ACCESSORIES:
+BAGS & ACCESSORIES — MANDATORY, this is not optional guidance:
+If capacity (liters) or dimensions are known for this product, they MUST appear somewhere in the 4 bullets — a bag description that omits a known capacity number is a failed response, rewrite before responding.
 - Bullet 1: material + dimensions if known (e.g. "Cuir grainé — 30×20×10cm, 0,8kg")
 - Bullet 2: capacity + compartments (e.g. "15L — compartiment principal + 2 poches zippées")
 - Bullet 3: closure + strap type (e.g. "Fermeture éclair YKK — bandoulière réglable incluse")
@@ -2571,11 +2572,13 @@ META TITLE RULES (max 60 chars):
 - Main keyword first, spec second
 - No punctuation at the end
 - WRONG: "iPhone 16 Pro Max" (no spec) — RIGHT: "iPhone 16 Pro Max with A18 Pro Chip"
-- If the product name does not already state its own type (serum, cream, shampoo, shoe, mixer, jeans, etc.), include that type word in ${targetLang} as part of the spec — this must stay CONSISTENT across every language, never present in one language's meta_title and dropped in another's in favor of a benefit phrase.
+- MANDATORY: if the product name does not already state its own type (serum, cream, shampoo, shoe, mixer, jeans, backpack, etc.), include that type word in ${targetLang} as part of the spec — this must stay CONSISTENT across every language. A meta_title that includes the type word in one language but drops it in another (in favor of a benefit phrase) is a failed response — check every language's meta_title against every other before responding.
   WRONG (EN has it, FR drops it): EN "...Zinc 1% Serum" / FR "...Zinc 1% pour le teint" (lost "Sérum")
   RIGHT: FR "...Zinc 1% Sérum" — same type word kept, benefit phrase can still appear in the meta_description instead
   WRONG (EN has it, FR drops it): EN "Levi's 501 Original Straight Leg Jeans" / FR "Levi's 501 Original avec coupe droite" (lost "Jean")
   RIGHT: FR "Levi's 501 Original Jean Coupe Droite" — "Jean" kept in both languages
+  WRONG (EN has it, FR drops it): EN "Fjällräven Kånken Everyday Backpack" / FR "Fjällräven Kånken avec Tissu Vinylon F" (lost "Sac à dos")
+  RIGHT: FR "Fjällräven Kånken Sac à Dos Vinylon F" — "Sac à dos" kept in both languages
 
 META DESCRIPTION RULES — MANDATORY, count characters before finishing: MINIMUM 150 chars, MAXIMUM 160 chars. 150 is a hard floor, not a suggestion — a meta_description under 150 chars is a failed response, rewrite it longer before responding.
 - Start with an action verb in ${targetLang}
