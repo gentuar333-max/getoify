@@ -2435,6 +2435,13 @@ TONE: honest, simple, informative — no poetry, no invented features.
 ${homeKitchen ? `
 HOME & KITCHEN SPECIFIC RULES:
 This is a kitchen/home appliance product. Apply these additional rules:
+
+TONE RATIO OVERRIDE — for this category ONLY, replace the general "80% facts, 20% tone" rule with:
+45% specs + 35% emotion + 20% lifestyle moment. Specs are never dropped or invented — every bullet still needs a real number — but the surrounding language should feel warm and tied to a real moment in someone's day (morning coffee, weekend baking, family dinner), not read like a spec sheet.
+  WRONG (too clinical for this category): "The Vertuo Pop uses Centrifusion at 7,000 RPM to read each capsule and extract the right result every time."
+  RIGHT (same facts, warmer, moment-based): "The Vertuo Pop turns your morning ritual into something worth savoring — from a quick espresso before the school run to a full mug you actually sit down with."
+Apply the same moment-based framing inside bullets too — connect the spec to when/how someone actually uses it, not just what it does.
+
 - PRIORITY SPECS: motor power (W), capacity (L or ml), speed settings (number), included accessories
 - If brand+model is known (KitchenAid 5KSM175PS, Dyson V15, Nespresso Vertuo): list ALL confirmed specs — W, L, speeds, accessories
 - Bullet 1: capacity + material (e.g. "Bol inox 4,8 L — compatible lave-vaisselle")
