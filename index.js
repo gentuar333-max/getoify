@@ -26,6 +26,92 @@ const {
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
+// ─── SHOP SESSION AUTH ────────────────────────────────────────────────────
+// Zëvendëson "shop=X ne URL" si identitet. Pas OAuth-it te suksesshem
+// (/auth/callback), lëshohet nje cookie e nënshkruar (HttpOnly, e
+// pafalsifikueshme pa SHOPIFY_API_SECRET) qe deshmon se ky browser ka
+// kaluar vertet OAuth-in per ate shop. Route-t e ndjeshme (te dhena/veprime
+// per nje shop specifik) kerkojne kete cookie permes requireShopAuth, dhe
+// perdorin req.verifiedShop — jo me req.query.shop apo req.body.shop, qe
+// deri tani ishin te falsifikueshme nga kushdo qe di emrin e shop-it.
+const SESSION_COOKIE_NAME = 'getoify_session';
+const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 dite
+
+function toBase64Url(buf) {
+  return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function fromBase64Url(str) {
+  str = str.replace(/-/g, '+').replace(/_/g, '/');
+  while (str.length % 4) str += '=';
+  return Buffer.from(str, 'base64');
+}
+
+function signSession(shop) {
+  const payload = toBase64Url(Buffer.from(JSON.stringify({ shop, iat: Date.now() })));
+  const sig = crypto.createHmac('sha256', SHOPIFY_API_SECRET).update(payload).digest('hex');
+  return `${payload}.${sig}`;
+}
+
+function verifySession(cookieValue) {
+  if (!cookieValue) return null;
+  const dotIdx = cookieValue.lastIndexOf('.');
+  if (dotIdx === -1) return null;
+  const payload = cookieValue.slice(0, dotIdx);
+  const sig = cookieValue.slice(dotIdx + 1);
+  const expectedSig = crypto.createHmac('sha256', SHOPIFY_API_SECRET).update(payload).digest('hex');
+  const sigBuf = Buffer.from(sig, 'utf8');
+  const expectedBuf = Buffer.from(expectedSig, 'utf8');
+  if (sigBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(sigBuf, expectedBuf)) return null;
+  try {
+    const data = JSON.parse(fromBase64Url(payload).toString('utf8'));
+    if (!data.shop || !data.iat) return null;
+    if (Date.now() - data.iat > SESSION_MAX_AGE_MS) return null;
+    return data.shop;
+  } catch (e) {
+    return null;
+  }
+}
+
+function getCookie(req, name) {
+  const header = req.headers.cookie;
+  if (!header) return null;
+  for (const part of header.split(';')) {
+    const idx = part.indexOf('=');
+    if (idx === -1) continue;
+    if (part.slice(0, idx).trim() === name) return decodeURIComponent(part.slice(idx + 1).trim());
+  }
+  return null;
+}
+
+// Kerkohet ne cdo route qe lexon/shkruan te dhena te nje shop specifik.
+// Verifikon cookie-n e sesionit dhe vendos req.verifiedShop — handler-at
+// duhet ta perdorin kete, jo me req.query.shop apo req.body.shop.
+function requireShopAuth(req, res, next) {
+  const shop = verifySession(getCookie(req, SESSION_COOKIE_NAME));
+  if (!shop) return res.status(401).json({ error: 'Not authenticated. Please reconnect your store.' });
+  req.verifiedShop = shop;
+  next();
+}
+
+// Per endpoint-et e mirembajtjes (jo per merchant, per ty si zhvillues) —
+// kerkon ADMIN_API_KEY (query ?admin_key= ose header x-admin-key) ne vend
+// te session cookie-t, sepse keto s'kalojne nga dashboard-i i merchant-it.
+// Nese ADMIN_API_KEY s'eshte vendosur ne env, route-t bllokohen (fail-closed).
+function requireAdminKey(req, res, next) {
+  const expected = process.env.ADMIN_API_KEY;
+  if (!expected) {
+    console.warn('[admin-key] ADMIN_API_KEY nuk eshte vendosur — route i mirembajtjes bllokohet per siguri');
+    return res.status(503).json({ error: 'Admin routes are not configured' });
+  }
+  const provided = String(req.query.admin_key || req.headers['x-admin-key'] || '');
+  const providedBuf = Buffer.from(provided);
+  const expectedBuf = Buffer.from(expected);
+  if (providedBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(providedBuf, expectedBuf)) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  next();
+}
+
 // Intercept Shopify 401 — mark token invalid in Supabase
 axios.interceptors.response.use(
   res => res,
@@ -123,7 +209,7 @@ async function removeScriptTag(shop, token) {
 
 // Install widget manually — thirre nje here per stores ekzistuese
 // https://getoify.com/install-widget-manual?shop=xxx
-app.get('/install-widget-manual', async (req, res) => {
+app.get('/install-widget-manual', requireAdminKey, async (req, res) => {
   const { shop } = req.query;
   if (!shop) return res.status(400).json({ error: 'Missing shop' });
   try {
@@ -307,9 +393,8 @@ async function sendNotification(subject, html) {
 // /plan — perdoret nga settings.html (loadPlan) per te shfaqur planin aktual.
 // Zevendeson /plan e vjeter te lib/stripe.js — tani lexon direkt nga stores
 // (plan, billing_cycle) qe perditesohen nga /billing/callback me poshte.
-app.get('/plan', async (req, res) => {
-  const { shop } = req.query;
-  if (!shop) return res.status(400).json({ error: 'Missing shop' });
+app.get('/plan', requireShopAuth, async (req, res) => {
+  const shop = req.verifiedShop;
   try {
     const { data: store } = await supabase
       .from('stores')
@@ -552,9 +637,10 @@ app.get('/billing/callback', async (req, res) => {
 app.get('/shopify-translation-app', (req, res) => res.sendFile(path.join(__dirname, 'public', 'shopify-translation-app.html')));
 app.get('/vs/langify', (req, res) => res.sendFile(path.join(__dirname, 'public', 'vs', 'langify.html')));
 
-app.get('/product-translations', async (req, res) => {
-  const { shop, productId } = req.query;
-  if (!shop || !productId) return res.status(400).json({ error: 'Missing shop or productId' });
+app.get('/product-translations', requireShopAuth, async (req, res) => {
+  const shop = req.verifiedShop;
+  const { productId } = req.query;
+  if (!productId) return res.status(400).json({ error: 'Missing productId' });
   try {
     const pid = normalizeProductId(productId);
     const data = await fetchAllRows(supabase, {
@@ -570,9 +656,8 @@ app.get('/product-translations', async (req, res) => {
 });
 
 // Token health check
-app.get('/token-status', async (req, res) => {
-  const { shop } = req.query;
-  if (!shop) return res.status(400).json({ error: 'Missing shop' });
+app.get('/token-status', requireShopAuth, async (req, res) => {
+  const shop = req.verifiedShop;
   const { data } = await supabase.from('stores').select('token_invalid').eq('shop', shop).single();
   res.json({ invalid: data?.token_invalid === true });
 });
@@ -634,7 +719,17 @@ app.get('/auth/callback', async (req, res) => {
     // Instalo widget ScriptTag automatikisht
 installScriptTag(shop, accessToken).catch(e => console.error('[widget] OAuth install error:', e.message));
 
-res.redirect('/dashboard?shop=' + shop + '&token=' + accessToken);
+// Sesioni i merchant-it — cookie e nenshkruar, e VETMja dëshmi qe dashboard-i
+// pranohet ta perdore per te thirrur route-t e mbrojtura (requireShopAuth).
+// access_token NUK kalon me ne URL — mbetet vetem server-side ne Supabase.
+res.cookie(SESSION_COOKIE_NAME, signSession(shop), {
+  httpOnly: true,
+  secure: true,
+  sameSite: 'lax',
+  maxAge: SESSION_MAX_AGE_MS
+});
+
+res.redirect('/dashboard?shop=' + shop);
   } catch (error) {
     console.error('OAuth callback error:', error.message);
     res.redirect('/?error=oauth_failed&shop=' + (req.query.shop || ''));
@@ -643,7 +738,7 @@ res.redirect('/dashboard?shop=' + shop + '&token=' + accessToken);
 
 // Endpoint per te regjistruar webhooks per stores ekzistuese
 // Thirre nje here: https://getoify.com/register-webhooks?shop=xxx.myshopify.com
-app.get('/register-webhooks', async (req, res) => {
+app.get('/register-webhooks', requireAdminKey, async (req, res) => {
   const { shop } = req.query;
   if (!shop) return res.status(400).json({ error: 'Missing shop' });
   try {
@@ -688,7 +783,7 @@ app.get('/register-webhooks', async (req, res) => {
 
 // Fshi te gjitha webhooks dhe regjistro sersish me URL te sakte
 // https://getoify.com/reset-webhooks?shop=xxx.myshopify.com
-app.get('/reset-webhooks', async (req, res) => {
+app.get('/reset-webhooks', requireAdminKey, async (req, res) => {
   const { shop } = req.query;
   if (!shop) return res.status(400).json({ error: 'Missing shop' });
   try {
@@ -770,7 +865,7 @@ app.get('/llm.txt', (req, res) => {
 // Perplexity, or Claude about products in their niche.
 // GET /generate-llm-txt?shop=xxx — returns the txt file for download
 // The merchant then uploads it to their store root or Shopify Files.
-app.get('/generate-llm-txt', async (req, res) => {
+app.get('/generate-llm-txt', requireAdminKey, async (req, res) => {
   const { shop } = req.query;
   if (!shop) return res.status(400).json({ error: 'Missing shop' });
 
@@ -858,9 +953,10 @@ app.get('/generate-llm-txt', async (req, res) => {
 
 
 // API routes
-app.get('/locales', async (req, res) => {
-  const { shop, token } = req.query;
-  if (!shop || !token) return res.status(400).json({ error: 'Missing shop or token' });
+app.get('/locales', requireShopAuth, async (req, res) => {
+  const shop = req.verifiedShop;
+  const { token } = req.query;
+  if (!token) return res.status(400).json({ error: 'Missing token' });
   try {
     const query = `query { shopLocales { locale name primary published } }`;
     const response = await axios.post(
@@ -877,9 +973,8 @@ app.get('/locales', async (req, res) => {
   }
 });
 
-app.get('/products', async (req, res) => {
-  const { shop } = req.query;
-  if (!shop) return res.status(400).json({ error: 'Missing shop' });
+app.get('/products', requireShopAuth, async (req, res) => {
+  const shop = req.verifiedShop;
   // KRITIKE: perpara perdorej req.query.token direkt, i cili vjen nga
   // localStorage/URL i frontend-it dhe mund te jete i vjeteruar (token-at
   // "expiring" tani skadojne pas 60 min). Kjo anashkalonte plotesisht
@@ -926,9 +1021,8 @@ app.get('/products', async (req, res) => {
   }
 });
 
-app.get('/status', async (req, res) => {
-  const { shop } = req.query;
-  if (!shop) return res.status(400).json({ error: 'Missing shop' });
+app.get('/status', requireShopAuth, async (req, res) => {
+  const shop = req.verifiedShop;
   try {
     const { data: storeRow } = await supabase.from('stores').select('plan, plan_started_at').eq('shop', shop).single();
     const planName = storeRow?.plan || 'free';
@@ -958,12 +1052,12 @@ app.get('/status', async (req, res) => {
   }
 });
 
-app.get('/store-settings', async (req, res) => {
-  const { shop } = req.query;
+app.get('/store-settings', requireShopAuth, async (req, res) => {
+  const shop = req.verifiedShop;
   try {
     const { data, error } = await supabase
       .from('stores')
-      .select('tone, glossary, selected_locales, plan, access_token')
+      .select('tone, glossary, selected_locales, plan')
       .eq('shop', shop)
       .single();
     if (error) throw error;
@@ -973,8 +1067,9 @@ app.get('/store-settings', async (req, res) => {
   }
 });
 
-app.post('/settings', async (req, res) => {
-  const { shop, tone, glossary } = req.body;
+app.post('/settings', requireShopAuth, async (req, res) => {
+  const shop = req.verifiedShop;
+  const { tone, glossary } = req.body;
   try {
     const { error } = await supabase.from('stores').update({ tone, glossary }).eq('shop', shop);
     if (error) throw error;
@@ -984,9 +1079,10 @@ app.post('/settings', async (req, res) => {
   }
 });
 
-app.post('/save-locales', async (req, res) => {
-  const { shop, selected_locales } = req.body;
-  if (!shop || !selected_locales) return res.status(400).json({ error: 'Missing data' });
+app.post('/save-locales', requireShopAuth, async (req, res) => {
+  const shop = req.verifiedShop;
+  const { selected_locales } = req.body;
+  if (!selected_locales) return res.status(400).json({ error: 'Missing data' });
   try {
     // Kontroll limiti i gjuhëve sipas planit
     const PLANS = app.locals.PLANS;
@@ -1087,9 +1183,8 @@ app.post('/save-locales', async (req, res) => {
 });
 
 // Endpoint per te marre gjuhet e disponueshme dhe limitin e planit
-app.get('/plan-languages', async (req, res) => {
-  const { shop } = req.query;
-  if (!shop) return res.status(400).json({ error: 'Missing shop' });
+app.get('/plan-languages', requireShopAuth, async (req, res) => {
+  const shop = req.verifiedShop;
   try {
     const store = await getStore(shop);
     const PLANS = app.locals.PLANS;
@@ -1573,7 +1668,7 @@ async function searchProductSpecs(title) {
     if (weight) specs.push({ key: 'Weight', value: `${weight[1]}g` });
 
     // Chipset — Exynos, Snapdragon, Dimensity, Tensor, Apple M/A-series (iPhone + Mac)
-    const chipset = snippets.match(/\b(A\d{1,2}\s*(?:Pro|Bionic|Fusion)?|Exynos\s*\d+\w*|Snapdragon\s*[\d\w\s]+?(?=[\s,\.])|Dimensity\s*\d+\w*|Tensor\s*G?\d+|Apple\s*M\d[\w]*|Helio\s*\w+|Kirin\s*\d+)\b/i);
+    const chipset = snippets.match(/\b(A\d{1,2}\s*(?:Pro|Bionic|Fusion)?|Exynos\s*\d+\w*|Snapdragon\s*[\d\w\s+]+?(?=[\s,\.])|Dimensity\s*\d+\w*|Tensor\s*G?\d+|Apple\s*M\d[\w]*|Helio\s*\w+|Kirin\s*\d+)\b/i);
     if (chipset) specs.push({ key: 'Chipset', value: chipset[1].trim() });
 
     // 5G connectivity
@@ -3191,8 +3286,9 @@ async function localizeProductBody(shop, token, pid, targetLang, locale, tone, g
   return { product_id: pid, product: product.title, translated, shopify: shopifyResult };
 }
 
-app.post('/localize', async (req, res) => {
-  const { shop, token, productId, targetLang, locale, tone, glossary } = req.body;
+app.post('/localize', requireShopAuth, async (req, res) => {
+  const shop = req.verifiedShop;
+  const { token, productId, targetLang, locale, tone, glossary } = req.body;
   try {
     const pid = normalizeProductId(productId);
 
@@ -3229,8 +3325,9 @@ app.post('/localize', async (req, res) => {
 });
 
 
-app.post('/bulk-localize-collections', async (req, res) => {
-  const { shop, token, glossary } = req.body;
+app.post('/bulk-localize-collections', requireShopAuth, async (req, res) => {
+  const shop = req.verifiedShop;
+  const { token, glossary } = req.body;
   try {
     const store = await getStore(shop);
     const savedLocales = store.selected_locales || [];
@@ -3240,8 +3337,9 @@ app.post('/bulk-localize-collections', async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
-app.post('/bulk-localize-blogs', async (req, res) => {
-  const { shop, token, glossary } = req.body;
+app.post('/bulk-localize-blogs', requireShopAuth, async (req, res) => {
+  const shop = req.verifiedShop;
+  const { token, glossary } = req.body;
   try {
     const store = await getStore(shop);
     const savedLocales = store.selected_locales || [];
@@ -3251,8 +3349,9 @@ app.post('/bulk-localize-blogs', async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
-app.post('/bulk-localize-all', async (req, res) => {
-  const { shop, token, tone, glossary } = req.body;
+app.post('/bulk-localize-all', requireShopAuth, async (req, res) => {
+  const shop = req.verifiedShop;
+  const { token, tone, glossary } = req.body;
   try {
     const store = await getStore(shop);
     const savedLocales = store.selected_locales || [];
@@ -3572,8 +3671,9 @@ app.post('/webhook/shop/redact', requireWebhookHmac, async (req, res) => {
   }
 });
 
-app.post('/process-product', async (req, res) => {
-  const { shop, productId, productTitle } = req.body;
+app.post('/process-product', requireShopAuth, async (req, res) => {
+  const shop = req.verifiedShop;
+  const { productId, productTitle } = req.body;
   let pid;
   try {
     pid = normalizeProductId(productId);
