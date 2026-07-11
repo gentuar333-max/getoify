@@ -236,6 +236,7 @@
       const statusData = await statusRes.json();
 
       statusData.translations.forEach(t => {
+        if (t.status !== 'done') return;
         const pid = String(t.product_id);
         if (!translatedMap[pid]) translatedMap[pid] = [];
         if (!translatedMap[pid].includes(t.locale)) translatedMap[pid].push(t.locale);
@@ -510,6 +511,7 @@
         const data = await res.json();
         const newMap = {};
         data.translations.forEach(t => {
+          if (t.status !== 'done') return;
           const pid = String(t.product_id);
           if (!newMap[pid]) newMap[pid] = [];
           if (!newMap[pid].includes(t.locale)) newMap[pid].push(t.locale);
