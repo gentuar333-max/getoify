@@ -2298,7 +2298,7 @@ FORBIDDEN for Fashion & Apparel:
 FIT LANGUAGE — always use precise fit terms, never vague descriptions:
 - RIGHT: "Coupe Regular — taille naturelle, jambe droite" / "Slim fit — taille mi-haute, effilé à la cheville"
 - WRONG: "silhouette épurée", "coupe flatteuse", "style moderne"
-- For jeans specifically: always mention waist rise (taille naturelle/mi-haute/basse) + leg cut (droit/slim/bootcut)
+- For jeans specifically: always mention waist rise (taille naturelle/mi-haute/basse) + leg cut (droit/slim/bootcut) + fabric composition if known (e.g. "100% coton", "denim rigide non-stretch") — for well-known models like Levi's 501, this material is a confirmed stable fact, not a guess
 
 TONE: aspirational but grounded — mix lifestyle language with concrete specs.
 ` : ''}
@@ -2571,9 +2571,11 @@ META TITLE RULES (max 60 chars):
 - Main keyword first, spec second
 - No punctuation at the end
 - WRONG: "iPhone 16 Pro Max" (no spec) — RIGHT: "iPhone 16 Pro Max with A18 Pro Chip"
-- If the product name does not already state its own type (serum, cream, shampoo, shoe, mixer, etc.), include that type word in ${targetLang} as part of the spec — this must stay CONSISTENT across every language, never present in one language's meta_title and dropped in another's in favor of a benefit phrase.
+- If the product name does not already state its own type (serum, cream, shampoo, shoe, mixer, jeans, etc.), include that type word in ${targetLang} as part of the spec — this must stay CONSISTENT across every language, never present in one language's meta_title and dropped in another's in favor of a benefit phrase.
   WRONG (EN has it, FR drops it): EN "...Zinc 1% Serum" / FR "...Zinc 1% pour le teint" (lost "Sérum")
   RIGHT: FR "...Zinc 1% Sérum" — same type word kept, benefit phrase can still appear in the meta_description instead
+  WRONG (EN has it, FR drops it): EN "Levi's 501 Original Straight Leg Jeans" / FR "Levi's 501 Original avec coupe droite" (lost "Jean")
+  RIGHT: FR "Levi's 501 Original Jean Coupe Droite" — "Jean" kept in both languages
 
 META DESCRIPTION RULES — MANDATORY, count characters before finishing: MINIMUM 150 chars, MAXIMUM 160 chars. 150 is a hard floor, not a suggestion — a meta_description under 150 chars is a failed response, rewrite it longer before responding.
 - Start with an action verb in ${targetLang}
