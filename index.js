@@ -2583,7 +2583,7 @@ ${langCfg.cta ? `- End with: "${langCfg.cta}"` : '- No call to action'}
   WRONG (too short, 120 chars): "Track performance across weeks of training with solar-extended battery life, multi-band GPS, and ECG monitoring built in"
   RIGHT (150-160 chars, same facts extended): "Track performance across weeks of training with solar-extended battery life, multi-band GPS, and ECG monitoring — built for serious athletes who need data they can trust."
 
-SELF-CHECK — do this mentally before writing any JSON:
+SELF-CHECK — SILENT INTERNAL REASONING ONLY. Do NOT write any of this out as text in your response. Do not write "Step 1", "SELF-CHECK", or any analysis before your answer. Consider these points internally, then respond with ONLY the ###TITLE### block below — nothing before it, no narration of your reasoning process.
 
 Step 1 — SPECS CHECK:
 - Bullet 1 must contain a number or measurement (ml, cm, kg, pieces, hours...)
@@ -2607,7 +2607,7 @@ Step 3 — BULLET CHECK:
 Step 4 — TONE CHECK:
 - Every verb addressed to the customer must use "${langCfg.tone}" consistently — no mixing of formal/informal
 
-Only after passing all 4 steps, write the response.
+Your response starts IMMEDIATELY with ###TITLE### — the very first characters you output must be "###TITLE###", with no preamble, no self-check text, no explanation.
 
 Respond ONLY in this exact format, no JSON, no markdown backticks, no extra commentary before or after:
 ###TITLE###
@@ -2766,7 +2766,7 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
       const callSonnet = async (content) => {
         const claudeRes = await axios.post('https://api.anthropic.com/v1/messages', {
           model: 'claude-sonnet-4-6',
-          max_tokens: 1500,
+          max_tokens: 2500,
           temperature: 0,
           messages: [{ role: 'user', content }]
         }, {
