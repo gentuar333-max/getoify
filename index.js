@@ -878,8 +878,22 @@ app.get('/locales', async (req, res) => {
 });
 
 app.get('/products', async (req, res) => {
-  const { shop, token } = req.query;
-  if (!shop || !token) return res.status(400).json({ error: 'Missing shop or token' });
+  const { shop } = req.query;
+  if (!shop) return res.status(400).json({ error: 'Missing shop' });
+  // KRITIKE: perpara perdorej req.query.token direkt, i cili vjen nga
+  // localStorage/URL i frontend-it dhe mund te jete i vjeteruar (token-at
+  // "expiring" tani skadojne pas 60 min). Kjo anashkalonte plotesisht
+  // getStore()'s auto-refresh mekanizmin, duke shkaktuar 401 te panevojshem
+  // sapo token-i i URL-se skadonte, edhe pse Supabase mund te kishte tashme
+  // nje token te freskuar. Tani merret gjithmone permes getStore(shop).
+  let token;
+  try {
+    const store = await getStore(shop);
+    token = store?.access_token || req.query.token;
+  } catch(e) {
+    token = req.query.token;
+  }
+  if (!token) return res.status(400).json({ error: 'Missing shop or token' });
   try {
     let allProducts = [];
     let url = `https://${shop}/admin/api/2024-01/products.json?limit=${SHOPIFY_PRODUCTS_PAGE}`;
