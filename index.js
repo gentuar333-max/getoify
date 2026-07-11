@@ -2561,10 +2561,13 @@ META TITLE RULES (max 60 chars):
   WRONG (EN has it, FR drops it): EN "...Zinc 1% Serum" / FR "...Zinc 1% pour le teint" (lost "Sérum")
   RIGHT: FR "...Zinc 1% Sérum" — same type word kept, benefit phrase can still appear in the meta_description instead
 
-META DESCRIPTION RULES (exactly 140-160 chars — use the full space):
+META DESCRIPTION RULES — MANDATORY, count characters before finishing: MINIMUM 150 chars, MAXIMUM 160 chars. 150 is a hard floor, not a suggestion — a meta_description under 150 chars is a failed response, rewrite it longer before responding.
 - Start with an action verb in ${targetLang}
 - One specific concrete benefit
 ${langCfg.cta ? `- End with: "${langCfg.cta}"` : '- No call to action'}
+- If your draft is under 150 chars, add a second concrete benefit or spec before finalizing — never submit a short meta_description just because the first sentence felt complete.
+  WRONG (too short, 120 chars): "Track performance across weeks of training with solar-extended battery life, multi-band GPS, and ECG monitoring built in"
+  RIGHT (150-160 chars, same facts extended): "Track performance across weeks of training with solar-extended battery life, multi-band GPS, and ECG monitoring — built for serious athletes who need data they can trust."
 
 SELF-CHECK — do this mentally before writing any JSON:
 
