@@ -2557,6 +2557,9 @@ META TITLE RULES (max 60 chars):
 - Main keyword first, spec second
 - No punctuation at the end
 - WRONG: "iPhone 16 Pro Max" (no spec) — RIGHT: "iPhone 16 Pro Max with A18 Pro Chip"
+- If the product name does not already state its own type (serum, cream, shampoo, shoe, mixer, etc.), include that type word in ${targetLang} as part of the spec — this must stay CONSISTENT across every language, never present in one language's meta_title and dropped in another's in favor of a benefit phrase.
+  WRONG (EN has it, FR drops it): EN "...Zinc 1% Serum" / FR "...Zinc 1% pour le teint" (lost "Sérum")
+  RIGHT: FR "...Zinc 1% Sérum" — same type word kept, benefit phrase can still appear in the meta_description instead
 
 META DESCRIPTION RULES (exactly 140-160 chars — use the full space):
 - Start with an action verb in ${targetLang}
