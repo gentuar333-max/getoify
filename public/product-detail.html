@@ -136,6 +136,23 @@
       };
         const flag = langFlags[t.locale] || '';
 
+        // Perditeso titullin e faqes/breadcrumb nga te dhena reale (original_title)
+        // sapo mberrin — URL parametri productTitle mund te jete bosh/vizë nese
+        // faqja u hap para se produkti te kishte titull ne translations tabelen.
+        if (t.original_title && t.original_title.trim()) {
+          document.getElementById('tb-title').textContent = t.original_title;
+        }
+
+        // Status "processing" — trego gjendje qarte "duke u gjeneruar", jo
+        // strukture e plote bosh qe duket si "e mbaruar por pa permbajtje".
+        if (t.status === 'processing') {
+          return `
+            <div class="section">
+              <div class="section-title">${flag} ${t.locale.toUpperCase()} — Translation</div>
+              <div class="loading">Generating description and translation — usually takes 10-30 seconds...</div>
+            </div>`;
+        }
+
         return `
           <div class="section">
             <div class="section-title">${flag} ${t.locale.toUpperCase()} — Translation</div>
