@@ -199,13 +199,13 @@ async function installScriptTag(shop, token) {
   const scriptUrl = `${APP_URL}/widget.js`;
   try {
     const existing = await axios.get(
-      `https://${shop}/admin/api/2024-01/script_tags.json`,
+      `https://${shop}/admin/api/2026-07/script_tags.json`,
       { headers: { 'X-Shopify-Access-Token': token } }
     );
     const alreadyInstalled = (existing.data.script_tags || []).some(s => s.src === scriptUrl);
     if (alreadyInstalled) { console.log(`[widget] ScriptTag already installed: ${shop}`); return; }
     await axios.post(
-      `https://${shop}/admin/api/2024-01/script_tags.json`,
+      `https://${shop}/admin/api/2026-07/script_tags.json`,
       { script_tag: { event: 'onload', src: scriptUrl } },
       { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
     );
@@ -219,13 +219,13 @@ async function removeScriptTag(shop, token) {
   const scriptUrl = `${APP_URL}/widget.js`;
   try {
     const existing = await axios.get(
-      `https://${shop}/admin/api/2024-01/script_tags.json`,
+      `https://${shop}/admin/api/2026-07/script_tags.json`,
       { headers: { 'X-Shopify-Access-Token': token } }
     );
     for (const tag of (existing.data.script_tags || [])) {
       if (tag.src === scriptUrl) {
         await axios.delete(
-          `https://${shop}/admin/api/2024-01/script_tags/${tag.id}.json`,
+          `https://${shop}/admin/api/2026-07/script_tags/${tag.id}.json`,
           { headers: { 'X-Shopify-Access-Token': token } }
         );
         console.log(`[widget] ScriptTag removed: ${shop}`);
@@ -451,7 +451,7 @@ app.get('/plan', requireShopAuth, async (req, res) => {
 async function isDevelopmentStore(shop, token) {
   try {
     const shopRes = await axios.get(
-      `https://${shop}/admin/api/2024-01/shop.json`,
+      `https://${shop}/admin/api/2026-07/shop.json`,
       { headers: { 'X-Shopify-Access-Token': token } }
     );
     const planName = (shopRes.data.shop?.plan_name || '').toLowerCase();
@@ -506,7 +506,7 @@ app.get('/checkout', async (req, res) => {
     if (store.billing_id) {
       try {
         await axios.delete(
-          `https://${shop}/admin/api/2024-01/recurring_application_charges/${store.billing_id}.json`,
+          `https://${shop}/admin/api/2026-07/recurring_application_charges/${store.billing_id}.json`,
           { headers: { 'X-Shopify-Access-Token': token } }
         );
         console.log(`[billing] Cancelled charge ${store.billing_id} for ${shop} (downgrade to free)`);
@@ -524,7 +524,7 @@ app.get('/checkout', async (req, res) => {
     if (store.billing_id) {
       try {
         await axios.delete(
-          `https://${shop}/admin/api/2024-01/recurring_application_charges/${store.billing_id}.json`,
+          `https://${shop}/admin/api/2026-07/recurring_application_charges/${store.billing_id}.json`,
           { headers: { 'X-Shopify-Access-Token': token } }
         );
         console.log(`[billing] Cancelled previous charge ${store.billing_id} for ${shop} before creating new one`);
@@ -623,13 +623,13 @@ app.get('/billing/callback', async (req, res) => {
   const token = store.access_token;
   try {
     const chargeRes = await axios.get(
-      `https://${shop}/admin/api/2024-01/recurring_application_charges/${charge_id}.json`,
+      `https://${shop}/admin/api/2026-07/recurring_application_charges/${charge_id}.json`,
       { headers: { 'X-Shopify-Access-Token': token } }
     );
     const charge = chargeRes.data.recurring_application_charge;
     if (charge.status === 'accepted') {
       await axios.post(
-        `https://${shop}/admin/api/2024-01/recurring_application_charges/${charge_id}/activate.json`,
+        `https://${shop}/admin/api/2026-07/recurring_application_charges/${charge_id}/activate.json`,
         {}, { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
       );
       await supabase.from('stores').update({
@@ -759,7 +759,7 @@ app.get('/auth/callback', async (req, res) => {
     for (const wh of webhookTopics) {
       try {
         await axios.post(
-          `https://${shop}/admin/api/2024-01/webhooks.json`,
+          `https://${shop}/admin/api/2026-07/webhooks.json`,
           { webhook: { topic: wh.topic, address: wh.address, format: 'json' } },
           { headers: { 'X-Shopify-Access-Token': accessToken, 'Content-Type': 'application/json' } }
         );
@@ -816,7 +816,7 @@ app.get('/register-webhooks', requireAdminKey, async (req, res) => {
     for (const wh of webhookTopics) {
       try {
         await axios.post(
-          `https://${shop}/admin/api/2024-01/webhooks.json`,
+          `https://${shop}/admin/api/2026-07/webhooks.json`,
           { webhook: { topic: wh.topic, address: wh.address, format: 'json' } },
           { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
         );
@@ -849,7 +849,7 @@ app.get('/reset-webhooks', requireAdminKey, async (req, res) => {
 
     // Merr te gjitha webhooks ekzistuese
     const listRes = await axios.get(
-      `https://${shop}/admin/api/2024-01/webhooks.json`,
+      `https://${shop}/admin/api/2026-07/webhooks.json`,
       { headers: { 'X-Shopify-Access-Token': token } }
     );
     const existing = listRes.data.webhooks || [];
@@ -858,7 +858,7 @@ app.get('/reset-webhooks', requireAdminKey, async (req, res) => {
     const deleted = [];
     for (const wh of existing) {
       await axios.delete(
-        `https://${shop}/admin/api/2024-01/webhooks/${wh.id}.json`,
+        `https://${shop}/admin/api/2026-07/webhooks/${wh.id}.json`,
         { headers: { 'X-Shopify-Access-Token': token } }
       );
       deleted.push({ id: wh.id, topic: wh.topic, address: wh.address });
@@ -875,7 +875,7 @@ app.get('/reset-webhooks', requireAdminKey, async (req, res) => {
     const registered = [];
     for (const wh of webhookTopics) {
       const r = await axios.post(
-        `https://${shop}/admin/api/2024-01/webhooks.json`,
+        `https://${shop}/admin/api/2026-07/webhooks.json`,
         { webhook: { topic: wh.topic, address: wh.address, format: 'json' } },
         { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
       );
@@ -932,21 +932,21 @@ app.get('/generate-llm-txt', requireAdminKey, async (req, res) => {
 
     // Fetch store info
     const shopRes = await axios.get(
-      `https://${shop}/admin/api/2024-01/shop.json`,
+      `https://${shop}/admin/api/2026-07/shop.json`,
       { headers: { 'X-Shopify-Access-Token': token } }
     );
     const shopInfo = shopRes.data.shop;
 
     // Fetch products (up to 50 for llm.txt — enough for AI context)
     const productsRes = await axios.get(
-      `https://${shop}/admin/api/2024-01/products.json?limit=50&fields=id,title,body_html,product_type,tags,handle`,
+      `https://${shop}/admin/api/2026-07/products.json?limit=50&fields=id,title,body_html,product_type,tags,handle`,
       { headers: { 'X-Shopify-Access-Token': token } }
     );
     const products = productsRes.data.products || [];
 
     // Fetch collections
     const collectionsRes = await axios.get(
-      `https://${shop}/admin/api/2024-01/custom_collections.json?limit=20&fields=id,title,body_html,handle`,
+      `https://${shop}/admin/api/2026-07/custom_collections.json?limit=20&fields=id,title,body_html,handle`,
       { headers: { 'X-Shopify-Access-Token': token } }
     );
     const collections = collectionsRes.data.custom_collections || [];
@@ -1024,7 +1024,7 @@ app.get('/locales', requireShopAuth, async (req, res) => {
   try {
     const query = `query { shopLocales { locale name primary published } }`;
     const response = await axios.post(
-      `https://${shop}/admin/api/2024-01/graphql.json`,
+      `https://${shop}/admin/api/2026-07/graphql.json`,
       { query },
       { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
     );
@@ -1053,7 +1053,7 @@ app.get('/products', requireShopAuth, async (req, res) => {
   if (!token) return res.status(400).json({ error: 'Missing shop or token' });
   try {
     let allProducts = [];
-    let url = `https://${shop}/admin/api/2024-01/products.json?limit=${SHOPIFY_PRODUCTS_PAGE}`;
+    let url = `https://${shop}/admin/api/2026-07/products.json?limit=${SHOPIFY_PRODUCTS_PAGE}`;
 
     while (url) {
       const response = await axios.get(url, {
@@ -1215,7 +1215,7 @@ app.post('/save-locales', requireShopAuth, async (req, res) => {
             for (const pid of productIds) {
               try {
                 await axios.post(
-                  `https://${shop}/admin/api/2024-01/graphql.json`,
+                  `https://${shop}/admin/api/2026-07/graphql.json`,
                   {
                     query: removeMutation,
                     variables: {
@@ -1317,7 +1317,7 @@ async function getStore(shop) {
 async function getShopLocales(shop, token) {
   const query = `query { shopLocales { locale name primary published } }`;
   const res = await axios.post(
-    `https://${shop}/admin/api/2024-01/graphql.json`,
+    `https://${shop}/admin/api/2026-07/graphql.json`,
     { query },
     { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
   );
@@ -1329,7 +1329,7 @@ async function getShopLocales(shop, token) {
 async function getPrimaryLocale(shop, token) {
   const query = `query { shopLocales { locale primary } }`;
   const res = await axios.post(
-    `https://${shop}/admin/api/2024-01/graphql.json`,
+    `https://${shop}/admin/api/2026-07/graphql.json`,
     { query },
     { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
   );
@@ -1353,13 +1353,13 @@ function formatBodyHtml(text) {
 
 async function updateShopifyProductBodyIfEmpty(shop, token, pid, descriptionText) {
   const checkRes = await axios.get(
-    `https://${shop}/admin/api/2024-01/products/${pid}.json`,
+    `https://${shop}/admin/api/2026-07/products/${pid}.json`,
     { headers: { 'X-Shopify-Access-Token': token } }
   );
   if (!productBodyIsEmpty(checkRes.data.product?.body_html)) return false;
 
   await axios.put(
-    `https://${shop}/admin/api/2024-01/products/${pid}.json`,
+    `https://${shop}/admin/api/2026-07/products/${pid}.json`,
     { product: { body_html: formatBodyHtml(descriptionText) } },
     { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
   );
@@ -3109,7 +3109,7 @@ async function localizeProduct(shop, token, productId, targetLang, locale, tone,
 
 async function localizeProductBody(shop, token, pid, targetLang, locale, tone, glossary) {
   const productRes = await axios.get(
-    `https://${shop}/admin/api/2024-01/products/${pid}.json`,
+    `https://${shop}/admin/api/2026-07/products/${pid}.json`,
     { headers: { 'X-Shopify-Access-Token': token } }
   );
   const product = productRes.data.product;
@@ -3122,7 +3122,7 @@ async function localizeProductBody(shop, token, pid, targetLang, locale, tone, g
     }
   `;
   const digestRes = await axios.post(
-    `https://${shop}/admin/api/2024-01/graphql.json`,
+    `https://${shop}/admin/api/2026-07/graphql.json`,
     { query: digestQuery, variables: { resourceId: `gid://shopify/Product/${pid}` } },
     { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
   );
@@ -3134,7 +3134,7 @@ async function localizeProductBody(shop, token, pid, targetLang, locale, tone, g
   let metafields = [];
   try {
     const mfRes = await axios.get(
-      `https://${shop}/admin/api/2024-01/products/${pid}/metafields.json`,
+      `https://${shop}/admin/api/2026-07/products/${pid}/metafields.json`,
       { headers: { 'X-Shopify-Access-Token': token } }
     );
     metafields = (mfRes.data.metafields || []).filter(mf =>
@@ -3204,7 +3204,7 @@ async function localizeProductBody(shop, token, pid, targetLang, locale, tone, g
   try {
     const allLocalesQuery = `query { shopLocales { locale } }`;
     const allLocalesRes = await axios.post(
-      `https://${shop}/admin/api/2024-01/graphql.json`,
+      `https://${shop}/admin/api/2026-07/graphql.json`,
       { query: allLocalesQuery },
       { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
     );
@@ -3231,7 +3231,7 @@ async function localizeProductBody(shop, token, pid, targetLang, locale, tone, g
       if (bodyUpdated) {
         // Re-fetch digests so body_html digest is available for translation registration
         const freshDigestRes = await axios.post(
-          `https://${shop}/admin/api/2024-01/graphql.json`,
+          `https://${shop}/admin/api/2026-07/graphql.json`,
           { query: digestQuery, variables: { resourceId: `gid://shopify/Product/${pid}` } },
           { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
         );
@@ -3266,7 +3266,7 @@ async function localizeProductBody(shop, token, pid, targetLang, locale, tone, g
     console.log(`[locale] ${locale} s'eshte konfiguruar te ${shop} — anashkalohet translationsRegister`);
   } else {
     pushRes = await axios.post(
-    `https://${shop}/admin/api/2024-01/graphql.json`,
+    `https://${shop}/admin/api/2026-07/graphql.json`,
     {
       query: mutation,
       variables: {
@@ -3310,7 +3310,7 @@ async function localizeProductBody(shop, token, pid, targetLang, locale, tone, g
         const mfResourceId = `gid://shopify/Metafield/${mf.id}`;
         // Merr digest per kete metafield
         const mfDigestRes = await axios.post(
-          `https://${shop}/admin/api/2024-01/graphql.json`,
+          `https://${shop}/admin/api/2026-07/graphql.json`,
           { query: digestQuery, variables: { resourceId: mfResourceId } },
           { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
         );
@@ -3318,7 +3318,7 @@ async function localizeProductBody(shop, token, pid, targetLang, locale, tone, g
         const mfDigest = mfContents.find(c => c.key === 'value')?.digest;
         if (!mfDigest) { console.warn(`[metafields] No digest for ${mf.key}`); continue; }
         await axios.post(
-          `https://${shop}/admin/api/2024-01/graphql.json`,
+          `https://${shop}/admin/api/2026-07/graphql.json`,
           {
             query: mutation,
             variables: {
@@ -3444,7 +3444,7 @@ app.post('/bulk-localize-all', requireShopAuth, async (req, res) => {
       : await getShopLocales(shop, token);
     // Fetch all products with cursor pagination (supports 500+)
     let products = [];
-    let bulkUrl = `https://${shop}/admin/api/2024-01/products.json?limit=${SHOPIFY_PRODUCTS_PAGE}`;
+    let bulkUrl = `https://${shop}/admin/api/2026-07/products.json?limit=${SHOPIFY_PRODUCTS_PAGE}`;
     while (bulkUrl) {
       const batchRes = await axios.get(bulkUrl, {
         headers: { 'X-Shopify-Access-Token': token },
@@ -3858,7 +3858,7 @@ async function pollNewProducts() {
 
       try {
         const res = await axios.get(
-          `https://${shop}/admin/api/2024-01/products.json?limit=50&order=created_at+desc`,
+          `https://${shop}/admin/api/2026-07/products.json?limit=50&order=created_at+desc`,
           { headers: { 'X-Shopify-Access-Token': token } }
         );
 
@@ -3960,17 +3960,17 @@ async function autoResetWebhooks() {
     for (const store of stores) {
       if (!store.access_token || store.access_token.startsWith('shpua_')) continue;
       try {
-        const listRes = await axios.get(`https://${store.shop}/admin/api/2024-01/webhooks.json`,
+        const listRes = await axios.get(`https://${store.shop}/admin/api/2026-07/webhooks.json`,
           { headers: { 'X-Shopify-Access-Token': store.access_token }, timeout: 10000 });
         const existing = listRes.data.webhooks || [];
         const allCorrect = webhookTopics.every(wh => existing.some(e => e.topic === wh.topic && e.address === wh.address));
         if (allCorrect) { console.log(`[auto-webhooks] OK: ${store.shop}`); continue; }
         for (const wh of existing) {
-          await axios.delete(`https://${store.shop}/admin/api/2024-01/webhooks/${wh.id}.json`,
+          await axios.delete(`https://${store.shop}/admin/api/2026-07/webhooks/${wh.id}.json`,
             { headers: { 'X-Shopify-Access-Token': store.access_token }, timeout: 10000 });
         }
         for (const wh of webhookTopics) {
-          await axios.post(`https://${store.shop}/admin/api/2024-01/webhooks.json`,
+          await axios.post(`https://${store.shop}/admin/api/2026-07/webhooks.json`,
             { webhook: { topic: wh.topic, address: wh.address, format: 'json' } },
             { headers: { 'X-Shopify-Access-Token': store.access_token, 'Content-Type': 'application/json' }, timeout: 10000 });
         }
