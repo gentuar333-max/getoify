@@ -344,11 +344,28 @@ async function getLocalizedProductCount(shop, planStartedAt) {
 }
 
 
-// Sa PRODUKTE perpunohen njekohesisht ne bulk-localize-all. Lokalet brenda
-// nje produkti TE VETEM mbeten sekuenciale (shih processProductLocales) —
-// arkitektura "Sonnet nje here, Gemini per pjesen tjeter" varet nga kjo
-// rradhitje, prandaj konkurrenca aplikohet vetem mes produkteve te ndryshme.
+// Sa çifte (produkt, gjuhe) perpunohen njekohesisht — nga /poll per rradhen
+// (shih processQueuedTranslations) dhe historikisht nga bulk-localize-all.
+// SHENIM: qysh nga rradhitja e re me poshte, /bulk-localize-all VETEM
+// vendos pune ne rradhe (status 'queued') dhe kthehet menjehere — konkurrenca
+// aplikohet nga /poll kur i procesion, jo me brenda vete kerkeses HTTP.
 const BULK_CONCURRENCY = 4;
+
+// Prag: nese numri i çifteve (produkt, gjuhe) per t'u perkthyer eshte NEN
+// kete kufi, procesohen MENJEHERE brenda vete kerkeses (pergjigje e plote,
+// sjellje e vjeter — e shpejte per dyqane te vogla/mesatare). Vetem kur e
+// KALON, vendosen ne rradhe (shih QUEUE_BATCH_SIZE me poshte). Bazuar te
+// ~20 perkthime/minute me BULK_CONCURRENCY=4 (~10-15s secili) — rregullo
+// sipas limitit real te timeout te planit tend Vercel.
+const IMMEDIATE_BULK_THRESHOLD = 20;
+
+// Sa çifte (produkt, gjuhe) 'queued' procesohen NE NJE THIRRJE te /poll.
+// Mban çdo invokim brenda kohes se sigurt per Vercel (cron çdo 5 min),
+// pavaresisht sa jane gjithsej ne rradhe — pjesa e mbetur vazhdon invokimin
+// tjeter. Numri konkret varet nga limiti real i timeout-it te planit tend
+// Vercel — 30 eshte nje fillim konservativ, i rregullueshem sipas asaj qe
+// vezhgon ne praktike (logs: sa kohe zgjat nje invokim /poll).
+const QUEUE_BATCH_SIZE = 30;
 
 // Ekzekuton 'items' me konkurrence maksimale 'limit', pa varesi te jashtme.
 // 'limit' "runner" lupa rrjedhin paralel, secila merr artikullin tjeter te
@@ -3541,7 +3558,7 @@ app.post('/bulk-localize-all', requireShopAuth, async (req, res) => {
       bulkUrl = nextMatch ? nextMatch[1] : null;
     }
 
-    // Enforce bulk limit — never translate more than bulk_limit in one run
+    // Enforce bulk limit — never queue more than bulk_limit products in one run
     if (products.length > bulkLimit) {
       console.warn(`[bulk-limit] Slicing ${products.length} → ${bulkLimit} products for ${shop} (bulk_limit)`);
       products = products.slice(0, bulkLimit);
@@ -3555,7 +3572,7 @@ app.post('/bulk-localize-all', requireShopAuth, async (req, res) => {
     const translatedSet = new Set((existingRows || []).map(r => `${String(r.product_id)}:${r.locale}`));
     const existingProductIds = new Set((existingRows || []).map(r => String(r.product_id)));
 
-    const toTranslate = [];
+    const toQueue = [];
     let trackedCount = existingProductIds.size; // produktet aktuale ne plan
     for (const product of products) {
       const pid = String(normalizeProductId(product.id));
@@ -3565,46 +3582,65 @@ app.post('/bulk-localize-all', requireShopAuth, async (req, res) => {
       const isNewProduct = !existingProductIds.has(pid);
       if (isNewProduct) {
         if (PLANS && trackedCount >= productLimit) {
-          console.log(`[plan-limit] ${shop} reached ${productLimit} products — stopping bulk for new products`);
+          console.log(`[plan-limit] ${shop} reached ${productLimit} products — stopping queue for new products`);
           break;
         }
         trackedCount++;
       }
-      toTranslate.push({ product, missingLocales });
+      for (const lang of missingLocales) toQueue.push({ product, lang });
     }
-    console.log(`[bulk] ${products.length} total — ${toTranslate.length} need translation — ${products.length - toTranslate.length} skipped`);
+    console.log(`[bulk] ${shop}: ${products.length} produkte gjithsej — ${toQueue.length} çifte (produkt, gjuhe) per t'u perkthyer`);
 
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.write('{"results":[');
-    let first = true;
-    function writeResult(obj) {
-      // Sinkron — pa 'await' brenda — pra e sigurt edhe kur disa produkte
-      // po perpunohen njekohesisht (event loop i Node s'e nderpret kete blloku)
-      if (!first) res.write(',');
-      res.write(JSON.stringify(obj));
-      first = false;
+    if (toQueue.length === 0) {
+      return res.json({ success: true, results: [], message: 'Nothing to translate — everything is already up to date.' });
     }
 
-    async function processProductLocales(product, missingLocales) {
-      const bulkPid = normalizeProductId(product.id);
-      for (const lang of missingLocales) {
+    // HIBRID: numra te vegjel (dyqan i vogel/mesatar, ose vetem produkte te
+    // pakta te reja) procesohen MENJEHERE, njesoj si perpara — pergjigje e
+    // plote, e menjehershme. Vetem kur numri i çifteve E KALON pragun (rrezik
+    // real timeout — shih #7), vendosen ne rradhe dhe /poll i procesion ne
+    // grupe te sigurta. Pragu (IMMEDIATE_BULK_THRESHOLD, percaktuar me lart)
+    // bazohet ne ~20 perkthime/minute me BULK_CONCURRENCY=4.
+    if (toQueue.length <= IMMEDIATE_BULK_THRESHOLD) {
+      console.log(`[bulk] ${toQueue.length} <= ${IMMEDIATE_BULK_THRESHOLD} — duke perpunuar menjehere (si me pare)`);
+      const results = [];
+      await runWithConcurrency(toQueue, BULK_CONCURRENCY, async ({ product, lang }) => {
+        const pid = normalizeProductId(product.id);
         try {
-          const result = await localizeProduct(shop, token, bulkPid, lang.targetLang, lang.locale, tone, glossary);
-          writeResult({ success: true, product_id: bulkPid, locale: lang.locale, ...result });
+          const result = await localizeProduct(shop, token, pid, lang.targetLang, lang.locale, tone, glossary);
+          results.push({ success: true, product_id: pid, locale: lang.locale, ...result });
         } catch (err) {
-          writeResult({ product_id: bulkPid, product: product.title, locale: lang.locale, success: false, error: err.message });
+          results.push({ product_id: pid, product: product.title, locale: lang.locale, success: false, error: err.message });
         }
-        await new Promise(resolve => setTimeout(resolve, 300));
-      }
+      });
+      return res.json({ success: true, processed_immediately: true, results });
     }
 
-    console.log(`[bulk] Duke perpunuar me konkurrence ${BULK_CONCURRENCY} produkte njekohesisht`);
-    await runWithConcurrency(toTranslate, BULK_CONCURRENCY, ({ product, missingLocales }) =>
-      processProductLocales(product, missingLocales)
-    );
+    // I MADH — mbi prag, rrezik real timeout. Vendos ne rradhe (status
+    // 'queued'), /poll (cron çdo 5 min) e procesion ne grupe permes
+    // processQueuedTranslations() — asnje invokim i vetem s'rrezikon timeout.
+    console.log(`[bulk] ${toQueue.length} > ${IMMEDIATE_BULK_THRESHOLD} — duke vendosur ne rradhe per /poll`);
+    let queuedCount = 0;
+    for (const { product, lang } of toQueue) {
+      const pid = String(normalizeProductId(product.id));
+      const { error: insertErr } = await supabase.from('translations').insert({
+        shop, product_id: pid, locale: lang.locale, status: 'queued',
+        original_title: product.title || '', original_description: '',
+        product_handle: product.handle || '',
+        translated_title: '', translated_description: ''
+      });
+      // 23505 = rreshti ekziston tashme (p.sh. nga nje bulk i meparshem qe
+      // s'eshte perpunuar ende) — numerohet si i vendosur ne rradhe njesoj.
+      if (!insertErr || insertErr.code === '23505') queuedCount++;
+      else console.warn(`[bulk] Insert 'queued' deshtoi per ${pid}/${lang.locale}:`, insertErr.message);
+    }
 
-    res.write(']}');
-    res.end();
+    res.json({
+      success: true,
+      processed_immediately: false,
+      queued: queuedCount,
+      message: `${queuedCount} translations queued for background processing (checked every ~5 minutes). Refresh this page to see progress.`
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -4017,11 +4053,69 @@ app.post('/webhook/collection-create', async (req, res) => {
   } catch(err) { console.error('[collection webhook] Error:', err.message); }
 });
 
+// Procesón nje grup te KUFIZUAR (QUEUE_BATCH_SIZE) çiftesh (produkt, gjuhe)
+// te shenuara 'queued' nga /bulk-localize-all. Thirret nga /poll (cron çdo
+// 5 min) — jo brenda vete kerkeses HTTP te /bulk-localize-all — pikerisht
+// per te shmangur rrezikun e timeout-it per plane te medha (Enterprise).
+// Rradha e mbetur (nese ka me shume se QUEUE_BATCH_SIZE) vazhdon ne
+// invokimin tjeter te cron-it, automatikisht, pa nevoje per veprim shtese.
+async function processQueuedTranslations() {
+  try {
+    const { data: queuedRows, error } = await supabase
+      .from('translations')
+      .select('shop, product_id, locale')
+      .eq('status', 'queued')
+      .order('created_at', { ascending: true })
+      .limit(QUEUE_BATCH_SIZE);
+    if (error) { console.warn('[queue] Fetch i rradhes deshtoi:', error.message); return; }
+    if (!queuedRows?.length) return;
+
+    console.log(`[queue] Duke perpunuar ${queuedRows.length} çifte nga rradha`);
+
+    // Cache i vogel per store — disa rreshta mund t'i perkasin te njejtit
+    // shop, s'ka nevoje te therrasim getStore() per secilin veç e veç.
+    const storeCache = new Map();
+    async function getStoreCached(shop) {
+      if (!storeCache.has(shop)) storeCache.set(shop, await getStore(shop).catch(() => null));
+      return storeCache.get(shop);
+    }
+
+    await runWithConcurrency(queuedRows, BULK_CONCURRENCY, async (row) => {
+      // KRITIKE: fshi rreshtin 'queued' PARA se te therrasim localizeProduct.
+      // localizeProduct e ndertoi vete lock-un e vet me INSERT (status
+      // 'processing') mbi te njejtin constraint unik (shop, product_id,
+      // locale) qe perdor edhe rreshti 'queued' — nese s'e fshijme kete
+      // rresht paraprakisht, INSERT-i i localizeProduct do te perplasej me
+      // te (23505) dhe do ta trajtonte gabimisht si "dikush tjeter po e
+      // procesion", duke e anashkaluar pa e perkthyer fare.
+      await supabase.from('translations').delete()
+        .eq('shop', row.shop).eq('product_id', row.product_id).eq('locale', row.locale).eq('status', 'queued');
+
+      const store = await getStoreCached(row.shop);
+      if (!store?.access_token) {
+        console.warn(`[queue] ${row.shop} pa access_token te vlefshem, anashkalohet ${row.product_id}/${row.locale}`);
+        return;
+      }
+      const targetLang = LOCALE_MAP[row.locale] || row.locale;
+      try {
+        await localizeProduct(row.shop, store.access_token, row.product_id, targetLang, row.locale, store.tone || 'professional', store.glossary || 'checkout, Shopify');
+        console.log(`[queue] Done: ${row.shop} ${row.product_id}/${row.locale}`);
+      } catch(e) {
+        console.error(`[queue] Error ${row.shop} ${row.product_id}/${row.locale}:`, e.message);
+      }
+      await new Promise(r => setTimeout(r, 200));
+    });
+  } catch(e) {
+    console.error('[queue] Gabim i pergjithshem:', e.message);
+  }
+}
+
 // Vercel Cron endpoint — called every 5 minutes by vercel.json crons config
 // setInterval does not work on Vercel serverless — use this instead
 app.get('/poll', async (req, res) => {
   await cleanupStaleProcessingLocks();
   await pollNewProducts();
+  await processQueuedTranslations();
   res.json({ ok: true, time: new Date().toISOString() });
 });
 
