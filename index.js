@@ -729,7 +729,7 @@ res.cookie(SESSION_COOKIE_NAME, signSession(shop), {
   maxAge: SESSION_MAX_AGE_MS
 });
 
-res.redirect('/dashboard?shop=' + shop);
+res.redirect('/dashboard?shop=' + shop + '&reauth=1');
   } catch (error) {
     console.error('OAuth callback error:', error.message);
     res.redirect('/?error=oauth_failed&shop=' + (req.query.shop || ''));
