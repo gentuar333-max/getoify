@@ -112,6 +112,35 @@ function requireAdminKey(req, res, next) {
   next();
 }
 
+// ─── OAUTH CALLBACK HARDENING ─────────────────────────────────────────────
+// Format i vlefshem per domain shop-i, sipas rregullit qe vete Shopify e
+// dokumenton: vetem shkronja a-z, numra 0-9, pika dhe viza, dhe DUHET te
+// mbaroje me ".myshopify.com". Perdoret PARA se `shop` te futet ne çdo URL
+// te jashtme (/auth, /auth/callback) — mbyll rrugen e SSRF-it ku dikush do
+// te vendoste nje host arbitrar (p.sh. "shop=intern.local") dhe do e bente
+// serverin tone te dergonte kerkesa (bashke me client_secret-in tone!) atje.
+function isValidShopDomain(shop) {
+  return typeof shop === 'string' && /^[a-zA-Z0-9.-]+\.myshopify\.com$/.test(shop);
+}
+
+// Verifikon hmac-un qe Shopify e shton te query string i /auth/callback —
+// KY eshte ndryshe nga HMAC i webhook-ve (verifyShopifyWebhookHmac me poshte):
+// per OAuth callback, Shopify e nenshkruan STRING-un e parametrave (jo trupin
+// e kerkeses), dhe rezultati eshte HEX (jo base64). Sipas shopify.dev:
+// hiq 'hmac' (dhe 'signature' nese ekziston), rradhit çelesat e mbetur
+// leksikografikisht, bashko si "kyc=vlere" me '&', HMAC-SHA256 me client
+// secret, krahaso hex digest-in me parametrin hmac.
+function verifyOAuthCallbackHmac(query) {
+  const { hmac, signature, ...rest } = query;
+  if (!hmac || typeof hmac !== 'string') return false;
+  const message = Object.keys(rest).sort().map(key => `${key}=${rest[key]}`).join('&');
+  const digest = crypto.createHmac('sha256', SHOPIFY_API_SECRET).update(message).digest('hex');
+  const digestBuf = Buffer.from(digest, 'utf8');
+  const hmacBuf = Buffer.from(hmac, 'utf8');
+  if (digestBuf.length !== hmacBuf.length) return false;
+  return crypto.timingSafeEqual(digestBuf, hmacBuf);
+}
+
 // Intercept Shopify 401 — mark token invalid in Supabase
 axios.interceptors.response.use(
   res => res,
@@ -665,14 +694,40 @@ app.get('/token-status', requireShopAuth, async (req, res) => {
 // OAuth
 app.get('/auth', (req, res) => {
   const shop = req.query.shop;
-  if (!shop) return res.status(400).send('Missing shop parameter');
+  if (!shop || !isValidShopDomain(shop)) return res.status(400).send('Missing or invalid shop parameter');
+  // Nonce per mbrojtje CSRF gjate OAuth — ruhet ne cookie te vetin (jo ne
+  // sesionin e merchant-it, s'ekziston ende) dhe verifikohet ne /auth/callback
+  // qe te sigurohemi se ky eshte i njejti browser qe filloi flow-in, jo dikush
+  // qe u mashtrua te klikoje nje link OAuth te pergatitur nga sulmuesi.
+  const state = crypto.randomBytes(16).toString('hex');
+  res.cookie('getoify_oauth_state', state, {
+    httpOnly: true, secure: true, sameSite: 'lax', maxAge: 10 * 60 * 1000
+  });
   const redirectUri = `${APP_URL}/auth/callback`;
-  const installUrl = `https://${shop}/admin/oauth/authorize?client_id=${SHOPIFY_API_KEY}&scope=${SHOPIFY_SCOPES}&redirect_uri=${redirectUri}`;
+  const installUrl = `https://${shop}/admin/oauth/authorize?client_id=${SHOPIFY_API_KEY}&scope=${SHOPIFY_SCOPES}&redirect_uri=${redirectUri}&state=${state}`;
   res.redirect(installUrl);
 });
 
 app.get('/auth/callback', async (req, res) => {
-  const { shop, code } = req.query;
+  const { shop, code, state } = req.query;
+
+  // Tre kontrolle sigurie PARA se te bejme çfarëdo — nese ndonjeri deshton,
+  // ndalojme menjehere. Kjo eshte pikerisht rendi qe rekomandon shopify.dev.
+  if (!shop || !isValidShopDomain(shop)) {
+    console.warn('[auth] callback me shop te pavlefshem — refuzuar:', shop);
+    return res.status(400).send('Invalid shop parameter');
+  }
+  const savedState = getCookie(req, 'getoify_oauth_state');
+  res.clearCookie('getoify_oauth_state');
+  if (!savedState || savedState !== state) {
+    console.warn('[auth] OAuth state s\'perputhet (mundesi CSRF) — refuzuar per shop:', shop);
+    return res.status(403).send('Invalid OAuth state');
+  }
+  if (!verifyOAuthCallbackHmac(req.query)) {
+    console.warn('[auth] HMAC verifikim deshtoi — refuzuar per shop:', shop);
+    return res.status(403).send('Invalid HMAC signature');
+  }
+
   try {
     // expiring:1 kerkohet nga Shopify — token-at "non-expiring" te vjeter
     // refuzohen tani nga Admin API ("Non-expiring access tokens are no
@@ -955,8 +1010,16 @@ app.get('/generate-llm-txt', requireAdminKey, async (req, res) => {
 // API routes
 app.get('/locales', requireShopAuth, async (req, res) => {
   const shop = req.verifiedShop;
-  const { token } = req.query;
-  if (!token) return res.status(400).json({ error: 'Missing token' });
+  // SSRF/trust fix: token nuk pranohet me nga query string - shop tashme
+  // eshte i verifikuar, token-i real merret gjithmone nga Supabase.
+  let token;
+  try {
+    const store = await getStore(shop);
+    token = store?.access_token;
+  } catch(e) {
+    token = null;
+  }
+  if (!token) return res.status(400).json({ error: 'Store not connected or token missing' });
   try {
     const query = `query { shopLocales { locale name primary published } }`;
     const response = await axios.post(
@@ -975,18 +1038,16 @@ app.get('/locales', requireShopAuth, async (req, res) => {
 
 app.get('/products', requireShopAuth, async (req, res) => {
   const shop = req.verifiedShop;
-  // KRITIKE: perpara perdorej req.query.token direkt, i cili vjen nga
-  // localStorage/URL i frontend-it dhe mund te jete i vjeteruar (token-at
-  // "expiring" tani skadojne pas 60 min). Kjo anashkalonte plotesisht
-  // getStore()'s auto-refresh mekanizmin, duke shkaktuar 401 te panevojshem
-  // sapo token-i i URL-se skadonte, edhe pse Supabase mund te kishte tashme
-  // nje token te freskuar. Tani merret gjithmone permes getStore(shop).
+  // SSRF/trust fix: token nuk pranohet me nga klienti (req.query.token) —
+  // shop tashme eshte i verifikuar nga cookie e sesionit, pra token-i real
+  // merret gjithmone nga Supabase permes getStore(shop), qe perfshin edhe
+  // rifreskim automatik nese ka skaduar.
   let token;
   try {
     const store = await getStore(shop);
-    token = store?.access_token || req.query.token;
+    token = store?.access_token;
   } catch(e) {
-    token = req.query.token;
+    token = null;
   }
   if (!token) return res.status(400).json({ error: 'Missing shop or token' });
   try {
@@ -3288,13 +3349,18 @@ async function localizeProductBody(shop, token, pid, targetLang, locale, tone, g
 
 app.post('/localize', requireShopAuth, async (req, res) => {
   const shop = req.verifiedShop;
-  const { token, productId, targetLang, locale, tone, glossary } = req.body;
+  const { productId, targetLang, locale, tone, glossary } = req.body;
   try {
     const pid = normalizeProductId(productId);
 
     // Kontroll limiti para gjenerimit — /localize eshte endpoint qe
     // theret nga dashboard kur merchant klikon "Translate" per nje produkt
     const store = await getStore(shop);
+    // SSRF/trust fix: token nuk pranohet me nga trupi i kerkeses — shop
+    // tashme eshte i verifikuar, pra token-i real merret nga i njejti
+    // getStore(shop) i thirrur me lart (nuk shton nje thirrje shtese ne DB).
+    const token = store?.access_token;
+    if (!token) return res.status(400).json({ error: 'Store not connected or token missing' });
     const PLANS = app.locals.PLANS;
     if (PLANS && store) {
       const planName = store.plan || 'free';
@@ -3365,7 +3431,7 @@ app.post('/bulk-localize-all', requireShopAuth, async (req, res) => {
       const planName = store.plan || 'free';
       const plan = PLANS[planName] || PLANS.free;
       productLimit = plan.product_limit;
-      localeLimit = plan.locale_limit;
+      localeLimit = plan.language_limit;
       bulkLimit = plan.bulk_limit !== undefined ? plan.bulk_limit : plan.product_limit;
       if (savedLocales.length > localeLimit) {
         console.warn(`[plan-limit] ${shop} has ${savedLocales.length} locales but plan allows ${localeLimit}`);
