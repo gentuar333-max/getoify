@@ -1,230 +1,531 @@
-[1mdiff --git a/index.js b/index.js[m
-[1mindex 52fafa4..f882a75 100644[m
-[1m--- a/index.js[m
-[1m+++ b/index.js[m
-[36m@@ -729,7 +729,7 @@[m [mres.cookie(SESSION_COOKIE_NAME, signSession(shop), {[m
-   maxAge: SESSION_MAX_AGE_MS[m
- });[m
- [m
-[31m-res.redirect('/dashboard?shop=' + shop);[m
-[32m+[m[32mres.redirect('/dashboard?shop=' + shop + '&reauth=1');[m
-   } catch (error) {[m
-     console.error('OAuth callback error:', error.message);[m
-     res.redirect('/?error=oauth_failed&shop=' + (req.query.shop || ''));[m
-[1mdiff --git a/public/dashboard.html b/public/dashboard.html[m
-[1mindex 806d1bf..d83462a 100644[m
-[1m--- a/public/dashboard.html[m
-[1m+++ b/public/dashboard.html[m
-[36m@@ -332,6 +332,30 @@[m
-     document.getElementById('sb-av').textContent = shop.substring(0, 2).toUpperCase();[m
-   } else { window.location.href = '/'; }[m
- [m
-[32m+[m[32m  // Zevendeson fetch() per cdo thirrje qe kerkon requireShopAuth ne server.[m[41m[m
-[32m+[m[32m  // Nese pergjigja eshte 401 (cookie e sesionit mungon ose ka skaduar):[m[41m[m
-[32m+[m[32m  // - here e pare (s'kemi ardhur tashme nga nje reauth) -> ridrejto vetvetiu[m[41m[m
-[32m+[m[32m  //   te /auth?shop=X. Nese merchant-i eshte i loguar ne Shopify Admin dhe[m[41m[m
-[32m+[m[32m  //   scope-t s'kane ndryshuar, Shopify e kthen menjehere pa asnje ekran.[m[41m[m
-[32m+[m[32m  // - nese kemi ardhur TASHME nga nje reauth (?reauth=1) dhe prape 401 ->[m[41m[m
-[32m+[m[32m  //   diçka tjeter eshte gabim (p.sh. cookies te bllokuara) - mos rifillo[m[41m[m
-[32m+[m[32m  //   ciklin, shfaq banner-in ekzistues "Reconnect store" ne vend te tij.[m[41m[m
-[32m+[m[32m  function authedFetch(url, options) {[m[41m[m
-[32m+[m[32m    return fetch(url, options).then(function(res) {[m[41m[m
-[32m+[m[32m      if (res.status === 401) {[m[41m[m
-[32m+[m[32m        const alreadyReauthed = new URLSearchParams(window.location.search).get('reauth') === '1';[m[41m[m
-[32m+[m[32m        if (!alreadyReauthed) {[m[41m[m
-[32m+[m[32m          reconnectStore();[m[41m[m
-[32m+[m[32m        } else {[m[41m[m
-[32m+[m[32m          const banner = document.getElementById('token-banner');[m[41m[m
-[32m+[m[32m          if (banner) banner.style.display = 'flex';[m[41m[m
-[32m+[m[32m        }[m[41m[m
-[32m+[m[32m        return new Promise(function() {}); // ndalon zinxhirin - faqja po ridrejtohet ose banner-i tashme u shfaq[m[41m[m
-[32m+[m[32m      }[m[41m[m
-[32m+[m[32m      return res;[m[41m[m
-[32m+[m[32m    });[m[41m[m
-[32m+[m[32m  }[m[41m[m
-[32m+[m[41m[m
-   function nav(e, page) { e.preventDefault(); window.location.href = page + '?shop=' + shop; }[m
- [m
-   function toggleSidebar() {[m
-[36m@@ -344,7 +368,7 @@[m
-   async function loadData() {[m
-     try {[m
-       // Load translations from Supabase[m
-[31m-      const statusRes = await fetch('/status?shop=' + shop);[m
-[32m+[m[32m      const statusRes = await authedFetch('/status?shop=' + shop);[m[41m[m
-       const statusData = await statusRes.json();[m
- [m
-       // Count unique product IDs[m
-[36m@@ -372,7 +396,7 @@[m
-       const tok = token || localStorage.getItem('getoify_token');[m
-       if (tok) {[m
-         try {[m
-[31m-          const prodRes = await fetch('/products?shop=' + shop + '&token=' + tok);[m
-[32m+[m[32m          const prodRes = await authedFetch('/products?shop=' + shop + '&token=' + tok);[m[41m[m
-           const prodData = await prodRes.json();[m
-           if (prodData.total !== undefined) {[m
-             document.getElementById('m-total').textContent = prodData.total;[m
-[36m@@ -424,7 +448,7 @@[m
-     if (!tok) { alert('Please reconnect your store first.'); return; }[m
-     btn.innerHTML = '<i class="ti ti-player-play"></i>Running...'; btn.disabled = true;[m
-     try {[m
-[31m-      const res = await fetch('/bulk-localize-all', { method: 'POST', headers: { 'Content-Type': 'application/json' },[m
-[32m+[m[32m      const res = await authedFetch('/bulk-localize-all', { method: 'POST', headers: { 'Content-Type': 'application/json' },[m[41m[m
-         body: JSON.stringify({ shop, token: tok, tone: 'professional and elegant', glossary: 'checkout, Shopify' }) });[m
-       if (!res.ok) { const err = await res.text(); console.error('Bulk error:', err); alert('Error: ' + err); }[m
-       else { const text = await res.text(); console.log('Bulk result:', text); }[m
-[36m@@ -438,7 +462,7 @@[m
- [m
-   async function checkLanguageSetup() {[m
-     try {[m
-[31m-      const res = await fetch('/store-settings?shop=' + shop);[m
-[32m+[m[32m      const res = await authedFetch('/store-settings?shop=' + shop);[m[41m[m
-       const data = await res.json();[m
-       userPlan = data.plan || 'free';[m
-       const locales = data.selected_locales || [];[m
-[36m@@ -474,7 +498,7 @@[m
-     const btn = document.getElementById('save-langs-btn');[m
-     btn.textContent = 'Saving...'; btn.disabled = true;[m
-     try {[m
-[31m-      const res = await fetch('/save-locales', { method: 'POST', headers: { 'Content-Type': 'application/json' },[m
-[32m+[m[32m      const res = await authedFetch('/save-locales', { method: 'POST', headers: { 'Content-Type': 'application/json' },[m[41m[m
-         body: JSON.stringify({ shop, selected_locales: selectedLangs }) });[m
-       if (res.ok) { document.getElementById('lang-modal').classList.add('hidden'); }[m
-       else { btn.textContent = 'Save languages'; btn.disabled = false; }[m
-[36m@@ -489,7 +513,7 @@[m
- [m
-   async function checkTokenStatus() {[m
-     try {[m
-[31m-      const res = await fetch('/token-status?shop=' + shop);[m
-[32m+[m[32m      const res = await authedFetch('/token-status?shop=' + shop);[m[41m[m
-       const data = await res.json();[m
-       if (data.invalid) {[m
-         const banner = document.getElementById('token-banner');[m
-[1mdiff --git a/public/pricing.html b/public/pricing.html[m
-[1mindex d7da495..91fadf1 100644[m
-[1m--- a/public/pricing.html[m
-[1m+++ b/public/pricing.html[m
-[36m@@ -141,12 +141,12 @@[m
-     <div class="free-banner-left">[m
-       <div class="free-banner-tag">Free forever</div>[m
-       <div class="free-banner-title">Try before you commit.</div>[m
-[31m-      <div class="free-banner-desc">15 products, 2 languages. No credit card. No time limit.</div>[m
-[32m+[m[32m      <div class="free-banner-desc">15 products, 1 language. No credit card. No time limit.</div>[m[41m[m
-     </div>[m
-     <div class="free-banner-limits">[m
-       <div class="free-lim"><div class="free-lim-val">15</div><div class="free-lim-lbl">Products</div></div>[m
-[31m-      <div class="free-lim"><div class="free-lim-val">2</div><div class="free-lim-lbl">Languages</div></div>[m
-[31m-      <div class="free-lim"><div class="free-lim-val">30</div><div class="free-lim-lbl">Translations</div></div>[m
-[32m+[m[32m      <div class="free-lim"><div class="free-lim-val">1</div><div class="free-lim-lbl">Language</div></div>[m[41m[m
-[32m+[m[32m      <div class="free-lim"><div class="free-lim-val">15</div><div class="free-lim-lbl">Translations</div></div>[m[41m[m
-     </div>[m
-     <a href="/auth" class="btn-free">Connect Shopify Store</a>[m
-   </div>[m
-[36m@@ -208,7 +208,7 @@[m
-       <div class="plan-annual-note" id="starter-note">&nbsp;</div>[m
-       <div class="plan-limits">[m
-         <div class="plan-limit-item"><div class="plan-limit-val">125</div><div class="plan-limit-lbl">Products</div></div>[m
-[31m-        <div class="plan-limit-item"><div class="plan-limit-val">1</div><div class="plan-limit-lbl">Languages</div></div>[m
-[32m+[m[32m        <div class="plan-limit-item"><div class="plan-limit-val">2</div><div class="plan-limit-lbl">Languages</div></div>[m[41m[m
-       </div>[m
-       <ul class="plan-features">[m
-         <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>AI description generation</li>[m
-[36m@@ -233,13 +233,13 @@[m
-       <div class="plan-annual-note" id="growth-note">&nbsp;</div>[m
-       <div class="plan-limits">[m
-         <div class="plan-limit-item"><div class="plan-limit-val">300</div><div class="plan-limit-lbl">Products</div></div>[m
-[31m-        <div class="plan-limit-item"><div class="plan-limit-val">2</div><div class="plan-limit-lbl">Languages</div></div>[m
-[32m+[m[32m        <div class="plan-limit-item"><div class="plan-limit-val">5</div><div class="plan-limit-lbl">Languages</div></div>[m[41m[m
-       </div>[m
-       <ul class="plan-features">[m
-         <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Everything in Starter</li>[m
-[31m-        <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>2 languages simultaneously</li>[m
-[32m+[m[32m        <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>5 languages simultaneously</li>[m[41m[m
-         <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Priority processing</li>[m
-[31m-        <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Bulk translate 300 products</li>[m
-[32m+[m[32m        <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>300 products × 5 languages = 1,500 translations</li>[m[41m[m
-         <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Email support</li>[m
-       </ul>[m
-       <a href="#" class="btn-plan" onclick="startCheckout('growth')">Get started</a>[m
-[36m@@ -258,12 +258,12 @@[m
-       <div class="plan-annual-note" id="pro-note">&nbsp;</div>[m
-       <div class="plan-limits">[m
-         <div class="plan-limit-item"><div class="plan-limit-val">700</div><div class="plan-limit-lbl">Products</div></div>[m
-[31m-        <div class="plan-limit-item"><div class="plan-limit-val">3</div><div class="plan-limit-lbl">Languages</div></div>[m
-[32m+[m[32m        <div class="plan-limit-item"><div class="plan-limit-val">10</div><div class="plan-limit-lbl">Languages</div></div>[m[41m[m
-       </div>[m
-       <ul class="plan-features">[m
-         <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Everything in Growth</li>[m
-[31m-        <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>700 products × 3 languages</li>[m
-[31m-        <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Up to 2,100 translations</li>[m
-[32m+[m[32m        <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>700 products × 10 languages</li>[m[41m[m
-[32m+[m[32m        <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Up to 7,000 translations</li>[m[41m[m
-         <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Full translation history</li>[m
-         <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Auto-sync new products</li>[m
-       </ul>[m
-[36m@@ -283,13 +283,13 @@[m
-       <div class="plan-annual-note" id="enterprise-note">&nbsp;</div>[m
-       <div class="plan-limits">[m
-         <div class="plan-limit-item"><div class="plan-limit-val">1,400</div><div class="plan-limit-lbl">Products</div></div>[m
-[31m-        <div class="plan-limit-item"><div class="plan-limit-val">4</div><div class="plan-limit-lbl">Languages</div></div>[m
-[32m+[m[32m        <div class="plan-limit-item"><div class="plan-limit-val">20</div><div class="plan-limit-lbl">Languages</div></div>[m[41m[m
-       </div>[m
-       <ul class="plan-features">[m
-         <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Everything in Pro</li>[m
-[31m-        <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>1,400 products × 4 languages</li>[m
-[31m-        <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Up to 5,600 translations</li>[m
-[31m-        <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Choose any 4 of 8 languages</li>[m
-[32m+[m[32m        <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>1,400 products × 20 languages</li>[m[41m[m
-[32m+[m[32m        <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Up to 28,000 translations</li>[m[41m[m
-[32m+[m[32m        <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>All 20 languages included</li>[m[41m[m
-         <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Priority support</li>[m
-       </ul>[m
-       <a href="#" class="btn-plan" onclick="startCheckout('enterprise')">Get started</a>[m
-[36m@@ -327,7 +327,7 @@[m
-     <div class="faq-item"><div class="faq-q">Can I cancel anytime?</div><div class="faq-a">Yes. Cancel from your dashboard at any time. Your translations stay in Shopify — we never delete them on cancellation.</div></div>[m
-     <div class="faq-item"><div class="faq-q">What happens when I hit my limit?</div><div class="faq-a">New products above your limit won't be auto-translated. Existing translations are untouched. Upgrade anytime to continue.</div></div>[m
-     <div class="faq-item"><div class="faq-q">Do you support annual billing?</div><div class="faq-a">Yes — pay annually and save 20%. Billed once per year. Switch between monthly and annual at renewal.</div></div>[m
-[31m-    <div class="faq-item"><div class="faq-q">Which languages are supported?</div><div class="faq-a">French, German, Italian, Spanish, Portuguese, English, Dutch, and Polish — 8 languages total. Pick the ones that matter for your store, up to your plan's limit.</div></div>[m
-[32m+[m[32m    <div class="faq-item"><div class="faq-q">Which languages are supported?</div><div class="faq-a">20 languages including French, German, Italian, Spanish, Dutch, Portuguese, Polish, Swedish, Danish, Norwegian, Czech, Romanian, Hungarian, Arabic, Japanese, Korean, Turkish, Indonesian, and more. Pick the ones that matter for your store, up to your plan's limit.</div></div>[m[41m[m
-     <div class="faq-item"><div class="faq-q">Is my store data safe?</div><div class="faq-a">We only access product data — titles, descriptions, metadata. Never orders, customers, or payment information.</div></div>[m
-   </div>[m
- </div>[m
-[1mdiff --git a/shopify.app.toml b/shopify.app.toml[m
-[1mindex 7b96d14..16316c3 100644[m
-[1m--- a/shopify.app.toml[m
-[1m+++ b/shopify.app.toml[m
-[36m@@ -12,10 +12,13 @@[m [mdev_store_url = ""[m
- [webhooks][m
- api_version = "2025-07"[m
- [m
-[32m+[m[32m  [[webhooks.subscriptions]][m
-[32m+[m[32m  compliance_topics = ["customers/data_request", "customers/redact", "shop/redact"][m
-[32m+[m[32m  uri = "https://www.getoify.com/webhook"[m
-[32m+[m
- [access_scopes][m
-[31m-# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes[m
- scopes = "read_locales,read_products,write_products,read_script_tags,write_script_tags,read_content,write_content,read_translations,write_translations"[m
-[31m-optional_scopes = [ ][m
-[32m+[m[32moptional_scopes = [][m
- use_legacy_install_flow = false[m
- [m
- [auth][m
-[36m@@ -23,15 +26,4 @@[m [mredirect_urls = [[m
-   "https://www.getoify.com/auth/callback",[m
-   "https://getoify.vercel.app/auth/callback",[m
-   "https://getoify.onrender.com/auth/callback"[m
-[31m-][m
-[31m-[[webhooks.subscriptions]][m
-[31m-topics = ["customers/data_request"][m
-[31m-uri = "/webhook/customers/data-request"[m
-[31m-[m
-[31m-[[webhooks.subscriptions]][m
-[31m-topics = ["customers/redact"][m
-[31m-uri = "/webhook/customers/redact"[m
-[31m-[m
-[31m-[[webhooks.subscriptions]][m
-[31m-topics = ["shop/redact"][m
-[31m-uri = "/webhook/shop/redact"[m
-\ No newline at end of file[m
-[32m+[m[32m][m
-\ No newline at end of file[m
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Getoify — Dashboard</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --cream: #FDFCF9; --cream-bg: #F7F5F0; --cream-mid: #F0EDE6;
+      --border: #E0DDD6; --ink: #1C1B18; --ink-mid: #3D3C38;
+      --ink-muted: #5C5850; --ink-faint: #8B8070; --accent: #8B7355;
+      --green: #6BAF8A; --amber: #C9A96E; --red: #C97070;
+    }
+    html, body { height: 100%; font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--ink); background: var(--cream-bg); -webkit-font-smoothing: antialiased; }
+    .app { display: grid; grid-template-columns: 220px 1fr; height: 100vh; }
+    .sb { background: var(--cream); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+    .sb-logo { padding: 18px 20px 14px; border-bottom: 1px solid var(--border); font-size: 15px; font-weight: 500; color: var(--ink); }
+    .sb-logo span { color: var(--accent); }
+    .sb-store { padding: 10px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
+    .sb-dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; flex-shrink: 0; }
+    .sb-store-name { font-size: 12px; color: var(--ink-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sb-nav { padding: 10px; flex: 1; overflow-y: auto; }
+    .sb-lbl { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; color: var(--ink-faint); text-transform: uppercase; padding: 12px 8px 4px; }
+    .sb-item { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 5px; font-size: 13px; color: var(--ink-muted); cursor: pointer; margin-bottom: 1px; text-decoration: none; transition: background 0.1s; font-weight: 400; }
+    .sb-item:hover { background: var(--cream-mid); color: var(--ink); }
+    .sb-item.act { background: var(--cream-mid); color: var(--ink); font-weight: 500; }
+    .sb-item i { font-size: 15px; opacity: 0.8; }
+    .sb-item.act i { opacity: 1; }
+    .sb-foot { padding: 12px 20px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 9px; }
+    .sb-av { width: 28px; height: 28px; border-radius: 50%; background: var(--cream-mid); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 500; color: var(--accent); flex-shrink: 0; }
+    .sb-un { font-size: 12px; color: var(--ink-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .main { display: flex; flex-direction: column; overflow: hidden; }
+    .topbar { background: var(--cream); border-bottom: 1px solid var(--border); padding: 0 22px; height: 50px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .tb-title { font-size: 14px; font-weight: 500; color: var(--ink); }
+    .tb-right { display: flex; gap: 8px; }
+    .btn { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 500; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-family: 'DM Sans', sans-serif; border: 1px solid var(--border); background: var(--cream); color: var(--ink); transition: background 0.1s; }
+    .btn:hover { background: var(--cream-mid); }
+    .btn-dark { background: var(--ink); color: var(--cream); border-color: var(--ink); }
+    .btn-dark:hover { background: #333; }
+    .btn i { font-size: 13px; }
+    .body { padding: 18px 22px; overflow-y: auto; flex: 1; }
+    .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+    .mc { background: var(--cream); border: 1px solid var(--border); border-radius: 8px; padding: 13px 15px; }
+    .mc-lbl { font-size: 11px; color: var(--ink-faint); margin-bottom: 7px; font-weight: 500; }
+    .mc-val { font-size: 22px; font-weight: 500; color: var(--ink); letter-spacing: -0.02em; line-height: 1; }
+    .mc-sub { font-size: 11px; margin-top: 4px; }
+    .c-green { color: #3D7A56; } .c-amber { color: #8B6030; } .c-gray { color: var(--ink-faint); }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+    .card { background: var(--cream); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+    .card-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .card-title { font-size: 13px; font-weight: 500; color: var(--ink); }
+    .card-link { font-size: 11px; color: var(--ink-faint); cursor: pointer; font-weight: 500; }
+    .card-link:hover { color: var(--accent); }
+    .lang-rows { display: flex; flex-direction: column; gap: 9px; }
+    .lr { display: flex; align-items: center; gap: 10px; }
+    .lr-flag { font-size: 14px; width: 20px; text-align: center; flex-shrink: 0; }
+    .lr-name { font-size: 12px; color: var(--ink-mid); width: 56px; flex-shrink: 0; font-weight: 500; }
+    .lr-track { flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+    .lr-fill { height: 100%; border-radius: 2px; }
+    .f-done { background: var(--green); } .f-mid { background: var(--amber); } .f-low { background: var(--ink-faint); }
+    .lr-pct { font-size: 11px; color: var(--ink-faint); min-width: 30px; text-align: right; font-weight: 500; }
+    .act-list { display: flex; flex-direction: column; }
+    .al { display: flex; align-items: flex-start; gap: 9px; padding: 7px 0; border-bottom: 1px solid var(--cream-mid); }
+    .al:last-child { border-bottom: none; }
+    .al-ico { width: 26px; height: 26px; border-radius: 5px; background: var(--cream-mid); display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--accent); flex-shrink: 0; }
+    .al-txt { font-size: 12px; color: var(--ink-mid); line-height: 1.4; }
+    .al-txt strong { color: var(--ink); font-weight: 500; }
+    .al-time { font-size: 10px; color: var(--ink-faint); margin-top: 2px; }
+    .tbl-card { background: var(--cream); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .tbl-hd { display: flex; align-items: center; justify-content: space-between; padding: 13px 16px; border-bottom: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; }
+    th { font-size: 10px; font-weight: 600; color: var(--ink-faint); text-align: left; padding: 8px 16px; letter-spacing: 0.06em; background: var(--cream); }
+    td { font-size: 12px; color: var(--ink-mid); padding: 9px 16px; border-top: 1px solid var(--cream-mid); vertical-align: middle; }
+    tr:hover td { background: var(--cream-bg); }
+    .prod-nm { color: var(--ink); font-weight: 500; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .pill { display: inline-flex; align-items: center; justify-content: center; height: 18px; padding: 0 7px; border-radius: 3px; font-size: 10px; font-weight: 600; }
+    .pill-lang { background: var(--cream-mid); color: var(--accent); }
+    .st { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 500; }
+    .st-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+    .d-gr { background: var(--green); }
+    .loading { text-align: center; padding: 2rem; color: var(--ink-faint); font-size: 13px; }
+    .banner-warn { display: none; align-items: center; gap: 12px; background: #FEF3E2; border: 1px solid #C9A96E; border-radius: 7px; padding: 11px 16px; margin-bottom: 14px; }
+    .banner-warn i { color: #8B6030; font-size: 16px; flex-shrink: 0; }
+    .banner-warn-txt { flex: 1; font-size: 13px; color: #5C4020; }
+    .banner-warn-btn { background: var(--ink); color: var(--cream); border: none; border-radius: 5px; padding: 6px 14px; font-size: 12px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; white-space: nowrap; }
+    .mob-menu-btn { display: none; background: none; border: none; cursor: pointer; padding: 6px; color: var(--ink); border-radius: 5px; }
+    .mob-menu-btn:hover { background: var(--cream-mid); }
+    .mob-menu-btn i { font-size: 18px; }
+    .sb-overlay { display: none; position: fixed; inset: 0; background: rgba(28,27,24,0.35); z-index: 49; }
+    @media (max-width: 768px) {
+      .app { grid-template-columns: 1fr; }
+      .sb { display: none; position: fixed; left: 0; top: 0; bottom: 0; width: 240px; z-index: 50; box-shadow: 4px 0 20px rgba(0,0,0,0.12); }
+      .sb.open { display: flex; }
+      .sb-overlay.open { display: block; }
+      .mob-menu-btn { display: flex; align-items: center; justify-content: center; }
+      .metrics { grid-template-columns: repeat(2, 1fr); }
+      .row2 { grid-template-columns: 1fr; }
+      .tb-right { gap: 6px; }
+      .btn { font-size: 11px; padding: 5px 9px; }
+      .btn span { max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      #btn-run { white-space: nowrap; }
+    }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(28,27,24,0.45); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 1rem; backdrop-filter: blur(2px); }
+    .modal-overlay.hidden { display: none; }
+    .modal { background: #FDFCF9; border-radius: 12px; padding: 2rem; width: 100%; max-width: 440px; max-height: 90vh; box-shadow: 0 8px 32px rgba(0,0,0,0.12); display: flex; flex-direction: column; }
+    .modal-title { font-size: 16px; font-weight: 500; color: var(--ink); margin-bottom: 4px; flex-shrink: 0; }
+    .modal-sub { font-size: 13px; color: var(--ink-faint); margin-bottom: 1.5rem; line-height: 1.5; flex-shrink: 0; }
+    .modal-sub strong { color: var(--ink-mid); font-weight: 500; }
+    .lang-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 1.5rem; overflow-y: auto; flex: 1; min-height: 0; padding-right: 4px; }
+    .lang-card { border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: border-color 0.15s, background 0.15s; user-select: none; }
+    .lang-card:hover { background: var(--cream-mid); }
+    .lang-card.selected { border-color: var(--ink); background: var(--cream-mid); }
+    .lang-card.disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+    .lang-flag { font-size: 20px; line-height: 1; }
+    .lang-info { display: flex; flex-direction: column; }
+    .lang-name { font-size: 13px; font-weight: 500; color: var(--ink); }
+    .lang-code { font-size: 10px; color: var(--ink-faint); letter-spacing: 0.06em; text-transform: uppercase; }
+    .lang-check { margin-left: auto; width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid var(--border); flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: background 0.15s, border-color 0.15s; }
+    .lang-card.selected .lang-check { background: var(--ink); border-color: var(--ink); }
+    .lang-check svg { display: none; }
+    .lang-card.selected .lang-check svg { display: block; }
+    .plan-note { font-size: 11px; color: var(--ink-faint); margin-bottom: 1.25rem; display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .plan-badge { background: var(--cream-mid); color: var(--accent); font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px; letter-spacing: 0.06em; text-transform: uppercase; }
+    .modal-footer { display: flex; gap: 8px; flex-shrink: 0; }
+    .modal-btn { flex: 1; padding: 11px; border-radius: 7px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: var(--cream); color: var(--ink); transition: background 0.15s; }
+    .modal-btn:hover { background: var(--cream-mid); }
+    .modal-btn-primary { background: var(--ink); color: #FDFCF9; border-color: var(--ink); }
+    .modal-btn-primary:hover { background: #333; }
+    .modal-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="sb">
+    <div class="sb-logo"><img src="/images/logo-wordmark.png" height="26" alt="Getoify" style="display:block;"></div>
+    <div class="sb-store"><div class="sb-dot"></div><div class="sb-store-name" id="sb-shop">Loading...</div></div>
+    <nav class="sb-nav">
+      <a class="sb-item act" href="#" onclick="nav(event,'/dashboard')"><i class="ti ti-layout-dashboard"></i>Overview</a>
+      <a class="sb-item" href="#" onclick="nav(event,'/products-page')"><i class="ti ti-stack"></i>Products</a>
+      <div class="sb-lbl">Setup</div>
+      <a class="sb-item" href="#" onclick="nav(event,'/tone')"><i class="ti ti-adjustments"></i>Tone Setup</a>
+      <a class="sb-item" href="#" onclick="nav(event,'/glossary')"><i class="ti ti-book"></i>Glossary</a>
+      <div class="sb-lbl">Automation</div>
+      <a class="sb-item" href="#" onclick="nav(event,'/autosync')"><i class="ti ti-refresh"></i>Auto-Sync</a>
+      <div class="sb-lbl">Account</div>
+      <a class="sb-item" href="#" onclick="nav(event,'/settings')"><i class="ti ti-settings"></i>Settings</a>
+    </nav>
+    <div class="sb-foot"><div class="sb-av" id="sb-av">?</div><div class="sb-un" id="sb-shop2">—</div></div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="mob-menu-btn" onclick="toggleSidebar()" aria-label="Menu"><i class="ti ti-menu-2"></i></button>
+        <div class="tb-title">Overview</div>
+      </div>
+      <div class="tb-right">
+        <button class="btn"><i class="ti ti-plug"></i><span id="tb-shop">—</span></button>
+        <button class="btn btn-dark" id="btn-run" onclick="runBulk()"><i class="ti ti-player-play"></i>Run bulk translate</button>
+      </div>
+    </div>
+    <div class="body">
+      <div class="banner-warn" id="token-banner">
+        <i class="ti ti-alert-triangle"></i>
+        <div class="banner-warn-txt">Your store connection has expired. Reconnect to continue translating.</div>
+        <button class="banner-warn-btn" onclick="reconnectStore()">Reconnect store</button>
+      </div>
+      <div class="metrics">
+        <div class="mc"><div class="mc-lbl">Total products</div><div class="mc-val" id="m-total">—</div><div class="mc-sub c-gray" id="m-total-sub">In your store</div></div>
+        <div class="mc"><div class="mc-lbl">Localized</div><div class="mc-val" id="m-localized">—</div><div class="mc-sub c-green" id="m-localized-sub">Unique products</div></div>
+        <div class="mc"><div class="mc-lbl">Flagged (QA)</div><div class="mc-val" id="m-flagged">0</div><div class="mc-sub c-amber">Need review</div></div>
+        <div class="mc"><div class="mc-lbl">Translations done</div><div class="mc-val" id="m-done">—</div><div class="mc-sub c-gray">Total records</div></div>
+      </div>
+
+      <div id="limit-banner" style="display:none;background:#FEF3C7;border:1px solid #F59E0B;border-radius:8px;padding:14px 20px;margin-bottom:14px;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span id="limit-banner-text" style="font-size:13px;font-weight:500;color:#92400E;"></span>
+        </div>
+        <a href="#" onclick="window.location.href='/pricing?shop='+localStorage.getItem('getoify_shop')" style="background:#D97706;color:white;padding:8px 18px;border-radius:5px;font-size:12px;font-weight:600;text-decoration:none;white-space:nowrap;">Upgrade plan</a>
+      </div>
+
+      <div class="row2">
+        <div class="card">
+          <div class="card-hd"><div class="card-title">Progress by language</div><div class="card-link">Details</div></div>
+          <div class="lang-rows" id="lang-rows"><div class="loading">Loading...</div></div>
+        </div>
+        <div class="card">
+          <div class="card-hd"><div class="card-title">Recent activity</div></div>
+          <div class="act-list" id="act-list"><div class="loading">Loading...</div></div>
+        </div>
+      </div>
+      <div class="tbl-card">
+        <div class="tbl-hd"><div class="card-title">Recent translations</div><div class="card-link">View all</div></div>
+        <table>
+          <thead><tr><th>PRODUCT</th><th>LANGUAGE</th><th>STATUS</th><th>DATE</th></tr></thead>
+          <tbody id="tbl-body"><tr><td colspan="4" class="loading">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="sb-overlay" id="sb-overlay" onclick="toggleSidebar()"></div>
+<div class="modal-overlay hidden" id="lang-modal">
+  <div class="modal">
+    <div class="modal-title">Choose your target languages</div>
+    <p class="modal-sub">Select the languages you want to translate your products into. <strong>You can change this later in Settings.</strong></p>
+    <div class="plan-note">
+      <span class="plan-badge" id="plan-badge">Free</span>
+      <span id="plan-note-text">Free plan — up to 2 languages. <a href="#" style="color:var(--accent);text-decoration:none;font-weight:500;">Upgrade for all 8</a></span>
+    </div>
+    <div class="lang-grid" id="lang-grid">
+      <div class="lang-card" data-locale="en" onclick="toggleLang(this)">
+        <span class="lang-flag">🇺🇸</span>
+        <div class="lang-info"><div class="lang-name">English</div><div class="lang-code">EN</div></div>
+        <div class="lang-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#FDFCF9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="lang-card" data-locale="fr" onclick="toggleLang(this)">
+        <span class="lang-flag">🇫🇷</span>
+        <div class="lang-info"><div class="lang-name">French</div><div class="lang-code">FR</div></div>
+        <div class="lang-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#FDFCF9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="lang-card" data-locale="de" onclick="toggleLang(this)">
+        <span class="lang-flag">🇩🇪</span>
+        <div class="lang-info"><div class="lang-name">German</div><div class="lang-code">DE</div></div>
+        <div class="lang-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#FDFCF9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="lang-card" data-locale="it" onclick="toggleLang(this)">
+        <span class="lang-flag">🇮🇹</span>
+        <div class="lang-info"><div class="lang-name">Italian</div><div class="lang-code">IT</div></div>
+        <div class="lang-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#FDFCF9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="lang-card" data-locale="es" onclick="toggleLang(this)">
+        <span class="lang-flag">🇪🇸</span>
+        <div class="lang-info"><div class="lang-name">Spanish</div><div class="lang-code">ES</div></div>
+        <div class="lang-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#FDFCF9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="lang-card" data-locale="nl" onclick="toggleLang(this)">
+        <span class="lang-flag">🇳🇱</span>
+        <div class="lang-info"><div class="lang-name">Dutch</div><div class="lang-code">NL</div></div>
+        <div class="lang-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#FDFCF9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="lang-card" data-locale="pt-PT" onclick="toggleLang(this)">
+        <span class="lang-flag">🇵🇹</span>
+        <div class="lang-info"><div class="lang-name">Portuguese</div><div class="lang-code">PT</div></div>
+        <div class="lang-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#FDFCF9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="lang-card" data-locale="pt-BR" onclick="toggleLang(this)">
+        <span class="lang-flag">🇧🇷</span>
+        <div class="lang-info"><div class="lang-name">Portuguese BR</div><div class="lang-code">BR</div></div>
+        <div class="lang-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#FDFCF9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="lang-card" data-locale="pl" onclick="toggleLang(this)">
+        <span class="lang-flag">🇵🇱</span>
+        <div class="lang-info"><div class="lang-name">Polish</div><div class="lang-code">PL</div></div>
+        <div class="lang-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#FDFCF9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="lang-card" data-locale="sv" onclick="toggleLang(this)">
+        <span class="lang-flag">🇸🇪</span>
+        <div class="lang-info"><div class="lang-name">Swedish</div><div class="lang-code">SV</div></div>
+        <div class="lang-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#FDFCF9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="lang-card" data-locale="da" onclick="toggleLang(this)">
+        <span class="lang-flag">🇩🇰</span>
+        <div class="lang-info"><div class="lang-name">Danish</div><div class="lang-code">DA</div></div>
+        <div class="lang-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#FDFCF9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="lang-card" data-locale="nb" onclick="toggleLang(this)">
+        <span class="lang-flag">🇳🇴</span>
+        <div class="lang-info"><div class="lang-name">Norwegian</div><div class="lang-code">NO</div></div>
+        <div class="lang-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#FDFCF9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="lang-card" data-locale="cs" onclick="toggleLang(this)">
+        <span class="lang-flag">🇨🇿</span>
+        <div class="lang-info"><div class="lang-name">Czech</div><div class="lang-code">CS</div></div>
+        <div class="lang-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#FDFCF9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="lang-card" data-locale="ro" onclick="toggleLang(this)">
+        <span class="lang-flag">🇷🇴</span>
+        <div class="lang-info"><div class="lang-name">Romanian</div><div class="lang-code">RO</div></div>
+        <div class="lang-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#FDFCF9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="lang-card" data-locale="hu" onclick="toggleLang(this)">
+        <span class="lang-flag">🇭🇺</span>
+        <div class="lang-info"><div class="lang-name">Hungarian</div><div class="lang-code">HU</div></div>
+        <div class="lang-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#FDFCF9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="lang-card" data-locale="ar" onclick="toggleLang(this)">
+        <span class="lang-flag">🇸🇦</span>
+        <div class="lang-info"><div class="lang-name">Arabic</div><div class="lang-code">AR</div></div>
+        <div class="lang-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#FDFCF9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="lang-card" data-locale="ja" onclick="toggleLang(this)">
+        <span class="lang-flag">🇯🇵</span>
+        <div class="lang-info"><div class="lang-name">Japanese</div><div class="lang-code">JA</div></div>
+        <div class="lang-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#FDFCF9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="lang-card" data-locale="ko" onclick="toggleLang(this)">
+        <span class="lang-flag">🇰🇷</span>
+        <div class="lang-info"><div class="lang-name">Korean</div><div class="lang-code">KO</div></div>
+        <div class="lang-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#FDFCF9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="lang-card" data-locale="tr" onclick="toggleLang(this)">
+        <span class="lang-flag">🇹🇷</span>
+        <div class="lang-info"><div class="lang-name">Turkish</div><div class="lang-code">TR</div></div>
+        <div class="lang-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#FDFCF9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="lang-card" data-locale="id" onclick="toggleLang(this)">
+        <span class="lang-flag">🇮🇩</span>
+        <div class="lang-info"><div class="lang-name">Indonesian</div><div class="lang-code">ID</div></div>
+        <div class="lang-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#FDFCF9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn" onclick="skipModal()">Skip for now</button>
+      <button class="modal-btn modal-btn-primary" id="save-langs-btn" onclick="saveLanguages()" disabled>Save languages</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const shop = new URLSearchParams(window.location.search).get('shop') || localStorage.getItem('getoify_shop');
+  const token = new URLSearchParams(window.location.search).get('token') || localStorage.getItem('getoify_token');
+  if (shop) localStorage.setItem('getoify_shop', shop);
+  if (token) localStorage.setItem('getoify_token', token);
+  if (shop) {
+    document.getElementById('sb-shop').textContent = shop;
+    document.getElementById('sb-shop2').textContent = shop;
+    document.getElementById('tb-shop').textContent = shop.replace('.myshopify.com', '');
+    document.getElementById('sb-av').textContent = shop.substring(0, 2).toUpperCase();
+  } else { window.location.href = '/'; }
+
+  // Zevendeson fetch() per cdo thirrje qe kerkon requireShopAuth ne server.
+  // Nese pergjigja eshte 401 (cookie e sesionit mungon ose ka skaduar):
+  // - here e pare (s'kemi ardhur tashme nga nje reauth) -> ridrejto vetvetiu
+  //   te /auth?shop=X. Nese merchant-i eshte i loguar ne Shopify Admin dhe
+  //   scope-t s'kane ndryshuar, Shopify e kthen menjehere pa asnje ekran.
+  // - nese kemi ardhur TASHME nga nje reauth (?reauth=1) dhe prape 401 ->
+  //   diçka tjeter eshte gabim (p.sh. cookies te bllokuara) - mos rifillo
+  //   ciklin, shfaq banner-in ekzistues "Reconnect store" ne vend te tij.
+  function authedFetch(url, options) {
+    return fetch(url, options).then(function(res) {
+      if (res.status === 401) {
+        const alreadyReauthed = new URLSearchParams(window.location.search).get('reauth') === '1';
+        if (!alreadyReauthed) {
+          reconnectStore();
+        } else {
+          const banner = document.getElementById('token-banner');
+          if (banner) banner.style.display = 'flex';
+        }
+        return new Promise(function() {}); // ndalon zinxhirin - faqja po ridrejtohet ose banner-i tashme u shfaq
+      }
+      return res;
+    });
+  }
+
+  function nav(e, page) { e.preventDefault(); window.location.href = page + '?shop=' + shop; }
+
+  function toggleSidebar() {
+    const sb = document.querySelector('.sb');
+    const overlay = document.getElementById('sb-overlay');
+    sb.classList.toggle('open');
+    overlay.classList.toggle('open');
+  }
+
+  async function loadData() {
+    try {
+      // Load translations from Supabase
+      const statusRes = await authedFetch('/status?shop=' + shop);
+      const statusData = await statusRes.json();
+
+      // Count unique product IDs
+      const uniqueProducts = new Set(statusData.translations.map(t => String(t.product_id)));
+      const uniqueCount = uniqueProducts.size;
+
+      document.getElementById('m-done').textContent = statusData.total_records || statusData.total_records || 0;
+      document.getElementById('m-localized').textContent = uniqueCount;
+      document.getElementById('m-localized-sub').textContent = uniqueCount + ' unique products';
+
+      // Show limit banner if reached
+      const planLimit = statusData.plan_limit || 15;
+      const limitBanner = document.getElementById('limit-banner');
+      if (limitBanner) {
+        if (uniqueCount >= planLimit) {
+          limitBanner.style.display = 'flex';
+          document.getElementById('limit-banner-text').textContent =
+            `You've reached your ${planLimit}-product limit. Upgrade to translate more products.`;
+        } else {
+          limitBanner.style.display = 'none';
+        }
+      }
+
+      // Load total products from Shopify
+      const tok = token || localStorage.getItem('getoify_token');
+      if (tok) {
+        try {
+          const prodRes = await authedFetch('/products?shop=' + shop + '&token=' + tok);
+          const prodData = await prodRes.json();
+          if (prodData.total !== undefined) {
+            document.getElementById('m-total').textContent = prodData.total;
+            document.getElementById('m-total-sub').textContent = 'In your store';
+          }
+        } catch(e) {
+          document.getElementById('m-total').textContent = '—';
+          document.getElementById('m-total-sub').textContent = 'Reconnect to update';
+        }
+      }
+
+      const byLocale = {};
+      statusData.translations.forEach(t => { byLocale[t.locale] = (byLocale[t.locale] || 0) + 1; });
+      const langNames = {
+        en: '🇺🇸 English', fr: '🇫🇷 French', de: '🇩🇪 German', it: '🇮🇹 Italian',
+        es: '🇪🇸 Spanish', nl: '🇳🇱 Dutch', 'pt-PT': '🇵🇹 Portuguese', 'pt-BR': '🇧🇷 Port. BR',
+        'pt-br': '🇧🇷 Port. BR', pl: '🇵🇱 Polish', sv: '🇸🇪 Swedish', da: '🇩🇰 Danish',
+        nb: '🇳🇴 Norwegian', cs: '🇨🇿 Czech', ro: '🇷🇴 Romanian', hu: '🇭🇺 Hungarian',
+        ar: '🇸🇦 Arabic', ja: '🇯🇵 Japanese', ko: '🇰🇷 Korean', tr: '🇹🇷 Turkish', id: '🇮🇩 Indonesian'
+      };
+      const total = uniqueCount || 1;
+      const langHtml = Object.entries(byLocale).map(([locale, count]) => {
+        const pct = Math.round((count / total) * 100);
+        const parts = (langNames[locale] || locale).split(' ');
+        const flag = parts[0]; const name = parts[1] || locale;
+        const cls = pct > 70 ? 'f-done' : pct > 30 ? 'f-mid' : 'f-low';
+        return `<div class="lr"><div class="lr-flag">${flag}</div><div class="lr-name">${name}</div><div class="lr-track"><div class="lr-fill ${cls}" style="width:${Math.min(pct,100)}%"></div></div><div class="lr-pct">${count}</div></div>`;
+      }).join('');
+      document.getElementById('lang-rows').innerHTML = langHtml || '<div class="loading">No languages yet</div>';
+
+      const actHtml = statusData.translations.slice(0, 4).map(t => `
+        <div class="al"><div class="al-ico"><i class="ti ti-check"></i></div><div>
+        <div class="al-txt"><strong>${t.translated_title || 'Product'}</strong> — ${t.locale.toUpperCase()}</div>
+        <div class="al-time">${new Date(t.created_at).toLocaleString()}</div></div></div>`).join('');
+      document.getElementById('act-list').innerHTML = actHtml || '<div class="loading">No activity yet</div>';
+
+      const tblHtml = statusData.translations.slice(0, 200000).map(t => `
+        <tr><td><div class="prod-nm">${t.translated_title || '—'}</div></td>
+        <td><span class="pill pill-lang">${t.locale.toUpperCase()}</span></td>
+        <td><div class="st"><div class="st-dot d-gr"></div>${t.status}</div></td>
+        <td>${new Date(t.created_at).toLocaleDateString()}</td></tr>`).join('');
+      document.getElementById('tbl-body').innerHTML = tblHtml || '<tr><td colspan="4" class="loading">No translations yet</td></tr>';
+    } catch(e) { console.error(e); }
+  }
+
+  async function runBulk() {
+    const btn = document.getElementById('btn-run');
+    const tok = new URLSearchParams(window.location.search).get('token') || localStorage.getItem('getoify_token');
+    if (!tok) { alert('Please reconnect your store first.'); return; }
+    btn.innerHTML = '<i class="ti ti-player-play"></i>Running...'; btn.disabled = true;
+    try {
+      const res = await authedFetch('/bulk-localize-all', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shop, token: tok, tone: 'professional and elegant', glossary: 'checkout, Shopify' }) });
+      if (!res.ok) { const err = await res.text(); console.error('Bulk error:', err); alert('Error: ' + err); }
+      else { const text = await res.text(); console.log('Bulk result:', text); }
+      btn.innerHTML = '<i class="ti ti-player-play"></i>Run bulk translate'; btn.disabled = false; loadData();
+    } catch(e) { console.error('Fetch error:', e); alert('Connection error: ' + e.message);
+      btn.innerHTML = '<i class="ti ti-player-play"></i>Run bulk translate'; btn.disabled = false; }
+  }
+
+  const PLAN_LANG_LIMITS = { free: 1, description: 1, starter: 2, growth: 5, pro: 10, enterprise: 20 };
+  let userPlan = 'free'; let selectedLangs = [];
+
+  async function checkLanguageSetup() {
+    try {
+      const res = await authedFetch('/store-settings?shop=' + shop);
+      const data = await res.json();
+      userPlan = data.plan || 'free';
+      const locales = data.selected_locales || [];
+      if (locales.length === 0) showModal();
+    } catch(e) { showModal(); }
+  }
+
+  function showModal() {
+    document.getElementById('plan-badge').textContent = userPlan === 'free' ? 'Free' : 'Paid';
+    const langLimit = PLAN_LANG_LIMITS[userPlan] || 1;
+    const planLabel = userPlan.charAt(0).toUpperCase() + userPlan.slice(1);
+    document.getElementById('plan-note-text').innerHTML = `${planLabel} plan — up to ${langLimit} language${langLimit === 1 ? '' : 's'}. <a href="/pricing?shop=${shop}" style="color:var(--accent);text-decoration:none;font-weight:500;">Upgrade for more</a>`;
+    document.getElementById('lang-modal').classList.remove('hidden');
+  }
+
+  function toggleLang(card) {
+    const maxLangs = PLAN_LANG_LIMITS[userPlan] || 1;
+    const locale = card.dataset.locale;
+    if (card.classList.contains('selected')) {
+      card.classList.remove('selected');
+      selectedLangs = selectedLangs.filter(l => l !== locale);
+    } else {
+      if (selectedLangs.length >= maxLangs) return;
+      card.classList.add('selected');
+      selectedLangs.push(locale);
+    }
+    const maxReached = selectedLangs.length >= maxLangs;
+    document.querySelectorAll('.lang-card:not(.selected)').forEach(c => { c.classList.toggle('disabled', maxReached); });
+    document.getElementById('save-langs-btn').disabled = selectedLangs.length === 0;
+  }
+
+  async function saveLanguages() {
+    const btn = document.getElementById('save-langs-btn');
+    btn.textContent = 'Saving...'; btn.disabled = true;
+    try {
+      const res = await authedFetch('/save-locales', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shop, selected_locales: selectedLangs }) });
+      if (res.ok) { document.getElementById('lang-modal').classList.add('hidden'); }
+      else { btn.textContent = 'Save languages'; btn.disabled = false; }
+    } catch(e) { btn.textContent = 'Save languages'; btn.disabled = false; }
+  }
+
+  function skipModal() { document.getElementById('lang-modal').classList.add('hidden'); }
+
+  function reconnectStore() {
+    window.location.href = '/auth?shop=' + shop;
+  }
+
+  async function checkTokenStatus() {
+    try {
+      const res = await authedFetch('/token-status?shop=' + shop);
+      const data = await res.json();
+      if (data.invalid) {
+        const banner = document.getElementById('token-banner');
+        banner.style.display = 'flex';
+        document.getElementById('btn-run').disabled = true;
+      }
+    } catch(e) {}
+  }
+
+  loadData();
+  checkLanguageSetup();
+  checkTokenStatus();
+</script>
+</body>
+</html>
