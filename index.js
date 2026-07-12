@@ -255,6 +255,29 @@ app.get('/install-widget-manual', requireAdminKey, async (req, res) => {
   }
 });
 
+// Migrim ScriptTag -> Theme App Extension: hiq ScriptTag-un e vjeter per nje
+// shop qe e kishte instaluar para migrimit. Thirre NJE HERE per çdo shop
+// ekzistues, PASI merchant-i te kete aktivizuar app embed block-un e ri ne
+// Theme Editor — perndryshe do te shihte widget-in DYFISH (te vjetrin +
+// te riun) derisa te fshihet ky ScriptTag.
+// https://getoify.com/remove-widget-scripttag?shop=xxx&admin_key=...
+app.get('/remove-widget-scripttag', requireAdminKey, async (req, res) => {
+  const { shop } = req.query;
+  if (!shop) return res.status(400).json({ error: 'Missing shop' });
+  try {
+    const { data: store } = await supabase
+      .from('stores')
+      .select('access_token')
+      .eq('shop', shop)
+      .single();
+    if (!store?.access_token) return res.status(404).json({ error: 'Store not found' });
+    await removeScriptTag(shop, store.access_token);
+    res.json({ success: true, shop, message: 'Old ScriptTag removed (if it existed)' });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Widget config endpoint — widget.js e thirr kete per te marre gjuhet aktive
 app.get('/widget-config', async (req, res) => {
   const { shop } = req.query;
@@ -874,8 +897,12 @@ app.get('/auth/callback', async (req, res) => {
       }
     }
 
-    // Instalo widget ScriptTag automatikisht
-installScriptTag(shop, accessToken).catch(e => console.error('[widget] OAuth install error:', e.message));
+    // Widget-i tani ngarkohet permes Theme App Extension (app embed block),
+    // jo me ScriptTag — Shopify e ka shenuar ScriptTag te papranueshme per
+    // review te App Store per storefront te pergjithshem, dhe punon vetem
+    // ne tema "vintage" (jo Online Store 2.0). installScriptTag() mbetet ne
+    // kod (mund te thirret manualisht per shops te vjeter nese nevojitet),
+    // por s'thirret me automatikisht ketu.
 
 // Sesioni i merchant-it — cookie e nenshkruar, e VETMja dëshmi qe dashboard-i
 // pranohet ta perdore per te thirrur route-t e mbrojtura (requireShopAuth).
