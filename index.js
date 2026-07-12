@@ -465,9 +465,10 @@ async function isDevelopmentStore(shop, token) {
   }
 }
 
-app.get('/checkout', async (req, res) => {
-  const { plan, billing, shop } = req.query;
-  if (!plan || !shop) return res.status(400).send('Missing plan or shop');
+app.get('/checkout', requireShopAuth, async (req, res) => {
+  const shop = req.verifiedShop;
+  const { plan, billing } = req.query;
+  if (!plan) return res.status(400).send('Missing plan');
   let store;
   try {
     store = await getStore(shop);
@@ -559,32 +560,114 @@ app.get('/checkout', async (req, res) => {
   }
 });
 
+// ─── PARTNER API — VERIFIKIM REAL PAGESE ──────────────────────────────────
+// Rekomandimi zyrtar i vete Shopify per kete skenar te sakte: pas
+// /billing/welcome, pyet Partner API (jo Admin API — eshte endpoint krejt
+// tjeter) per abonimin AKTIV real te dyqanit, ne vend te besimit te
+// plan_handle qe vjen ne URL (i cili s'eshte i nenshkruar — kushdo qe ka
+// sesion per dyqanin e vet mund ta ndryshoje ne URL dhe te "kaloje" ne plan
+// me te larte pa pagese reale).
+//
+// Kerkon 3 env vars TE REJA qe s'ekzistonin me pare:
+//   SHOPIFY_PARTNER_ORG_ID   — numri ne URL e Partner/Dev Dashboard (p.sh. 220355179)
+//   SHOPIFY_PARTNER_API_TOKEN — krijohet: Partner Dashboard -> Settings ->
+//                               Partner API clients -> Manage Partner API
+//                               clients -> leje "Manage apps"
+//   SHOPIFY_APP_GID          — gid://shopify/App/{numri i app-it, p.sh. 375138877441}
+//
+// FAIL-SAFE ME QELLIM: nese keto env vars mungojne (s'i ke vendosur ende)
+// ose vete thirrja deshton, funksionet kthejne null NE HESHTJE dhe
+// /billing/welcome bie mbrapsht te sjellja e vjeter (plan_handle nga URL) —
+// pra s'ndalon merchant qe po paguan SOT, thjesht verifikimi s'eshte akoma
+// aktiv derisa te vendosen env vars. Sapo te vendosen, verifikimi aktivizohet
+// vetvetiu, pa nevoje per ndryshim tjeter kodi.
+async function getShopGid(shop, token) {
+  try {
+    const res = await axios.post(
+      `https://${shop}/admin/api/2026-07/graphql.json`,
+      { query: `{ shop { id } }` },
+      { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' }, timeout: 10000 }
+    );
+    return res.data?.data?.shop?.id || null;
+  } catch(e) {
+    console.warn('[partner-api] Fetch shop GID deshtoi:', e.response?.data || e.message);
+    return null;
+  }
+}
+
+// Kthen handle-in e planit REAL, aktiv, konfirmuar nga vete Shopify (Partner
+// API) — ose null nese s'ka abonim aktiv, konfigurimi mungon, ose deshton.
+async function getVerifiedPlanHandle(shopGid) {
+  const orgId = process.env.SHOPIFY_PARTNER_ORG_ID;
+  const partnerToken = process.env.SHOPIFY_PARTNER_API_TOKEN;
+  const appGid = process.env.SHOPIFY_APP_GID;
+  if (!orgId || !partnerToken || !appGid || !shopGid) return null;
+  try {
+    const res = await axios.post(
+      `https://partners.shopify.com/${orgId}/api/unstable/graphql.json`,
+      {
+        query: `query($appId: ID!, $shopId: ID!) { activeSubscription(appId: $appId, shopId: $shopId) { items { handle } } }`,
+        variables: { appId: appGid, shopId: shopGid }
+      },
+      { headers: { 'X-Shopify-Access-Token': partnerToken, 'Content-Type': 'application/json' }, timeout: 10000 }
+    );
+    if (res.data.errors) {
+      console.warn('[partner-api] activeSubscription ktheu gabime:', JSON.stringify(res.data.errors));
+      return null;
+    }
+    return res.data?.data?.activeSubscription?.items?.[0]?.handle || null;
+  } catch(e) {
+    console.warn('[partner-api] activeSubscription deshtoi:', e.response?.data || e.message);
+    return null;
+  }
+}
+
 // ─── SHOPIFY APP PRICING WELCOME LINK ────────────────────────────────────────
 // Endpoint per flow-in e ri te Shopify App Pricing — pas aprovimit te planit
 // nga merchant ne faqen e hostuar nga Shopify, Shopify ridrejton ketu me
-// `plan_handle` (jo `charge_id` si legacy API). Perpiqemi te mapojme
-// plan_handle direkt te PLAN_PRICES pa pasur nevoje per Partner API — nese
-// handle-i perputhet, azhornojme planin menjehere. Nese jo, ruajme
-// 'pending_verification' dhe logojme per diagnoze, pa e thyer redirect-in
-// per merchant.
+// `plan_handle` (jo `charge_id` si legacy API).
 //
 // KRITIKE: `shop` NUK merret me nga query string (req.query.shop etj) — para
 // requireShopAuth, kushdo qe dinte/hamendesonte domain-in e nje dyqani mund
 // te thirrte kete URL direkt me ?shop=X&plan_handle=enterprise dhe ta
-// kalonte ate dyqan ne planin me te shtrenjte PA PAGUAR asgje, sepse
-// endpoint-i i besonte plan_handle-it verbatim. Meqe merchant-i normalisht
-// ka tashme session cookie (ka klikuar "Upgrade" nga dashboard-i, shkoi te
-// Shopify, u kthye mbrapsht — cookie SameSite=Lax udhёton neper kete
-// ridrejtim top-level), requireShopAuth e mbyll kete rruge per rastin e
-// zakonshem. Kjo NUK verifikon me Shopify nese pagesa reale ndodhi (do te
-// duhej Partner API per ate) — mbetet ende e mundur qe nje merchant real, i
-// loguar per DYQANIN E VET, te ndryshoje plan_handle ne URL dhe te marre
-// plan me te larte pa pagese; ai rrezik i mbetur kerkon integrim me te
-// thelle me Shopify Billing/Partner API, jashte shtrirjes se ketij fiksi.
+// kalonte ate dyqan ne planin me te shtrenjte PA PAGUAR asgje. requireShopAuth
+// e mbylli kete rruge per te huajt. Tani, SHTESE: perpara se t'i besojme
+// plan_handle-it te URL-se fare, pyesim Partner API-n (getVerifiedPlanHandle)
+// per abonimin AKTIV real te ketij dyqani — nese kthen pergjigje, PERDORET
+// AJO, jo URL-ja, edhe per merchant-in real te loguar per dyqanin e vet.
+// Kjo mbyll edhe rrezikun e fundit qe ishte lene hapur me pare.
 app.get('/billing/welcome', requireShopAuth, async (req, res) => {
   const shop = req.verifiedShop;
-  const plan_handle = req.query.plan_handle;
-  console.log(`[billing-welcome] Mberrin: shop=${shop} plan_handle=${plan_handle}`);
+  const urlPlanHandle = req.query.plan_handle;
+  console.log(`[billing-welcome] Mberrin: shop=${shop} plan_handle=${urlPlanHandle}`);
+
+  let verifiedHandle = null;
+  let verificationAttempted = false;
+  try {
+    const store = await getStore(shop);
+    if (store?.access_token) {
+      const shopGid = await getShopGid(shop, store.access_token);
+      if (shopGid) {
+        verificationAttempted = true;
+        verifiedHandle = await getVerifiedPlanHandle(shopGid);
+      }
+    }
+  } catch(e) {
+    console.warn('[billing-welcome] Verifikim Partner API deshtoi:', e.message);
+  }
+
+  let plan_handle;
+  if (verifiedHandle) {
+    plan_handle = verifiedHandle;
+    if (urlPlanHandle && verifiedHandle.toLowerCase() !== String(urlPlanHandle).toLowerCase()) {
+      console.warn(`[billing-welcome] MOSPËRPUTHJE per ${shop}: URL kerkonte "${urlPlanHandle}" por Shopify konfirmon "${verifiedHandle}" — po perdoret vlera e VERIFIKUAR, jo ajo e URL-se`);
+    } else {
+      console.log(`[billing-welcome] Handle i verifikuar nga Partner API: "${verifiedHandle}"`);
+    }
+  } else {
+    plan_handle = urlPlanHandle;
+    console.warn(`[billing-welcome] ${verificationAttempted ? 'Partner API u pyet por s\'ktheu abonim aktiv' : 'Partner API s\'eshte konfiguruar ende'} per ${shop} — duke perdorur plan_handle te PAVERIFIKUAR nga URL: "${urlPlanHandle}"`);
+  }
 
   if (plan_handle) {
     const normalizedHandle = plan_handle.toLowerCase();
@@ -595,13 +678,14 @@ app.get('/billing/welcome', requireShopAuth, async (req, res) => {
       await supabase.from('stores').update({
         plan: matchedPlan, plan_started_at: new Date().toISOString()
       }).eq('shop', shop);
-      console.log(`[billing-welcome] Plan azhornuar: ${shop} → ${matchedPlan} (nga handle "${plan_handle}")`);
+      console.log(`[billing-welcome] Plan azhornuar: ${shop} → ${matchedPlan} (nga handle "${plan_handle}", verifikuar me Partner API: ${!!verifiedHandle})`);
       await sendNotification(
         `New subscription: ${shop} → ${PLAN_PRICES[matchedPlan].label}`,
         `<h2>New Getoify subscription (App Pricing)</h2>
          <p><b>Store:</b> ${shop}</p>
          <p><b>Plan:</b> ${PLAN_PRICES[matchedPlan].label}</p>
          <p><b>Plan handle received:</b> ${plan_handle}</p>
+         <p><b>Verified with Shopify Partner API:</b> ${verifiedHandle ? 'Yes' : 'No — Partner API not configured or unavailable'}</p>
          <p><b>Time:</b> ${new Date().toISOString()}</p>`
       );
     } else {
@@ -615,9 +699,10 @@ app.get('/billing/welcome', requireShopAuth, async (req, res) => {
   res.redirect(`/dashboard?shop=${shop}&activated=1`);
 });
 
-app.get('/billing/callback', async (req, res) => {
-  const { plan, billing, shop, charge_id } = req.query;
-  if (!charge_id || !shop) return res.redirect(`/pricing?shop=${shop}&error=invalid_callback`);
+app.get('/billing/callback', requireShopAuth, async (req, res) => {
+  const shop = req.verifiedShop;
+  const { plan, billing, charge_id } = req.query;
+  if (!charge_id) return res.redirect(`/pricing?shop=${shop}&error=invalid_callback`);
   const store = await getStore(shop);
   if (!store) return res.redirect('/auth?shop=' + encodeURIComponent(shop));
   const token = store.access_token;
