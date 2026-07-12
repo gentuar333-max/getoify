@@ -110,13 +110,29 @@
     document.getElementById('tb-title').textContent = productTitle;
   }
 
+  // Zevendeson fetch() per cdo thirrje qe kerkon requireShopAuth ne server.
+  function authedFetch(url, options) {
+    return fetch(url, options).then(function(res) {
+      if (res.status === 401) {
+        const alreadyReauthed = new URLSearchParams(window.location.search).get('reauth') === '1';
+        if (!alreadyReauthed) {
+          window.location.href = '/auth?shop=' + shop;
+        } else {
+          alert('Your session has expired. Please reconnect your store.');
+        }
+        return new Promise(function() {});
+      }
+      return res;
+    });
+  }
+
   function nav(e, page) { e.preventDefault(); window.location.href = page + '?shop=' + shop; }
 
   function charClass(len, max) { return len <= max * 0.8 ? 'ok' : len <= max ? 'ok' : 'warn'; }
 
   async function loadData() {
     try {
-      const res = await fetch('/product-translations?shop=' + shop + '&productId=' + productId);
+      const res = await authedFetch('/product-translations?shop=' + shop + '&productId=' + productId);
       const data = await res.json();
 
       if (!data.translations || !data.translations.length) {
@@ -204,7 +220,7 @@
     // Live polling — rifreshon çdo 6 sekonda derisa të gjitha gjuhët të jenë "done"
     let detailPolling = setInterval(async () => {
       try {
-        const res = await fetch('/product-translations?shop=' + shop + '&productId=' + productId);
+        const res = await authedFetch('/product-translations?shop=' + shop + '&productId=' + productId);
         const data = await res.json();
         const translations = data.translations || [];
         const allDone = translations.length > 0 && translations.every(t => t.status === 'done');

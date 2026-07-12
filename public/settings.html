@@ -324,6 +324,24 @@
     document.getElementById('store-name').textContent = shop;
   }
 
+  // Zevendeson fetch() per cdo thirrje qe kerkon requireShopAuth ne server.
+  // Njesoj si dashboard.html: 401 here e pare -> ridrejto vetvetiu te /auth;
+  // 401 pas nje reauth (?reauth=1) -> mos rifillo ciklin, njofto me alert.
+  function authedFetch(url, options) {
+    return fetch(url, options).then(function(res) {
+      if (res.status === 401) {
+        const alreadyReauthed = new URLSearchParams(window.location.search).get('reauth') === '1';
+        if (!alreadyReauthed) {
+          window.location.href = '/auth?shop=' + shop;
+        } else {
+          alert('Your session has expired. Please reconnect your store.');
+        }
+        return new Promise(function() {});
+      }
+      return res;
+    });
+  }
+
   function nav(e, page) { e.preventDefault(); window.location.href = page + '?shop=' + shop; }
 
   function toggleSidebar() {
@@ -363,7 +381,7 @@
 
   async function loadSavedLanguages() {
     try {
-      const res = await fetch('/store-settings?shop=' + shop, { cache: 'no-store' });
+      const res = await authedFetch('/store-settings?shop=' + shop, { cache: 'no-store' });
       const data = await res.json();
       const saved = data.selected_locales || [];
       saved.forEach(locale => {
@@ -379,7 +397,7 @@
     const btn = document.getElementById('save-langs-btn');
     btn.textContent = 'Saving...'; btn.disabled = true;
     try {
-      const res = await fetch('/save-locales', {
+      const res = await authedFetch('/save-locales', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ shop, selected_locales: selectedLangs })
@@ -415,7 +433,7 @@
 
   async function loadPlan() {
     try {
-      const res = await fetch('/plan?shop=' + shop, { cache: 'no-store' });
+      const res = await authedFetch('/plan?shop=' + shop, { cache: 'no-store' });
       const data = await res.json();
       const plan = PLAN_CONFIG[data.plan] || PLAN_CONFIG.free;
 
@@ -443,13 +461,13 @@
 
   async function loadData() {
     try {
-      const res = await fetch('/status?shop=' + shop);
+      const res = await authedFetch('/status?shop=' + shop);
       const data = await res.json();
       const periodUsed = data.period_used !== undefined ? data.period_used : (data.total || 0);
       const allTime = data.total || 0;
 
       // Get plan limit dynamically
-      const planRes = await fetch('/plan?shop=' + shop);
+      const planRes = await authedFetch('/plan?shop=' + shop);
       const planData = await planRes.json();
       const plan = PLAN_CONFIG[planData.plan] || PLAN_CONFIG.free;
       const limit = plan.limit;

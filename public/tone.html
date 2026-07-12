@@ -138,6 +138,18 @@
 <script>
   const shop = new URLSearchParams(window.location.search).get('shop') || localStorage.getItem('getoify_shop');
   if (shop) { localStorage.setItem('getoify_shop', shop); document.getElementById('sb-shop').textContent = shop; document.getElementById('sb-shop2').textContent = shop; document.getElementById('sb-av').textContent = shop.substring(0, 2).toUpperCase(); }
+  // Zevendeson fetch() per cdo thirrje qe kerkon requireShopAuth ne server.
+  function authedFetch(url, options) {
+    return fetch(url, options).then(function(res) {
+      if (res.status === 401) {
+        const alreadyReauthed = new URLSearchParams(window.location.search).get('reauth') === '1';
+        if (!alreadyReauthed) { window.location.href = '/auth?shop=' + shop; }
+        else { alert('Your session has expired. Please reconnect your store.'); }
+        return new Promise(function() {});
+      }
+      return res;
+    });
+  }
   function nav(e, page) { e.preventDefault(); window.location.href = page + '?shop=' + shop; }
   function initToggles(groupId) {
     const btns = document.querySelectorAll('#' + groupId + ' .toggle');
@@ -159,7 +171,7 @@
     const tone = (getSelected('style-toggles').toLowerCase() + ' and ' + getSelected('formality-toggles') + '. ' + document.getElementById('brand-desc').value + ' ' + document.getElementById('custom').value).trim();
     const glossary = document.getElementById('forbidden').value;
     try {
-      await fetch('/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ shop, tone, glossary }) });
+      await authedFetch('/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ shop, tone, glossary }) });
       const toast = document.getElementById('toast'); toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 2500);
     } catch(e) { alert('Error saving. Please try again.'); }
   }

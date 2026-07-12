@@ -200,6 +200,26 @@
     document.getElementById('sb-av').textContent = shop.substring(0, 2).toUpperCase();
   } else { window.location.href = '/'; }
 
+  // Zevendeson fetch() per cdo thirrje qe kerkon requireShopAuth ne server.
+  // Njesoj si dashboard.html: 401 here e pare -> ridrejto vetvetiu te /auth;
+  // 401 pas nje reauth (?reauth=1) -> mos rifillo ciklin, njofto me alert
+  // (kjo faqe s'ka banner ekzistues per ta ripërdorur, prandaj alert e thjeshte
+  // ne vend te nje elementi te ri qe do kerkonte CSS shtese).
+  function authedFetch(url, options) {
+    return fetch(url, options).then(function(res) {
+      if (res.status === 401) {
+        const alreadyReauthed = new URLSearchParams(window.location.search).get('reauth') === '1';
+        if (!alreadyReauthed) {
+          window.location.href = '/auth?shop=' + shop;
+        } else {
+          alert('Your session has expired. Please reconnect your store.');
+        }
+        return new Promise(function() {});
+      }
+      return res;
+    });
+  }
+
   function nav(e, page) { e.preventDefault(); window.location.href = page + '?shop=' + shop; }
 
   const langFlags = { de: '🇩🇪', fr: '🇫🇷', it: '🇮🇹', es: '🇪🇸', nl: '🇳🇱', pt: '🇵🇹', 'pt-BR': '🇧🇷', 'pt-br': '🇧🇷', pl: '🇵🇱', ja: '🇯🇵', hi: '🇮🇳', id: '🇮🇩', en: '🇺🇸', 'en-GB': '🇺🇸', 'en-US': '🇺🇸', 'en-AU': '🇺🇸', 'en-CA': '🇺🇸', zh: '🇨🇳', ar: '🇸🇦', ko: '🇰🇷', sv: '🇸🇪', da: '🇩🇰', fi: '🇫🇮', nb: '🇳🇴' };
@@ -232,7 +252,7 @@
     try {
       translatedMap = {};
       // Always fetch status first to get translations
-      const statusRes = await fetch('/status?shop=' + shop);
+      const statusRes = await authedFetch('/status?shop=' + shop);
       const statusData = await statusRes.json();
 
       statusData.translations.forEach(t => {
@@ -246,7 +266,7 @@
       let activeToken = token;
       if (!activeToken) {
         try {
-          const settingsRes = await fetch('/store-settings?shop=' + shop);
+          const settingsRes = await authedFetch('/store-settings?shop=' + shop);
           const settings = await settingsRes.json();
           activeToken = settings.access_token || null;
         } catch(e) {}
@@ -255,7 +275,7 @@
       if (activeToken) {
         // Fetch real product list from Shopify via backend
         try {
-          const productsRes = await fetch('/products?shop=' + shop + '&token=' + activeToken);
+          const productsRes = await authedFetch('/products?shop=' + shop + '&token=' + activeToken);
           const prodData = await productsRes.json();
           if (prodData.products && prodData.products.length > 0) {
             allProducts = prodData.products.map(p => ({
@@ -286,7 +306,7 @@
       renderTable();
       // Check plan limit and show banner
       try {
-        const stRes = await fetch('/status?shop=' + shop);
+        const stRes = await authedFetch('/status?shop=' + shop);
         const stData = await stRes.json();
         if (stData.plan_limit && stData.period_used >= stData.plan_limit) {
           const banner = document.getElementById('limit-banner');
@@ -429,7 +449,7 @@
     btn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;display:inline-block"></span>Translating...</span>';
     btn.disabled = true;
     try {
-      await fetch('/bulk-localize-all', {
+      await authedFetch('/bulk-localize-all', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ shop, token, tone: 'professional and elegant', glossary: 'checkout, Shopify' })
@@ -462,7 +482,7 @@
     let activeToken = token;
     if (!activeToken) {
       try {
-        const s = await fetch('/store-settings?shop=' + shop);
+        const s = await authedFetch('/store-settings?shop=' + shop);
         const sd = await s.json();
         activeToken = sd.access_token || null;
         if (activeToken) localStorage.setItem('getoify_token', activeToken);
@@ -473,7 +493,7 @@
     btn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border:2px solid #E0DDD6;border-top-color:#8B7355;border-radius:50%;animation:spin 0.7s linear infinite;display:inline-block"></span>Translating</span>';
     btn.disabled = true;
     try {
-      const res = await fetch('/process-product', {
+      const res = await authedFetch('/process-product', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ shop, token: activeToken, productId: String(productId), productTitle })
@@ -507,7 +527,7 @@
     if (livePolling) return;
     livePolling = setInterval(async () => {
       try {
-        const res = await fetch('/status?shop=' + shop);
+        const res = await authedFetch('/status?shop=' + shop);
         const data = await res.json();
         const newMap = {};
         data.translations.forEach(t => {

@@ -179,6 +179,22 @@
     document.getElementById('webhook-url').textContent = 'getoify.com/webhook/product-create';
   }
 
+  // Zevendeson fetch() per cdo thirrje qe kerkon requireShopAuth ne server.
+  function authedFetch(url, options) {
+    return fetch(url, options).then(function(res) {
+      if (res.status === 401) {
+        const alreadyReauthed = new URLSearchParams(window.location.search).get('reauth') === '1';
+        if (!alreadyReauthed) {
+          window.location.href = '/auth?shop=' + shop;
+        } else {
+          alert('Your session has expired. Please reconnect your store.');
+        }
+        return new Promise(function() {});
+      }
+      return res;
+    });
+  }
+
   function nav(e, page) { e.preventDefault(); window.location.href = page + '?shop=' + shop; }
 
   function showToast(msg) {
@@ -197,7 +213,7 @@
 
   async function loadEvents() {
     try {
-      const res = await fetch('/status?shop=' + shop);
+      const res = await authedFetch('/status?shop=' + shop);
       const data = await res.json();
       const recent = data.translations.slice(0, 5);
       if (!recent.length) {
