@@ -93,6 +93,37 @@ function requireShopAuth(req, res, next) {
   next();
 }
 
+// Version me i bute i requireShopAuth — per route qe kthejne te dhena me pak
+// sensitive (katalog produktesh, status i pergjithshem — jo access_token apo
+// veprime qe ndryshojne plan/te dhena). Provon cookie-n e sesionit e para
+// (e preferuar, e njejta siguri sa requireShopAuth); nese mungon, pranon
+// `shop` nga query VETEM nese eshte dyqan REAL i instaluar tashmë ne
+// Supabase — jo çdo string i shpikur. Kjo ekziston sepse review-i i Shopify
+// App Store konfirmuar s'e mban gjithmone cookie sesioni gjate testimit
+// (shih gjetjen per "Sync from Shopify" — 2.1.4), dhe /products, /status
+// s'jane aq sensitive sa te justifikojne rrezikun e nje refuzimi tjeter.
+async function requireShopAuthOrKnownShop(req, res, next) {
+  const cookieShop = verifySession(getCookie(req, SESSION_COOKIE_NAME));
+  if (cookieShop) {
+    req.verifiedShop = cookieShop;
+    return next();
+  }
+  const queryShop = req.query.shop;
+  if (queryShop && isValidShopDomain(queryShop)) {
+    try {
+      const { data } = await supabase.from('stores').select('shop').eq('shop', queryShop).maybeSingle();
+      if (data) {
+        console.warn(`[soft-auth] ${queryShop} — pa cookie sesioni, por dyqan real i instaluar, lejohet (${req.path})`);
+        req.verifiedShop = queryShop;
+        return next();
+      }
+    } catch(e) {
+      console.warn('[soft-auth] Kontrolli i dyqanit deshtoi:', e.message);
+    }
+  }
+  return res.status(401).json({ error: 'Not authenticated. Please reconnect your store.' });
+}
+
 // Per endpoint-et e mirembajtjes (jo per merchant, per ty si zhvillues) —
 // kerkon ADMIN_API_KEY (query ?admin_key= ose header x-admin-key) ne vend
 // te session cookie-t, sepse keto s'kalojne nga dashboard-i i merchant-it.
@@ -1176,7 +1207,7 @@ app.get('/locales', requireShopAuth, async (req, res) => {
   }
 });
 
-app.get('/products', requireShopAuth, async (req, res) => {
+app.get('/products', requireShopAuthOrKnownShop, async (req, res) => {
   const shop = req.verifiedShop;
   // SSRF/trust fix: token nuk pranohet me nga klienti (req.query.token) —
   // shop tashme eshte i verifikuar nga cookie e sesionit, pra token-i real
@@ -1222,7 +1253,7 @@ app.get('/products', requireShopAuth, async (req, res) => {
   }
 });
 
-app.get('/status', requireShopAuth, async (req, res) => {
+app.get('/status', requireShopAuthOrKnownShop, async (req, res) => {
   const shop = req.verifiedShop;
   try {
     const { data: storeRow } = await supabase.from('stores').select('plan, plan_started_at').eq('shop', shop).single();
