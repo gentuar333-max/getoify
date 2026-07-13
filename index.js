@@ -1333,18 +1333,21 @@ app.post('/save-locales', requireShopAuth, async (req, res) => {
       }
     }
 
-    // KRITIKE: para se te perditesojme selected_locales, marrim vleren E VJETER
-    // per te llogaritur cilat gjuhe u HEQEN. Pa kete diagnoze, gjuhet e hequra
-    // mbeten "invisible zombie" — rreshtat ne 'translations' MBETEN, dhe cka
-    // eshte edhe me e rendesishme, vete PERKTHIMI mbetet i shkruajtur direkt
-    // ne Shopify (translationsRegister e shkroi ne kohen e vet) — merchant
-    // sheh ende gjuhen "e hequr" live ne dyqan, edhe pse s'e ka me te
-    // zgjedhur te Getoify. Kjo eshte pikerisht simptoma e raportuar:
-    // "perkthim ne gjuhe qe nuk zgjodha" — jo hallucination e AI-t, por
-    // te dhena te vjetra qe kurre s'ishin pastruar.
+    // KRITIKE — NDRYSHIM ME QELLIM: kur nje gjuhe hiqet nga selected_locales,
+    // KURRE s'fshihet asnje perkthim, as ketu (Supabase 'translations'), as
+    // ne Shopify (translationsRemove). selected_locales VETEM percakton cilat
+    // gjuhe sinkronizohen/perkthehen AKTIVISHT ME TEJ (bulk, webhook auto-
+    // translate, poll) — nuk eshte "fshi ato qe kam" por "mos vazhdo me keto".
+    // Perkthimet ekzistuese mbeten te dukshme per blerësit, dhe nese nje gjuhe
+    // rishtohet me vone, Getoify e sheh si tashme te perkthyer (s'rigjeneron,
+    // s'ka kosto te re API-je). Vetem loggojme cilat gjuhe u hoqen nga
+    // sinkronizimi aktiv, per diagnoze — asnje veprim destruktiv i lidhur.
     if (!currentStore) currentStore = await getStore(shop).catch(() => null);
     const oldLocales = currentStore?.selected_locales || [];
-    const removedLocales = oldLocales.filter(l => !selected_locales.includes(l));
+    const removedFromSync = oldLocales.filter(l => !selected_locales.includes(l));
+    if (removedFromSync.length > 0) {
+      console.log(`[save-locales] ${shop} — gjuhe hequr nga sinkronizimi aktiv (perkthimet EKZISTUESE MBETEN te paprekura): ${removedFromSync.join(', ')}`);
+    }
 
     const { error } = await supabase
       .from('stores')
@@ -1352,63 +1355,7 @@ app.post('/save-locales', requireShopAuth, async (req, res) => {
       .eq('shop', shop);
     if (error) throw error;
 
-    if (removedLocales.length > 0) {
-      console.log(`[save-locales] ${shop} — gjuhe te hequra: ${removedLocales.join(', ')} — duke pastruar te dhenat`);
-
-      // 1. Fshi rreshtat perkatese nga tabela jone — e shpejte, sinkron.
-      await supabase.from('translations').delete()
-        .eq('shop', shop)
-        .in('locale', removedLocales);
-
-      // 2. Fshi vete perkthimin nga Shopify (translationsRemove mutation) —
-      // asinkron/sfond, sepse mund te jene qindra produkte per shop me
-      // katalog te madh, s'duam te ngadalesojme pergjigjen per merchant-in.
-      // Best-effort: nese ndonje thirrje deshton, vazhdon me tjetrin, s'e
-      // ndalon procesin dhe s'e thyen pergjigjen tashme te derguar.
-      const token = currentStore?.access_token;
-      if (token) {
-        setImmediate(async () => {
-          try {
-            const { data: rowsToClean } = await supabase
-              .from('translations')
-              .select('product_id')
-              .eq('shop', shop);
-            const productIds = [...new Set((rowsToClean || []).map(r => String(r.product_id)))];
-            const removeMutation = `
-              mutation translationsRemove($resourceId: ID!, $translationKeys: [String!]!, $locales: [String!]!) {
-                translationsRemove(resourceId: $resourceId, translationKeys: $translationKeys, locales: $locales) {
-                  translations { locale key }
-                  userErrors { field message }
-                }
-              }
-            `;
-            for (const pid of productIds) {
-              try {
-                await axios.post(
-                  `https://${shop}/admin/api/2026-07/graphql.json`,
-                  {
-                    query: removeMutation,
-                    variables: {
-                      resourceId: `gid://shopify/Product/${pid}`,
-                      translationKeys: ['title', 'body_html', 'meta_title', 'meta_description'],
-                      locales: removedLocales
-                    }
-                  },
-                  { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
-                );
-              } catch(perProductErr) {
-                console.warn(`[save-locales] translationsRemove deshtoi per produkt ${pid}:`, perProductErr.response?.data || perProductErr.message);
-              }
-            }
-            console.log(`[save-locales] Pastrimi Shopify u perfundua per ${shop} — gjuhet: ${removedLocales.join(', ')}`);
-          } catch(cleanupErr) {
-            console.error('[save-locales] Pastrimi Shopify deshtoi:', cleanupErr.message);
-          }
-        });
-      }
-    }
-
-    res.json({ ok: true, removed_locales: removedLocales });
+    res.json({ ok: true, removed_from_sync: removedFromSync });
   } catch(e) {
     res.status(500).json({ error: e.message });
   }
