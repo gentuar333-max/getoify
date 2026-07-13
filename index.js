@@ -2008,6 +2008,55 @@ function forceHedgeSpecNumbers(text, targetLang) {
   return result;
 }
 
+// Prit fjalen e fundit te plote para 'limit' karaktere — s'e pret ne mes te
+// nje fjale. Perdoret nga enforceMetaDescriptionLength me poshte.
+function truncateAtWordBoundary(text, limit, minAcceptable) {
+  if (text.length <= limit) return text;
+  let cut = text.slice(0, limit);
+  const lastSpace = cut.lastIndexOf(' ');
+  if (lastSpace >= minAcceptable) cut = cut.slice(0, lastSpace);
+  return cut.trim().replace(/[,;:—\-]+$/, ''); // hiq pikesim te "varur" ne fund
+}
+
+// Rrjete sigurie DETERMINISTIKE per meta_description — vete prompt-i i kerkon
+// modelit "count characters before finishing... MINIMUM 150, MAXIMUM 160",
+// por shembuj real konfirmuan qe kjo s'respektohet gjithmone (as tejkalim,
+// as nen-kufi — pame te dyja rastet, p.sh. FR 167/160 dhe EN 120/160 per te
+// njejtin lloj produkti). Njesoj si forceHedgeSpecNumbers me lart: shtrese e
+// fundit deterministike, jo shprese qe modeli e degjon prompt-in.
+function enforceMetaDescriptionLength(metaDescription, description) {
+  const MIN = 150;
+  const MAX = 160;
+  let md = (metaDescription || '').trim();
+
+  // Bosh fare — perdor pershkrimin real si burim (praktike ekzistuese e
+  // zgjeruar; kurre s'shpikim tekst te ri).
+  if (!md && description) {
+    md = description.replace(/[•\n]/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+  if (!md) return md;
+
+  if (md.length > MAX) {
+    md = truncateAtWordBoundary(md, MAX, MIN - 20);
+  }
+
+  if (md.length < MIN && description) {
+    // S'mund te "zgjatim" duke shpikur permbajtje — rrezik faktesh te
+    // gabuara. Ne vend te kesaj, marrim permbajtje REALE shtese nga vete
+    // pershkrimi (qe zakonisht eshte me i gjate) per te arritur MIN.
+    const source = description.replace(/[•\n]/g, ' ').replace(/\s+/g, ' ').trim();
+    if (source.length >= MIN) {
+      const extended = truncateAtWordBoundary(source, MAX, MIN - 20);
+      if (extended.length >= MIN) md = extended;
+    }
+    // Nese pershkrimi vete eshte shume i shkurter per te mbushur deri ne
+    // MIN, e lëmë sic eshte — nen-gjatesi e vogel eshte defekt me i pakten
+    // i demshem se permbajtje e trilluar per te "mbushur hapesiren".
+  }
+
+  return md;
+}
+
 // Regjistron shkeljen ne Supabase per matje reale (jo vetem console.log) —
 // kerkon tabelen 'gate_violations' (shih SQL e dhene ne pergjigje). Nese
 // tabela mungon, dështon ne heshtje me warning, s'e nderpret gjenerimin.
@@ -2574,13 +2623,12 @@ If capacity (liters) or dimensions are known for this product, they MUST appear 
 - Bullet 3: closure + strap type (e.g. "Fermeture éclair YKK — bandoulière réglable incluse")
 - Bullet 4: care + warranty
 
-FORBIDDEN for Fashion & Apparel:
-- "intemporel", "authentique", "iconique" alone — always follow with a concrete spec: WRONG: "coupe intemporelle" / RIGHT: "coupe droite depuis 1873"
-- "style intemporel" without describing the actual style
-- "confort optimal" — write the material or technology that creates comfort
-- "coloris polyvalents" alone — always add the actual colorway name if known
-- "traverse les générations", "savoir-faire légendaire" — empty heritage claims without facts
-- Never write "taille fidèle" without confirming it — write "vérifier le guide des tailles" if unsure
+FORBIDDEN for Fashion & Apparel — THIS RULE APPLIES IN EVERY TARGET LANGUAGE, not only French. The concept: empty heritage/quality adjectives used ALONE, with no concrete spec backing them, read as marketing filler and must always be paired with a real fact (a date, a material, a measurement) or replaced entirely.
+- "timeless" / "authentic" / "iconic" used alone — always follow with a concrete spec: WRONG: "coupe intemporelle" / RIGHT: "coupe droite depuis 1873". Equivalent words to watch for by language: French "intemporel, authentique, iconique"; German "zeitlos, authentisch, ikonisch"; Italian "senza tempo, autentico, iconico"; Spanish "atemporal, auténtico, icónico"; Dutch "tijdloos, authentiek, iconisch"; Portuguese "intemporal, autêntico, icónico". For any other target language, identify and avoid the direct equivalent of these three words used without a backing fact.
+- "optimal comfort" (French "confort optimal", German "optimaler Komfort", Italian "comfort ottimale", Spanish "confort óptimo") — write the material or technology that creates comfort instead
+- "versatile colorways" alone (French "coloris polyvalents", German "vielseitige Farben", Italian "colori versatili") — always add the actual colorway name if known
+- generic heritage claims with no fact behind them (French "traverse les générations, savoir-faire légendaire") — in any language, do not write a heritage/legacy claim unless a specific fact (founding year, place, technique) backs it
+- never claim true-to-size fit without confirming it — write the equivalent of "check the size guide" instead if unsure (French "taille fidèle" is the violation to avoid; German "fällt normal aus", Italian "veste normale" are the equivalent unconfirmed claims to avoid)
 
 FIT LANGUAGE — always use precise fit terms, never vague descriptions:
 - RIGHT: "Coupe Regular — taille naturelle, jambe droite" / "Slim fit — taille mi-haute, effilé à la cheville"
@@ -2752,16 +2800,16 @@ Apply the same moment-based framing inside bullets too — connect the spec to w
 - PROSE: use "plaisir", "savoir-faire", "art", "précision" — NEVER "chaleur" for appliances (chaleur = physical heat, wrong context)
 - Do NOT use "chaleur" for mixers, blenders, or any appliance that does not produce heat
 
-CLOSED ECOSYSTEM RULE — applies to ALL products with proprietary consumables or subscriptions:
+CLOSED ECOSYSTEM RULE — applies to ALL products with proprietary consumables or subscriptions, IN EVERY TARGET LANGUAGE. The French phrases below are illustrative examples of the required CONTENT, not a French-only requirement — write the equivalent fact in whichever language you are generating. Each product is generated separately per language, so do not assume a fact "already covered" elsewhere; include it fully every single time, in every language, independently.
 Products: Nespresso, Keurig, Dolce Gusto, Peloton, NordicTrack, Apple, Philips Hue, Ring, etc.
 
-MANDATORY for closed ecosystem products:
+MANDATORY for closed ecosystem products — treat all 4 as equally required, not just the first:
 1. SPECIFY the ecosystem in title and description — never write generic "capsules" or "subscription":
    - Nespresso Vertuo → "Capsules Nespresso Vertuo exclusives" (NOT "capsules Nespresso")
    - Nespresso Original → "Capsules Nespresso Original" (NOT "capsules Nespresso")
    - These two systems are INCOMPATIBLE — never write "capsules Nespresso" without specifying the line
-2. SPECIFY incompatibilities explicitly — this prevents returns and negative reviews:
-   - "Capsules Vertuo exclusives — non compatibles avec capsules Original Line"
+2. SPECIFY incompatibilities explicitly, IN THIS LANGUAGE, EVERY TIME — this prevents returns and negative reviews, and is exactly as mandatory as point 1. Do not omit this fact even if the sentence already feels complete without it:
+   - "Capsules Vertuo exclusives — non compatibles avec capsules Original Line" (French example; write the equivalent incompatibility statement in the target language)
    - "Abonnement requis — non compatible avec Zwift ou apps tierces"
 3. SPECIFY all formats the machine supports — never limit to one:
    - Nespresso Vertuo Pop → NOT "machine à espresso" → "machine multi-formats : espresso (40ml) à mug (230ml)"
@@ -3310,6 +3358,9 @@ async function localizeProductBody(shop, token, pid, targetLang, locale, tone, g
   if (!translated.meta_description) {
     translated.meta_description = (translated.description || translated.title || product.title).substring(0, 160);
   }
+  // Rrjete sigurie deterministike — korrigjon 150-160 karakteret pavaresisht
+  // nese modeli vete e respektoi kufirin (shih arsyetimin te vete funksioni).
+  translated.meta_description = enforceMetaDescriptionLength(translated.meta_description, translated.description);
 
   // Primary locale duhet marre GJITHMONE (jo vetem brenda hadNoDescription) —
   // nevojitet per te ditur nese target locale eshte njesoj si primary locale
