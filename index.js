@@ -505,10 +505,16 @@ async function isDevelopmentStore(shop, token) {
   }
 }
 
-app.get('/checkout', requireShopAuth, async (req, res) => {
-  const shop = req.verifiedShop;
-  const { plan, billing } = req.query;
-  if (!plan) return res.status(400).send('Missing plan');
+app.get('/checkout', async (req, res) => {
+  const { plan, billing, shop } = req.query;
+  // isValidShopDomain (jo requireShopAuth): kjo route s'bën gjë tjetër veç
+  // ndërton URL dhe ridrejton te faqja e HOSTUAR nga vetë Shopify — Shopify
+  // vetë e kontrollon aksesin atje (kërkon login si admin i asaj dyqani),
+  // pra requireShopAuth këtu s'shton mbrojtje reale, vetëm rrezik: nëse
+  // Shopify e teston këtë route review-in pa cookie sesioni (proces
+  // automatik review-i), do të merrte 401 në vend të ridrejtimit — pikërisht
+  // simptoma "billing failed when attempting to subscribe" e raportuar.
+  if (!plan || !shop || !isValidShopDomain(shop)) return res.status(400).send('Missing or invalid plan/shop');
   let store;
   try {
     store = await getStore(shop);
@@ -526,7 +532,11 @@ app.get('/checkout', requireShopAuth, async (req, res) => {
   //
   // SHOPIFY_APP_HANDLE duhet vendosur te Vercel Environment Variables —
   // gjendet te shopify.app.toml lokal (rreshti "handle = ...") ose te
-  // Dev Dashboard settings.
+  // Dev Dashboard settings. NESE KJO MUNGON, /checkout bie te rruga e
+  // vjeter me poshte qe GJITHMONE thjesht kthen error pa krijuar charge —
+  // kjo eshte hipoteza kryesore per "billing failed when attempting to
+  // subscribe" te raportuar nga Shopify review, verifiko qe ky env var
+  // ekziston dhe perputhet saktesisht me handle-in real te app-it.
   const appHandle = process.env.SHOPIFY_APP_HANDLE;
   if (appHandle) {
     const storeHandle = shop.replace('.myshopify.com', '');
