@@ -12,10 +12,13 @@ dev_store_url = ""
 [webhooks]
 api_version = "2025-07"
 
+  [[webhooks.subscriptions]]
+  compliance_topics = ["customers/data_request", "customers/redact", "shop/redact"]
+  uri = "https://www.getoify.com/webhook"
+
 [access_scopes]
-# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
 scopes = "read_locales,read_products,write_products,read_script_tags,write_script_tags,read_content,write_content,read_translations,write_translations"
-optional_scopes = [ ]
+optional_scopes = []
 use_legacy_install_flow = false
 
 [auth]
@@ -24,14 +27,3 @@ redirect_urls = [
   "https://getoify.vercel.app/auth/callback",
   "https://getoify.onrender.com/auth/callback"
 ]
-[[webhooks.subscriptions]]
-topics = ["customers/data_request"]
-uri = "/webhook/customers/data-request"
-
-[[webhooks.subscriptions]]
-topics = ["customers/redact"]
-uri = "/webhook/customers/redact"
-
-[[webhooks.subscriptions]]
-topics = ["shop/redact"]
-uri = "/webhook/shop/redact"
