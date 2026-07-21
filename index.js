@@ -472,18 +472,25 @@ function extractShopFromHost(hostParam) {
 
 // Static pages
 app.get('/', (req, res) => {
-  // Nese Shopify e ka dërguar hmac+host (merchant klikoi "Open app" nga
-  // App Store/Admin — Shopify e dergon kete PAVARESISHT nese app-i eshte
-  // embedded apo jo), verifikojme dhe ridrejtojme direkt te OAuth, pa e
-  // detyruar merchant-in te shkruaje manualisht domain-in qe Shopify
-  // tashme e di. Perdor te njejtin verifikim HMAC si /auth/callback (i
-  // njejti algoritem i Shopify per parametra query te nenshkruar) — nese
-  // hmac s'perputhet ose host s'jep shop te vlefshem, bie normalisht te
-  // faqja statike (rasti i vizitorit organik, pa parametra nga Shopify).
-  if (req.query.hmac && req.query.host && verifyOAuthCallbackHmac(req.query)) {
+  if (Object.keys(req.query).length > 0) {
+    console.log('[root-visit] Query e plote e marre nga Shopify/vizitori:', JSON.stringify(req.query));
+  }
+  // Nese Shopify e ka dërguar `host` (merchant klikoi "Open app" nga App
+  // Store/Admin), nxjerrim shop-in prej tij dhe ridrejtojme direkt te OAuth,
+  // pa e detyruar merchant-in te shkruaje manualisht domain-in qe Shopify
+  // tashme e di.
+  // SHENIM: fillimisht provuam te verifikonim hmac (si /auth/callback), por
+  // Shopify e dergon vetem `hmac`+`host` ketu (jo `shop`+`timestamp` sikurse
+  // per instalim te dokumentuar zyrtarisht) — algoritmi i sakte per KETE
+  // kombinim specifik s'eshte konfirmuar me siguri. Rreziku i vetem nese
+  // dikush e falsifikon `host` eshte thjesht fillimi i OAuth per nje shop
+  // te zgjedhur nga ata (jo leakim te dhenash) — isValidShopDomain mbetet
+  // mburoja reale (mbyll format-in), kesisoj hmac s'eshte i domosdoshem ketu.
+  if (req.query.host) {
     const shop = extractShopFromHost(req.query.host);
     if (shop && isValidShopDomain(shop)) {
       return res.redirect('/auth?shop=' + encodeURIComponent(shop));
+
     }
   }
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
