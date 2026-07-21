@@ -446,8 +446,48 @@ const LOCALE_MAP = {
   'id': 'Indonesian', 'fi': 'Finnish', 'zh': 'Chinese', 'hi': 'Hindi'
 };
 
+// Nxjerr domain-in e shop-it nga vlera e dekoduar e 'host' parametrit qe
+// Shopify e dergon kur merchant klikon "Open app" nga App Store/Admin —
+// formati varet nese eshte admin i vjeter (shop.myshopify.com/admin) apo
+// i ri, i unifikuar (admin.shopify.com/store/handle). host vjen pa
+// 'padding' (=) - e shtojme vete perpara se ta dekodojme per siguri
+// maksimale ndaj çdo variacioni base64 decoder-i.
+function extractShopFromHost(hostParam) {
+  try {
+    let padded = String(hostParam);
+    while (padded.length % 4) padded += '=';
+    const decoded = Buffer.from(padded, 'base64').toString('utf8');
+
+    const oldFormat = decoded.match(/^([a-zA-Z0-9][a-zA-Z0-9.-]*\.myshopify\.com)/);
+    if (oldFormat) return oldFormat[1];
+
+    const newFormat = decoded.match(/admin\.shopify\.com\/store\/([a-zA-Z0-9-]+)/);
+    if (newFormat) return `${newFormat[1]}.myshopify.com`;
+
+    return null;
+  } catch (e) {
+    return null;
+  }
+}
+
 // Static pages
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+app.get('/', (req, res) => {
+  // Nese Shopify e ka dërguar hmac+host (merchant klikoi "Open app" nga
+  // App Store/Admin — Shopify e dergon kete PAVARESISHT nese app-i eshte
+  // embedded apo jo), verifikojme dhe ridrejtojme direkt te OAuth, pa e
+  // detyruar merchant-in te shkruaje manualisht domain-in qe Shopify
+  // tashme e di. Perdor te njejtin verifikim HMAC si /auth/callback (i
+  // njejti algoritem i Shopify per parametra query te nenshkruar) — nese
+  // hmac s'perputhet ose host s'jep shop te vlefshem, bie normalisht te
+  // faqja statike (rasti i vizitorit organik, pa parametra nga Shopify).
+  if (req.query.hmac && req.query.host && verifyOAuthCallbackHmac(req.query)) {
+    const shop = extractShopFromHost(req.query.host);
+    if (shop && isValidShopDomain(shop)) {
+      return res.redirect('/auth?shop=' + encodeURIComponent(shop));
+    }
+  }
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'public', 'dashboard.html')));
 app.get('/tone', (req, res) => res.sendFile(path.join(__dirname, 'public', 'tone.html')));
 app.get('/glossary', (req, res) => res.sendFile(path.join(__dirname, 'public', 'glossary.html')));
