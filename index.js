@@ -17,6 +17,33 @@ const app = express();
 app.use(express.json({
   verify: (req, res, buf) => { req.rawBody = buf; }
 }));
+// KRITIKE: ky route duhet te jete PARA express.static (poshte) — Express i
+// kontrollon ne rradhen e regjistrimit, dhe express.static e "kap" '/'
+// automatikisht (sherben public/index.html si default) PARA se logjika jone
+// te arrinte fare ta shohe kerkesen. Kjo ishte shkaku i vertete pse
+// merchant-et gjithmone binin te faqja statike, pavaresisht shop/host ne
+// URL — kodi ynë kurre s'ekzekutohej, jo problem i vete logjikes.
+app.get('/', (req, res) => {
+  if (Object.keys(req.query).length > 0) {
+    console.log('[root-visit] Query e plote e marre nga Shopify/vizitori:', JSON.stringify(req.query));
+  }
+  // Rasti #1, DOKUMENTUAR ZYRTARISHT: klikim "Add app"/instalim i PARE nga
+  // dikush qe kurre s'e ka pasur — Shopify dergon `shop` DIREKT (bashke me
+  // hmac+timestamp). Ky eshte skenari me i rendesishem per klientet e rinj
+  // (cold email), i thjeshte per t'u kontrolluar, s'kerkon dekodim host.
+  if (req.query.shop && isValidShopDomain(req.query.shop)) {
+    return res.redirect('/auth?shop=' + encodeURIComponent(req.query.shop));
+  }
+  // Rasti #2: klikim "Open app" per app TASHME te instaluar — Shopify
+  // dergon `host` (base64) ne vend te `shop` direkt per kete skenar.
+  if (req.query.host) {
+    const shop = extractShopFromHost(req.query.host);
+    if (shop && isValidShopDomain(shop)) {
+      return res.redirect('/auth?shop=' + encodeURIComponent(shop));
+    }
+  }
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 app.use(express.static(path.join(__dirname, 'public')));
 
 const { 
@@ -471,35 +498,6 @@ function extractShopFromHost(hostParam) {
 }
 
 // Static pages
-app.get('/', (req, res) => {
-  if (Object.keys(req.query).length > 0) {
-    console.log('[root-visit] Query e plote e marre nga Shopify/vizitori:', JSON.stringify(req.query));
-  }
-  // Rasti #1, DOKUMENTUAR ZYRTARISHT: klikim "Add app"/instalim i PARE nga
-  // dikush qe kurre s'e ka pasur — Shopify dergon `shop` DIREKT (bashke me
-  // hmac+timestamp). Ky eshte skenari me i rendesishem per klientet e rinj
-  // (cold email), i thjeshte per t'u kontrolluar, s'kerkon dekodim host.
-  if (req.query.shop && isValidShopDomain(req.query.shop)) {
-    return res.redirect('/auth?shop=' + encodeURIComponent(req.query.shop));
-  }
-  // Rasti #2: klikim "Open app" per app TASHME te instaluar — Shopify
-  // dergon `host` (base64) ne vend te `shop` direkt per kete skenar.
-  // SHENIM: fillimisht provuam te verifikonim hmac (si /auth/callback), por
-  // Shopify e dergon vetem `hmac`+`host` ketu (jo `shop`+`timestamp` sikurse
-  // per instalim te dokumentuar zyrtarisht) — algoritmi i sakte per KETE
-  // kombinim specifik s'eshte konfirmuar me siguri. Rreziku i vetem nese
-  // dikush e falsifikon `host` eshte thjesht fillimi i OAuth per nje shop
-  // te zgjedhur nga ata (jo leakim te dhenash) — isValidShopDomain mbetet
-  // mburoja reale (mbyll format-in), kesisoj hmac s'eshte i domosdoshem ketu.
-  if (req.query.host) {
-    const shop = extractShopFromHost(req.query.host);
-    if (shop && isValidShopDomain(shop)) {
-      return res.redirect('/auth?shop=' + encodeURIComponent(shop));
-
-    }
-  }
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
 app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'public', 'dashboard.html')));
 app.get('/tone', (req, res) => res.sendFile(path.join(__dirname, 'public', 'tone.html')));
 app.get('/glossary', (req, res) => res.sendFile(path.join(__dirname, 'public', 'glossary.html')));
