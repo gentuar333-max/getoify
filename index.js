@@ -475,10 +475,15 @@ app.get('/', (req, res) => {
   if (Object.keys(req.query).length > 0) {
     console.log('[root-visit] Query e plote e marre nga Shopify/vizitori:', JSON.stringify(req.query));
   }
-  // Nese Shopify e ka dërguar `host` (merchant klikoi "Open app" nga App
-  // Store/Admin), nxjerrim shop-in prej tij dhe ridrejtojme direkt te OAuth,
-  // pa e detyruar merchant-in te shkruaje manualisht domain-in qe Shopify
-  // tashme e di.
+  // Rasti #1, DOKUMENTUAR ZYRTARISHT: klikim "Add app"/instalim i PARE nga
+  // dikush qe kurre s'e ka pasur — Shopify dergon `shop` DIREKT (bashke me
+  // hmac+timestamp). Ky eshte skenari me i rendesishem per klientet e rinj
+  // (cold email), i thjeshte per t'u kontrolluar, s'kerkon dekodim host.
+  if (req.query.shop && isValidShopDomain(req.query.shop)) {
+    return res.redirect('/auth?shop=' + encodeURIComponent(req.query.shop));
+  }
+  // Rasti #2: klikim "Open app" per app TASHME te instaluar — Shopify
+  // dergon `host` (base64) ne vend te `shop` direkt per kete skenar.
   // SHENIM: fillimisht provuam te verifikonim hmac (si /auth/callback), por
   // Shopify e dergon vetem `hmac`+`host` ketu (jo `shop`+`timestamp` sikurse
   // per instalim te dokumentuar zyrtarisht) — algoritmi i sakte per KETE
