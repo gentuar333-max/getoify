@@ -2559,6 +2559,16 @@ DESCRIPTION RULES:
   WRONG: "16" QHD display — 240Hz refresh rate for fluid, frame-accurate visuals" (restates the spec twice, no outcome)
   RIGHT: "16" QHD display — 240Hz keeps fast-paced action sharp, zero motion blur"
   The spec is never sacrificed for tone — both must be present in every bullet.
+- STRUCTURAL VARIATION: do not build every bullet as "Spec — outcome" with the
+  same dash. Repeated identically four times in a row, it reads as a template,
+  not writing. Vary the construction — some examples of other valid forms:
+  "Snapdragon 8 handles heavy multitasking without throttling performance"
+  (spec leads straight into a verb, no dash needed)
+  "With IP68 protection, the 5000mAh battery delivers all-day power against
+  water and dust" (opens with a clause, spec follows)
+  Aim for at least 1-2 of the 4 bullets to break from the dash pattern this
+  way. The spec and the outcome must both still be present — only the
+  sentence construction changes, never the accuracy.
 - BULLET 4 CHECK — apply this rule with EQUAL rigor to the 4th bullet as to bullets 1-3. Confirmed real-world failure pattern: the last bullet is where this rule is most often dropped, becoming a list of remaining facts with no outcome attached (e.g., "7500mAh — 66W wired and wireless charging, IP69K rating, Android 15" — four facts, zero benefit, and also violates the one-spec-per-bullet rule below). Before finishing, check bullet 4 specifically: does it state an outcome, or did it become a dumping ground for whatever specs didn't fit earlier? If the latter, rewrite it with the same spec-to-benefit treatment, and drop any extra fact that doesn't fit rather than cramming it in unexplained.
 - Total description max 120 words
 
