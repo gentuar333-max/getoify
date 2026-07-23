@@ -960,11 +960,38 @@ app.get('/auth/callback', async (req, res) => {
     const refreshToken = response.data.refresh_token || null;
     const expiresInSec = response.data.expires_in || 3600;
     const tokenExpiresAt = new Date(Date.now() + expiresInSec * 1000).toISOString();
+
+    // Kontrollo PARA upsert-it nese dyqani ekzistonte tashme — na duhet kjo
+    // per Shoffi (poshte): duam te raportojme VETEM instalime VERTET te reja,
+    // jo ri-autorizim/ri-lidhje te nje dyqani ekzistues (p.sh. pas token te
+    // pavlefshem, siç e kemi pare shpesh sot). Pas upsert-it rreshti do te
+    // ekzistoje gjithmone, prandaj kontrolli duhet PARA.
+    const { data: existingStore } = await supabase
+      .from('stores').select('shop').eq('shop', shop).maybeSingle();
+    const isNewMerchant = !existingStore;
+
     await supabase.from('stores').upsert({
       shop, access_token: accessToken, refresh_token: refreshToken,
       token_expires_at: tokenExpiresAt, token_invalid: false
     }, { onConflict: 'shop' });
     console.log('Store connected:', shop);
+
+    // Shoffi (platforme afiliimi) — njofto VETEM per merchant VERTET te rinj.
+    // Fire-and-forget e qellimshme: nese Shoffi eshte i ngadalshem/poshte,
+    // s'duam te vonojme apo thyejme redirect-in real te merchant-it drejt
+    // dashboard-it. SHOFFI_API_KEY duhet vendosur si env variable te Vercel —
+    // kurre e shkruajtur direkt ne kod (njesoj si çdo sekret tjeter sot).
+    if (isNewMerchant && process.env.SHOFFI_API_KEY) {
+      const merchantIp = (req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+      axios.post('https://platform.shoffi.app/v1/newMerchant', {
+        api_key: process.env.SHOFFI_API_KEY,
+        shopName: shop,
+        appId: '375138877441',
+        XFF: merchantIp
+      }, { headers: { 'Content-Type': 'application/json' } })
+        .then(() => console.log('[shoffi] Merchant i ri njoftuar:', shop))
+        .catch(err => console.warn('[shoffi] Njoftimi deshtoi (jo kritike):', err.response?.data || err.message));
+    }
 
     // Regjistro webhooks automatikisht pas OAuth
     const webhookTopics = [
