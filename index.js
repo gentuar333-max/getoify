@@ -4103,10 +4103,31 @@ async function pollNewProducts() {
     if (!stores || !stores.length) return;
 
     for (const store of stores) {
-      const token = store.access_token;
+      let token = store.access_token;
       const shop = store.shop;
       const tone = store.tone || 'professional and elegant';
       const glossary = store.glossary || 'checkout, Shopify';
+
+      // KRITIKE: /poll lexon stores DIREKT nga databaza (select('*') sipër),
+      // duke anashkaluar plotesisht getStore() dhe mekanizmin e rifreskimit
+      // qe ndodhet BRENDA saj — kjo ishte shkaku real qe access_token (skadon
+      // çdo 60 min me expiring:1) mbetej PËRGJITHMONE i pafreskuar pas
+      // skadimit te pare, per ÇDO dyqan, jo raste te izoluara. Rifreskojme
+      // KETU, direkt, PARA se te perdoret token-i.
+      if (store.token_expires_at && store.refresh_token) {
+        const expiresAt = new Date(store.token_expires_at).getTime();
+        const fiveMinMs = 5 * 60 * 1000;
+        if (Date.now() >= expiresAt - fiveMinMs) {
+          try {
+            token = await refreshShopifyToken(shop, store.refresh_token);
+            console.log(`[poll] Token i rifreskuar per ${shop}`);
+          } catch (refreshErr) {
+            console.warn(`[poll] Rifreskimi deshtoi per ${shop}:`, refreshErr.response?.data || refreshErr.message);
+            await supabase.from('stores').update({ token_invalid: true }).eq('shop', shop);
+            continue; // s'ka kuptim te vazhdoje me token qe e dime tashme qe s'punon
+          }
+        }
+      }
 
       // Skip stores with old/invalid tokens
       if (!token || token.startsWith('shpua_')) {
@@ -4291,21 +4312,39 @@ async function autoResetWebhooks() {
       { topic: 'collections/update', address: `${APP_URL}/webhook/collection-create` }
     ];
     for (const store of stores) {
-      if (!store.access_token || store.access_token.startsWith('shpua_')) continue;
+      let accessToken = store.access_token;
+      if (!accessToken || accessToken.startsWith('shpua_')) continue;
+      // I njejti fiks si /poll — rifresko nese ka token_expires_at+refresh_token
+      // (kerkon nje lookup shtese, minimal, per keto dy fusha specifike,
+      // meqe kjo funksion origjinalisht mori vetem shop+access_token).
+      try {
+        const { data: fullStore } = await supabase
+          .from('stores').select('token_expires_at, refresh_token')
+          .eq('shop', store.shop).single();
+        if (fullStore?.token_expires_at && fullStore?.refresh_token) {
+          const expiresAt = new Date(fullStore.token_expires_at).getTime();
+          if (Date.now() >= expiresAt - 5 * 60 * 1000) {
+            accessToken = await refreshShopifyToken(store.shop, fullStore.refresh_token);
+          }
+        }
+      } catch (refreshErr) {
+        console.warn(`[autoResetWebhooks] Rifreskimi deshtoi per ${store.shop}, duke anashkaluar:`, refreshErr.message);
+        continue;
+      }
       try {
         const listRes = await axios.get(`https://${store.shop}/admin/api/2026-07/webhooks.json`,
-          { headers: { 'X-Shopify-Access-Token': store.access_token }, timeout: 10000 });
+          { headers: { 'X-Shopify-Access-Token': accessToken }, timeout: 10000 });
         const existing = listRes.data.webhooks || [];
         const allCorrect = webhookTopics.every(wh => existing.some(e => e.topic === wh.topic && e.address === wh.address));
         if (allCorrect) { console.log(`[auto-webhooks] OK: ${store.shop}`); continue; }
         for (const wh of existing) {
           await axios.delete(`https://${store.shop}/admin/api/2026-07/webhooks/${wh.id}.json`,
-            { headers: { 'X-Shopify-Access-Token': store.access_token }, timeout: 10000 });
+            { headers: { 'X-Shopify-Access-Token': accessToken }, timeout: 10000 });
         }
         for (const wh of webhookTopics) {
           await axios.post(`https://${store.shop}/admin/api/2026-07/webhooks.json`,
             { webhook: { topic: wh.topic, address: wh.address, format: 'json' } },
-            { headers: { 'X-Shopify-Access-Token': store.access_token, 'Content-Type': 'application/json' }, timeout: 10000 });
+            { headers: { 'X-Shopify-Access-Token': accessToken, 'Content-Type': 'application/json' }, timeout: 10000 });
         }
         console.log(`[auto-webhooks] Reset OK: ${store.shop}`);
       } catch(e) { console.warn(`[auto-webhooks] Failed for ${store.shop}:`, e.message); }
