@@ -336,6 +336,42 @@ app.get('/remove-widget-scripttag', requireAdminKey, async (req, res) => {
   }
 });
 
+// Kontroll LIVE i lidhjes me Shopify — a eshte VERTET ende i instaluar,
+// jo vetem çka thote flag-u i ruajtur token_invalid (mund te jete i
+// vjeter/jo i sakte, sidomos pas fiksit te sotem te rifreskimit). Perdor
+// getStore() qe perfiton automatikisht nga rifreskimi nese token-i eshte
+// afer skadimit — nese kthen 401/403 edhe pas rifreskimit, dyqani ka
+// gjasa reale te kete çinstaluar ose revokuar aksesin.
+app.get('/check-connection', requireAdminKey, async (req, res) => {
+  const { shop } = req.query;
+  if (!shop) return res.status(400).json({ error: 'Missing shop' });
+  try {
+    const store = await getStore(shop);
+    if (!store?.access_token) return res.status(404).json({ error: 'Store not found ne Supabase' });
+    const shopifyRes = await axios.get(
+      `https://${shop}/admin/api/2026-07/shop.json`,
+      { headers: { 'X-Shopify-Access-Token': store.access_token }, timeout: 10000 }
+    );
+    res.json({
+      connected: true,
+      shop,
+      shopify_confirms_name: shopifyRes.data.shop?.name,
+      plan: store.plan,
+      selected_locales: store.selected_locales
+    });
+  } catch(e) {
+    if (e.response?.status === 401 || e.response?.status === 403) {
+      return res.json({
+        connected: false,
+        shop,
+        reason: 'Shopify refuzoi token-in — ka gjasa reale çinstalim ose revokim aksesi',
+        shopify_status: e.response.status
+      });
+    }
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Widget config endpoint — widget.js e thirr kete per te marre gjuhet aktive
 app.get('/widget-config', async (req, res) => {
   const { shop } = req.query;
