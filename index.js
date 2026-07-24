@@ -1082,7 +1082,7 @@ app.get('/auth/callback', async (req, res) => {
         appId: '375138877441',
         XFF: merchantIp
       }, { headers: { 'Content-Type': 'application/json' } })
-        .then(() => console.log('[shoffi] Merchant i ri njoftuar:', shop))
+        .then((shoffiRes) => console.log('[shoffi] Pergjigje e plote:', JSON.stringify(shoffiRes.data)))
         .catch(err => console.warn('[shoffi] Njoftimi deshtoi (jo kritike):', err.response?.data || err.message));
     }
 
