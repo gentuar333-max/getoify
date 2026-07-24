@@ -181,6 +181,37 @@ function isValidShopDomain(shop) {
   return typeof shop === 'string' && /^[a-zA-Z0-9.-]+\.myshopify\.com$/.test(shop);
 }
 
+// Zbulon nese nje produkt eshte pjese e te dhenave FIKTIVE qe vete Shopify
+// i gjeneron automatikisht kur merchant-i zgjedh "Generate test data" gjate
+// krijimit te nje dev store — konfirmuar zyrtarisht (Shopify Partners blog):
+// "the store comes with a set of SNOWBOARD products". Perdorim pattern, jo
+// liste ekzakte emrash — me e fortë ndaj variacioneve, dhe pothuajse e
+// pamundur te prodhoje "false positive" per nje merchant real (dyqan qe
+// shet snowboard REALISHT do te duhej te kishte titull qe permban fjalen
+// e pazakontë "snowboard" — rrezik minimal). Kjo mbron çdo merchant qe
+// perdor dev store me te dhena testimi nga konsumimi i limitit te planit
+// mbi produkte fiktive, jo produktet e tij reale.
+// Titujt EKZAKTE te konfirmuar (jo fjale te vetme) — nga vete keto teste
+// sot (getoify-3-store, para migrimit). Perdorim perputhje EKZAKTE, jo
+// "permban fjalen snowboard", sepse nje merchant real qe VERTET shet
+// snowboard (biznes plotesisht i mundshem) do te anashkalohej gabimisht
+// me nje kontroll me te gjere.
+const SHOPIFY_SAMPLE_TITLES = [
+  'the complete snowboard',
+  'the 3p fulfilled snowboard',
+  'the collection snowboard liquid',
+  'the collection snowboard oxygen',
+  'the multi-managed snowboard',
+  'the multi-location snowboard',
+  'the archived snowboard',
+  'selling plans ski wax'
+];
+
+function isShopifySampleProduct(product) {
+  const title = (product?.title || '').toLowerCase().trim();
+  return SHOPIFY_SAMPLE_TITLES.includes(title);
+}
+
 // Verifikon hmac-un qe Shopify e shton te query string i /auth/callback —
 // KY eshte ndryshe nga HMAC i webhook-ve (verifyShopifyWebhookHmac me poshte):
 // per OAuth callback, Shopify e nenshkruan STRING-un e parametrave (jo trupin
@@ -368,6 +399,32 @@ app.get('/check-connection', requireAdminKey, async (req, res) => {
         shopify_status: e.response.status
       });
     }
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Pastrim: fshin perkthimet EKZISTUESE, vetem per produkte fiktive te
+// Shopify-t (Snowboard/Ski Wax) — per raste te perpunuara PARA se te
+// shtohej fiksi i mesiperm. Nuk prek ASNJE produkt tjeter te vertete.
+app.get('/cleanup-sample-products', requireAdminKey, async (req, res) => {
+  const { shop } = req.query;
+  if (!shop) return res.status(400).json({ error: 'Missing shop' });
+  try {
+    const { data: rows } = await supabase
+      .from('translations')
+      .select('id, original_title')
+      .eq('shop', shop);
+    const toDelete = (rows || []).filter(r => isShopifySampleProduct({ title: r.original_title }));
+    if (toDelete.length === 0) {
+      return res.json({ success: true, deleted: 0, message: 'Asnje produkt fiktiv Shopify i gjetur per kete shop' });
+    }
+    await supabase.from('translations').delete().in('id', toDelete.map(r => r.id));
+    res.json({
+      success: true,
+      deleted: toDelete.length,
+      titles: [...new Set(toDelete.map(r => r.original_title))]
+    });
+  } catch(e) {
     res.status(500).json({ error: e.message });
   }
 });
@@ -3852,6 +3909,12 @@ app.post('/webhook/product-create', requireWebhookHmac, async (req, res) => {
     const body = Buffer.isBuffer(rawBody) ? JSON.parse(rawBody.toString()) : rawBody;
     if (!body.title || !body.id) return;
 
+    // Anashkalo produktet FIKTIVE te vete Shopify-t ("Generate test data")
+    if (isShopifySampleProduct(body)) {
+      console.log(`[webhook] Anashkaluar produkt fiktiv i Shopify-t: ${body.title}`);
+      return;
+    }
+
     // Deduplikim: Shop + product_id + 30 sekonda
     const webhookKey = `${shop}:${body.id}`;
     if (recentWebhooks.has(webhookKey)) {
@@ -4195,6 +4258,12 @@ async function pollNewProducts() {
         );
 
         for (const product of res.data.products) {
+          // Anashkalo produktet FIKTIVE te vete Shopify-t ("Generate test
+          // data" — Snowboard/Ski Wax) — s'duhen perpunuar automatikisht,
+          // konsumojne limitin e planit per asgje reale.
+          if (isShopifySampleProduct(product)) {
+            continue;
+          }
           // Only localize if this product_id has never been translated.
           // Never delete existing translations automatically — this caused
           // data corruption where old product descriptions overwrote new ones.
