@@ -2405,6 +2405,169 @@ function isSportFitnessProduct(product) {
   return SPORT_FITNESS_TITLE_KEYWORDS.some(k => title.includes(k));
 }
 
+// OPTIMIZIM TOKEN: brenda Sport & Fitness, VETEM 1 nga ~6 nen-tipet aplikohet
+// per çdo produkt te vetem (nje massage gun s'ka nevoje per rregullat e
+// Peloton-it). Nese nen-tipi zbulohet me siguri, dergohet VETEM ai bllok —
+// nese JO (produkt i pazakonte, emertim i ri qe s'perputhet me asnje liste),
+// kthehet 'unknown' dhe caller-i (poshte, SPORT_FITNESS_FULL_TEXT) dergon
+// TE GJITHA nen-bllokun, EKZAKTESISHT sic ishte sjellja PARA ketij ndryshimi —
+// pra rrezik ZERO regresi per rastet e paperputhura, kursim vetem kur jemi
+// te sigurte.
+function detectSportFitnessSubtype(product) {
+  const title = (product.title || '').toLowerCase();
+  if (['theragun', 'massage gun', 'hyperice', 'hypervolt', 'achedaway', 'percussion'].some(k => title.includes(k))) return 'massage_gun';
+  if (['dumbbell', 'barbell', 'kettlebell', 'resistance band', 'pull-up bar', 'yoga mat', 'jump rope', 'battle rope', 'foam roller'].some(k => title.includes(k))) return 'fitness_equipment';
+  if (['concept2', 'rogue', 'eleiko', 'technogym', 'life fitness', 'rowing machine'].some(k => title.includes(k))) return 'gym_equipment';
+  if (['peloton', 'nordictrack', 'ergatta', 'ifit', 'echelon', 'stationary bike'].some(k => title.includes(k))) return 'connected_bikes';
+  if (['garmin', 'polar', 'whoop', 'oura', 'fitbit', 'smartwatch', 'sports watch', 'smart band', 'amazfit'].some(k => title.includes(k))) return 'wearables';
+  if (['whey', 'creatine', 'pre-workout', 'bcaa', 'protein bar', 'protein powder', 'energy gel', 'electrolyte'].some(k => title.includes(k))) return 'nutrition';
+  return 'unknown';
+}
+
+// Rregullat "GENERAL" — aplikohen GJITHMONE per Sport & Fitness, pavaresisht
+// nen-tipit (jo specifike per nje produkt te caktuar).
+const SPORT_FITNESS_ALWAYS_TEXT = `GENERAL RULES:
+- NEVER write "portatif" unless weight is confirmed < 0.8 kg
+- NEVER combine "athlètes sérieux" with "bien-être" — choose ONE audience
+- ALWAYS mention the key differentiator vs cheaper models in the same line
+
+VARIANT UNCERTAINTY RULE — CRITICAL:
+When the product name contains a variant identifier (Solar, AMOLED, Pro, Plus, Ultra, Max, Elite, SE):
+- These identifiers change specs fundamentally between variants
+- VERIFY before writing: does this variant have this spec?
+- Specs that DIFFER by variant → write "selon version" or use "up to" framing
+- Specs UNIVERSAL to all variants → write as confirmed
+- NEVER mix specs from different variants of the same product line
+- Examples of dangerous mix-ups:
+  Garmin Fenix 8 Solar = MIP display / Fenix 8 AMOLED = AMOLED display — MUTUALLY EXCLUSIVE
+  Theragun Pro Plus = 2 batteries / Theragun Pro = 1 battery — different models
+  Apple Watch Ultra = 10 ATM / Apple Watch SE = 50m — different resistance
+- RULE: if you know the variant suffix but are not 100% certain of that variant's spec → write "up to" or omit
+
+WATER RESISTANCE — verify before writing, always specify real-world limitations:
+- 5 ATM = rain, splashes, hand washing only — NOT swimming
+- 10 ATM = pool swimming, snorkeling, calm water — NOT diving or high-velocity water sports
+- 20 ATM+ = scuba diving
+- Never write 5 ATM for a product confirmed at 10 ATM (undersells), and never write "sports aquatiques"/"water sports" for 10 ATM without the diving/high-velocity limitation
+
+DISPLAY TYPE — verify before writing:
+- Solar models typically use MIP/transflective (better in sunlight, lower power)
+- AMOLED models use AMOLED (vivid colors, higher power draw)
+- Never write AMOLED for a Solar variant — they are physically incompatible
+
+BATTERY LIFE — always specify the mode, use realistic ranges (not maximum theoretical):
+- Format: "48 jours smartwatch / 145h GPS / 550 jours expedition (avec solaire)" or "4-5 jours (jusqu'à 7 jours mode économie)"
+- Never write "X jours" or "jusqu'à X jours" alone — always specify the mode and use a realistic range, not the max`;
+
+const SPORT_FITNESS_MASSAGE_GUN_TEXT = `MASSAGE GUN / PERCUSSION THERAPY (Theragun, Hyperice, Hypervolt, Achedaway):
+- Bullet 1: PPM + amplitude mm confirmed for this exact model
+- Bullet 2: batteries × autonomy = total hours (e.g. "2 batteries × 150 min = 5h total")
+- Bullet 3: PRO differentiators — OLED forcemètre, Bluetooth app, guided routines if Pro/Plus
+- Bullet 4: attachments count + weight kg
+- FORBIDDEN: "portatif" for Theragun Pro, Pro Plus, Elite (all >0.8 kg)
+- FORBIDDEN: "bien-être" for Pro/Elite models — write "usage professionnel et récupération athlétique"`;
+
+const SPORT_FITNESS_EQUIPMENT_TEXT = `FITNESS EQUIPMENT (dumbbells, kettlebells, resistance bands):
+- Bullet 1: weight/resistance range + increments
+- Bullet 2: material + grip type
+- Bullet 3: muscle groups targeted
+- Bullet 4: dimensions + storage`;
+
+const SPORT_GYM_EQUIPMENT_TEXT = `PROFESSIONAL GYM EQUIPMENT (Concept2, Rogue, Eleiko, Technogym, Life Fitness):
+- Bullet 1: resistance mechanism + technology name (e.g. "Volant d'inertie air — résistance auto-régulée")
+- Bullet 2: monitor/screen name + connectivity (e.g. "Performance Monitor PM5 — Bluetooth/ANT+, WiFi, Zwift")
+- Bullet 3: capacity + adjustability (e.g. "Capacité 227kg — course ajustable 38-48" pour 140-210cm")
+- Bullet 4: storage + warranty (e.g. "Démontable 2 parties <30 sec — garantie 5 ans cadre, 2 ans pièces")
+- ALWAYS mention: exact component names (PM5, J-cups, etc.), max capacity, warranty terms
+- SOCIAL PROOF: if used at CrossFit Games, Olympics, or pro clubs — mention it: "utilisé aux CrossFit Games et clubs professionnels"
+- NEVER write "professionnel" without proof — write the actual proof instead
+- REBRANDING: if product was renamed, mention: "Anciennement [Old Name] — même mécanisme, rebrand [year]"
+- COMPATIBLE APPS: always list if known (Zwift, Garmin Connect, Polar, ErgData, Concept2 Logbook)`;
+
+const SPORT_CONNECTED_BIKES_TEXT = `CONNECTED FITNESS BIKES & CARDIO (Peloton, NordicTrack, Ergatta, iFit, Echelon):
+- Bullet 1: KEY DIFFERENTIATOR vs base model (e.g. "Auto-Follow — résistance auto-ajustée selon le cours")
+- Bullet 2: screen size + rotation + class types (e.g. "Écran tactile rotatif 23,8" — classes live et on-demand")
+- Bullet 3: connectivity + ecosystem (e.g. "Apple GymKit, WiFi, Bluetooth 5.0 — compatible Apple Watch instantané")
+- Bullet 4: warranty PER COMPONENT — never write single warranty:
+  Format: "X ans cadre, Y mois pièces, Z mois main-d'œuvre"
+  Peloton Bike+: 5 ans cadre, 12 mois pièces/électronique, 12 mois main-d'œuvre
+  Never write "12 mois" alone for Peloton — undersells vs NordicTrack 10 ans
+- ALWAYS mention: pedal system (Look Delta, SPD, toe cages) + if shoes included or sold separately
+- ALWAYS mention: key differentiator that justifies premium over base model
+- SUBSCRIPTION: never write specific price — "Abonnement requis — voir tarifs sur peloton.com"
+- INCOMPATIBILITIES: if not compatible with Zwift or other apps → mention "non compatible apps tierces"`;
+
+// SPORTS WEARABLES — vetem 4 bullet-at e prioritetit (jo extras — ato jane
+// konstante te veçanta poshte, njesoj si te tekstit origjinal ku ishin
+// seksione TE VECANTA, jo te ngulitura brenda "SPORTS WEARABLES").
+const SPORT_WEARABLES_CORE_TEXT = `SPORTS WEARABLES (Garmin, Polar, Whoop, Oura):
+- Bullet 1: battery life with mode specified (smartwatch / GPS / expedition)
+- Bullet 2: display type CONFIRMED for this variant + resolution
+- Bullet 3: key sensors (HR, SpO2, HRV) + differentiating features (TOPO maps, ClimbPro, PacePro)
+- Bullet 4: water resistance ATM CONFIRMED + weight g`;
+
+const SPORT_NUTRITION_TEXT = `SPORTS NUTRITION:
+- Bullet 1: key active + g per serving
+- Bullet 2: servings per container + flavor
+- Bullet 3: additional blend
+- Bullet 4: certification if confirmed`;
+
+const SPORT_SUBSCRIPTION_TEXT = `SUBSCRIPTION & BUSINESS MODEL TRANSPARENCY:
+If the product requires a subscription (Whoop, Peloton, Oura, etc.):
+- MANDATORY: mention subscription requirement — never hide it
+- NEVER write a specific price for subscriptions — prices change and vary by region
+- Format: "Abonnement requis — voir tarifs sur [brand].com" or "Abonnement mensuel ou annuel requis"
+- If device is free with subscription → mention: "Appareil inclus avec abonnement"
+- French buyers hate surprise pricing — transparency without wrong numbers builds trust`;
+
+const SPORT_SCREENLESS_TEXT = `SCREENLESS DEVICES:
+If the product has no screen (Whoop, Oura Ring, smart rings):
+- Frame "no screen" as a BENEFIT: "Aucun écran — conception minimaliste, autonomie maximale"
+- Explain where data is accessed: "Toutes vos données sur l'app [brand] (iOS/Android)"
+- Never write "synchronise" when data only exists in the app — write "affichage exclusif sur app"`;
+
+const SPORT_SENSOR_ACCURACY_TEXT = `SENSOR ACCURACY — never write "24/7" without verifying each sensor individually:
+- HR (fréquence cardiaque) → typically continuous 24/7 — write "surveillance continue FC"
+- HRV → typically continuous or nightly — verify before writing "continue"
+- SpO2 → most wearables = nocturne + spot check ONLY — NEVER write "SpO2 continue" unless confirmed
+- Température cutanée → typically continuous — write "surveillance continue température"
+- Format: "Surveillance continue : FC, HRV, température. SpO2 nocturne et spot check."`;
+
+const SPORT_WEARABLE_MATERIALS_TEXT = `WEARABLE MATERIALS & SIZING:
+- If titanium confirmed → always mention: "Titane — [weight]g, légèreté et résistance"
+- If sizing kit required (Oura Ring) → always mention: "Kit d'essayage gratuit disponible avant commande"
+- Material differentiates premium from budget — never omit confirmed material`;
+
+// Kombinimet per çdo nen-tip specifik — subscription/screenless/sensor/
+// materials shtohen VETEM ku kane kuptim (bikes marrin vetem subscription;
+// wearables marrin te 4 extras-at), asnjehere te dyja njekohesisht per te
+// mos e dyfishuar subscription-in.
+const SPORT_FITNESS_SUBTYPE_MAP = {
+  massage_gun: SPORT_FITNESS_MASSAGE_GUN_TEXT,
+  fitness_equipment: SPORT_FITNESS_EQUIPMENT_TEXT,
+  gym_equipment: SPORT_GYM_EQUIPMENT_TEXT,
+  connected_bikes: [SPORT_CONNECTED_BIKES_TEXT, SPORT_SUBSCRIPTION_TEXT].join('\n\n'),
+  wearables: [SPORT_WEARABLES_CORE_TEXT, SPORT_SUBSCRIPTION_TEXT, SPORT_SCREENLESS_TEXT, SPORT_SENSOR_ACCURACY_TEXT, SPORT_WEARABLE_MATERIALS_TEXT].join('\n\n'),
+  nutrition: SPORT_NUTRITION_TEXT,
+};
+
+// Fallback — rindertuar ne RENDIN EKZAKT te tekstit origjinal (Massage →
+// Equipment → Gym → Bikes → Wearables-core → Nutrition → Subscription →
+// Screenless → Sensor → Materials), secili element NJE HERE TE VETME.
+// Perdoret vetem kur detectSportFitnessSubtype() kthen 'unknown'.
+const SPORT_FITNESS_ALL_SUBTYPES_TEXT = [
+  SPORT_FITNESS_MASSAGE_GUN_TEXT,
+  SPORT_FITNESS_EQUIPMENT_TEXT,
+  SPORT_GYM_EQUIPMENT_TEXT,
+  SPORT_CONNECTED_BIKES_TEXT,
+  SPORT_WEARABLES_CORE_TEXT,
+  SPORT_NUTRITION_TEXT,
+  SPORT_SUBSCRIPTION_TEXT,
+  SPORT_SCREENLESS_TEXT,
+  SPORT_SENSOR_ACCURACY_TEXT,
+  SPORT_WEARABLE_MATERIALS_TEXT,
+].join('\n\n');
+
 // Fashion & Apparel keywords
 const FASHION_APPAREL_TYPES = [
   'clothing', 'apparel', 'fashion', 'shoes', 'footwear', 'accessories',
@@ -2467,6 +2630,12 @@ async function generateProductCopy(product, targetLang, glossary, cleanBody, ima
   const homeKitchen = isHomeKitchenProduct(product);
   const beautyHealth = !homeKitchen && isBeautyHealthProduct(product);
   const sportFitness = !homeKitchen && !beautyHealth && isSportFitnessProduct(product);
+  // OPTIMIZIM TOKEN (shih detectSportFitnessSubtype me lart per arsyetimin e
+  // plote): 'unknown' → SPORT_FITNESS_ALL_SUBTYPES_TEXT (gjithcka, si sjellja
+  // e vjeter, zero regres); nen-tip i njohur → VETEM ai bllok.
+  const sportFitnessSubtypeText = sportFitness
+    ? (SPORT_FITNESS_SUBTYPE_MAP[detectSportFitnessSubtype(product)] || SPORT_FITNESS_ALL_SUBTYPES_TEXT)
+    : '';
   const fashionApparel = !homeKitchen && !beautyHealth && !sportFitness && isFashionApparelProduct(product);
   const techElectronics = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && isTechElectronicsProduct(product);
   const isGeneric = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && !techElectronics;
@@ -2922,114 +3091,9 @@ ${sportFitness ? `
 SPORT & FITNESS SPECIFIC RULES:
 This is a sport, fitness, or recovery product.
 
-GENERAL RULES:
-- NEVER write "portatif" unless weight is confirmed < 0.8 kg
-- NEVER combine "athlètes sérieux" with "bien-être" — choose ONE audience
-- ALWAYS mention the key differentiator vs cheaper models in the same line
+${SPORT_FITNESS_ALWAYS_TEXT}
 
-VARIANT UNCERTAINTY RULE — CRITICAL:
-When the product name contains a variant identifier (Solar, AMOLED, Pro, Plus, Ultra, Max, Elite, SE):
-- These identifiers change specs fundamentally between variants
-- VERIFY before writing: does this variant have this spec?
-- Specs that DIFFER by variant → write "selon version" or use "up to" framing
-- Specs UNIVERSAL to all variants → write as confirmed
-- NEVER mix specs from different variants of the same product line
-- Examples of dangerous mix-ups:
-  Garmin Fenix 8 Solar = MIP display / Fenix 8 AMOLED = AMOLED display — MUTUALLY EXCLUSIVE
-  Theragun Pro Plus = 2 batteries / Theragun Pro = 1 battery — different models
-  Apple Watch Ultra = 10 ATM / Apple Watch SE = 50m — different resistance
-- RULE: if you know the variant suffix but are not 100% certain of that variant's spec → write "up to" or omit
-
-WATER RESISTANCE — verify before writing, always specify real-world limitations:
-- 5 ATM = rain, splashes, hand washing only — NOT swimming
-- 10 ATM = pool swimming, snorkeling, calm water — NOT diving or high-velocity water sports
-- 20 ATM+ = scuba diving
-- Never write 5 ATM for a product confirmed at 10 ATM (undersells), and never write "sports aquatiques"/"water sports" for 10 ATM without the diving/high-velocity limitation
-
-DISPLAY TYPE — verify before writing:
-- Solar models typically use MIP/transflective (better in sunlight, lower power)
-- AMOLED models use AMOLED (vivid colors, higher power draw)
-- Never write AMOLED for a Solar variant — they are physically incompatible
-
-BATTERY LIFE — always specify the mode, use realistic ranges (not maximum theoretical):
-- Format: "48 jours smartwatch / 145h GPS / 550 jours expedition (avec solaire)" or "4-5 jours (jusqu'à 7 jours mode économie)"
-- Never write "X jours" or "jusqu'à X jours" alone — always specify the mode and use a realistic range, not the max
-
-MASSAGE GUN / PERCUSSION THERAPY (Theragun, Hyperice, Hypervolt, Achedaway):
-- Bullet 1: PPM + amplitude mm confirmed for this exact model
-- Bullet 2: batteries × autonomy = total hours (e.g. "2 batteries × 150 min = 5h total")
-- Bullet 3: PRO differentiators — OLED forcemètre, Bluetooth app, guided routines if Pro/Plus
-- Bullet 4: attachments count + weight kg
-- FORBIDDEN: "portatif" for Theragun Pro, Pro Plus, Elite (all >0.8 kg)
-- FORBIDDEN: "bien-être" for Pro/Elite models — write "usage professionnel et récupération athlétique"
-
-FITNESS EQUIPMENT (dumbbells, kettlebells, resistance bands):
-- Bullet 1: weight/resistance range + increments
-- Bullet 2: material + grip type
-- Bullet 3: muscle groups targeted
-- Bullet 4: dimensions + storage
-
-PROFESSIONAL GYM EQUIPMENT (Concept2, Rogue, Eleiko, Technogym, Life Fitness):
-- Bullet 1: resistance mechanism + technology name (e.g. "Volant d'inertie air — résistance auto-régulée")
-- Bullet 2: monitor/screen name + connectivity (e.g. "Performance Monitor PM5 — Bluetooth/ANT+, WiFi, Zwift")
-- Bullet 3: capacity + adjustability (e.g. "Capacité 227kg — course ajustable 38-48" pour 140-210cm")
-- Bullet 4: storage + warranty (e.g. "Démontable 2 parties <30 sec — garantie 5 ans cadre, 2 ans pièces")
-- ALWAYS mention: exact component names (PM5, J-cups, etc.), max capacity, warranty terms
-- SOCIAL PROOF: if used at CrossFit Games, Olympics, or pro clubs — mention it: "utilisé aux CrossFit Games et clubs professionnels"
-- NEVER write "professionnel" without proof — write the actual proof instead
-- REBRANDING: if product was renamed, mention: "Anciennement [Old Name] — même mécanisme, rebrand [year]"
-- COMPATIBLE APPS: always list if known (Zwift, Garmin Connect, Polar, ErgData, Concept2 Logbook)
-
-CONNECTED FITNESS BIKES & CARDIO (Peloton, NordicTrack, Ergatta, iFit, Echelon):
-- Bullet 1: KEY DIFFERENTIATOR vs base model (e.g. "Auto-Follow — résistance auto-ajustée selon le cours")
-- Bullet 2: screen size + rotation + class types (e.g. "Écran tactile rotatif 23,8" — classes live et on-demand")
-- Bullet 3: connectivity + ecosystem (e.g. "Apple GymKit, WiFi, Bluetooth 5.0 — compatible Apple Watch instantané")
-- Bullet 4: warranty PER COMPONENT — never write single warranty:
-  Format: "X ans cadre, Y mois pièces, Z mois main-d'œuvre"
-  Peloton Bike+: 5 ans cadre, 12 mois pièces/électronique, 12 mois main-d'œuvre
-  Never write "12 mois" alone for Peloton — undersells vs NordicTrack 10 ans
-- ALWAYS mention: pedal system (Look Delta, SPD, toe cages) + if shoes included or sold separately
-- ALWAYS mention: key differentiator that justifies premium over base model
-- SUBSCRIPTION: never write specific price — "Abonnement requis — voir tarifs sur peloton.com"
-- INCOMPATIBILITIES: if not compatible with Zwift or other apps → mention "non compatible apps tierces"
-
-SPORTS WEARABLES (Garmin, Polar, Whoop, Oura):
-- Bullet 1: battery life with mode specified (smartwatch / GPS / expedition)
-- Bullet 2: display type CONFIRMED for this variant + resolution
-- Bullet 3: key sensors (HR, SpO2, HRV) + differentiating features (TOPO maps, ClimbPro, PacePro)
-- Bullet 4: water resistance ATM CONFIRMED + weight g
-
-SPORTS NUTRITION:
-- Bullet 1: key active + g per serving
-- Bullet 2: servings per container + flavor
-- Bullet 3: additional blend
-- Bullet 4: certification if confirmed
-
-SUBSCRIPTION & BUSINESS MODEL TRANSPARENCY:
-If the product requires a subscription (Whoop, Peloton, Oura, etc.):
-- MANDATORY: mention subscription requirement — never hide it
-- NEVER write a specific price for subscriptions — prices change and vary by region
-- Format: "Abonnement requis — voir tarifs sur [brand].com" or "Abonnement mensuel ou annuel requis"
-- If device is free with subscription → mention: "Appareil inclus avec abonnement"
-- French buyers hate surprise pricing — transparency without wrong numbers builds trust
-
-SCREENLESS DEVICES:
-If the product has no screen (Whoop, Oura Ring, smart rings):
-- Frame "no screen" as a BENEFIT: "Aucun écran — conception minimaliste, autonomie maximale"
-- Explain where data is accessed: "Toutes vos données sur l'app [brand] (iOS/Android)"
-- Never write "synchronise" when data only exists in the app — write "affichage exclusif sur app"
-
-SENSOR ACCURACY — never write "24/7" without verifying each sensor individually:
-- HR (fréquence cardiaque) → typically continuous 24/7 — write "surveillance continue FC"
-- HRV → typically continuous or nightly — verify before writing "continue"
-- SpO2 → most wearables = nocturne + spot check ONLY — NEVER write "SpO2 continue" unless confirmed
-- Température cutanée → typically continuous — write "surveillance continue température"
-- Format: "Surveillance continue : FC, HRV, température. SpO2 nocturne et spot check."
-
-WEARABLE MATERIALS & SIZING:
-- If titanium confirmed → always mention: "Titane — [weight]g, légèreté et résistance"
-- If sizing kit required (Oura Ring) → always mention: "Kit d'essayage gratuit disponible avant commande"
-- Material differentiates premium from budget — never omit confirmed material
+${sportFitnessSubtypeText}
 
 TONE: performance-driven, factual, direct — no poetry, no vague lifestyle claims.
 
@@ -3384,6 +3448,20 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
       );
       rawText = geminiRes.data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     } else {
+      // FEATURE (kosto, me flag sigurie): route-im opsional drejt Gemini per
+      // gjenerimin e PARE kur s'ka konfirmim te jashtem specash (STEP B/C —
+      // rasti ku prompti VETE detyron hedging "up to"/pa specs, pra rreziku
+      // halucinacioni eshte tashme i kufizuar nga formulimi, jo nga modeli).
+      // I ANASHKALUAR fare (=sjellje identike me sot, Sonnet per gjithcka)
+      // PERVEQSE GEMINI_GENERATION_ENABLED='true' eshte vendosur EKSPLICITISHT
+      // ne env — kjo do te thote deploy-i i ketij kodi VETE s'ndryshon asgje
+      // derisa TI vete e aktivizosh, pasi te kesh testuar. Rastet me imazh
+      // (hasImage) MBETEN gjithmone te Sonnet — s'jane testuar me Gemini vision
+      // per kete perdorim specifik ende.
+      const useGeminiForGeneration =
+        process.env.GEMINI_GENERATION_ENABLED === 'true' &&
+        !hasExternalConfirmation && !hasImage;
+
       const callSonnet = async (content) => {
         const claudeRes = await axios.post('https://api.anthropic.com/v1/messages', {
           // FIX: claude-sonnet-4-6 -> claude-sonnet-5 — model me i ri, $2/$10
@@ -3411,7 +3489,33 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
         return text;
       };
 
-      rawText = await callSonnet(userContent);
+      // Gemini pranon nje string te vetem (jo array blloqesh si Sonnet) — i
+      // njejti format qe perdor tashme dega e perkthimit me lart.
+      const callGeminiGeneration = async (content) => {
+        const promptText = Array.isArray(content) ? content.map(b => b.text).join('\n\n') : content;
+        const geminiRes = await axios.post(
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent',
+          {
+            contents: [{ parts: [{ text: promptText }] }],
+            generationConfig: { maxOutputTokens: 1500, temperature: 0 }
+          },
+          {
+            headers: {
+              'x-goog-api-key': process.env.GEMINI_API_KEY,
+              'content-type': 'application/json'
+            },
+            timeout: 45000
+          }
+        );
+        return geminiRes.data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      };
+
+      const generationProvider = useGeminiForGeneration ? 'gemini-3.1-flash-lite' : 'claude-sonnet-5';
+      console.log(`[generation-routing] "${product.title}" (${targetLang}) hasExternalConfirmation:${hasExternalConfirmation} hasImage:${hasImage} → ${generationProvider}`);
+
+      rawText = useGeminiForGeneration
+        ? await callGeminiGeneration(userContent)
+        : await callSonnet(userContent);
 
       // Rrjeta e sigurise mekanike: nese s'ka konfirmim te jashtem dhe Sonnet
       // prape shkroi numra te "zhveshur" OSE emer çipi me brez specifik (shkeli
@@ -3424,7 +3528,7 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
 
         firstViolation = firstParsed?.description ? detectGateViolation(firstParsed.description, targetLang) : null;
         if (firstViolation) {
-          console.warn(`[gate-violation] Sonnet shkeli gate-in (${firstViolation}) per "${product.title}" (${targetLang}) — duke provuar korrigjim`);
+          console.warn(`[gate-violation] ${generationProvider} shkeli gate-in (${firstViolation}) per "${product.title}" (${targetLang}) — duke provuar korrigjim`);
           const correction = {
             type: 'text',
             text: `Your previous response violated a critical rule: it stated exact numeric specs (RAM, storage, screen size, battery, etc.) OR a specific chip/processor generation name (e.g. "A18", "Snapdragon 8 Elite") as confirmed facts, even though there is NO external confirmation for this product (no title override, no metafields). Rewrite the ENTIRE response. Every single numeric spec MUST use "up to" / "${UP_TO_HEDGES[targetLang]?.display || 'up to'}" framing or be omitted. Any chip/processor MUST be described generically (e.g. "Apple silicon chip", "octa-core processor") WITHOUT the generation number, unless it cannot be phrased that way, in which case omit it. Respond ONLY with the corrected version, same ###TITLE###/###DESCRIPTION###/###META_TITLE###/###META_DESCRIPTION###/###END### format as before.`
@@ -3436,7 +3540,14 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
           const retryContent = Array.isArray(userContent)
             ? [...userContent.filter(block => block.type !== 'image'), correction]
             : [...userContent, correction];
-          rawText = await callSonnet(retryContent);
+          // Retry-i duhet te shkoje te I NJEJTI provider qe gjeneroi pergjigjen
+          // e pare — nese Gemini e shkeli gate-in, retry-i shkon te Gemini,
+          // jo te Sonnet (perndryshe do te ndryshonim edhe modelin edhe
+          // gjenerimin ne te njejten kohe, duke e beri korrigjimin te
+          // paparashikueshem).
+          rawText = useGeminiForGeneration
+            ? await callGeminiGeneration(retryContent)
+            : await callSonnet(retryContent);
         }
       }
     }
