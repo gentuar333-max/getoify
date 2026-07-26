@@ -3403,13 +3403,17 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
 
   console.log(`[provider] ${isTranslation ? 'gemini-3.1-flash-lite (perkthim)' : 'claude-sonnet-5 (gjenerim i pare)'} — image:${hasImage} body:${!!cleanBody} product:"${product.title}"`);
 
+  // FIX (bug urgjent, konfirmuar ne prod): 'let'/'const' brenda try{} S'JANE
+  // TE DUKSHME brenda catch{} ne JavaScript — jane blloqe te veçanta scope-i.
+  // Deklarimi i meparshem i actualProvider ishte BRENDA try{}, dhe perdorej
+  // BRENDA catch{} — kjo shkaktonte "actualProvider is not defined" (ReferenceError
+  // I RI) SECILEHERE qe ndodhte ndonje gabim real (API, parsing, etj.), duke
+  // FSHEHUR gabimin e vertete pas ketij mesazhi te gabuar. Tani eshte KETU,
+  // JASHTE try/catch, e dukshme ne te dyja.
+  let actualProvider = isTranslation ? 'gemini-3.1-flash-lite' : 'claude-sonnet-5';
+
   try {
     let rawText = '';
-    // Deklaruar ketu (jo brenda else-s) qe te jete i dukshem edhe ne catch
-    // me poshte — perdoret per te loguar SAKTE cili provider deshtoi, ne
-    // vend te supozimit te vjeter "isTranslation false = gjithmone Claude"
-    // (i gabuar tani qe gjenerimi mund te shkoje edhe te Gemini).
-    let actualProvider = isTranslation ? 'gemini-3.1-flash-lite' : 'claude-sonnet-5';
     // Format i ri me shenues (###TITLE### etj) ne vend te JSON — eliminon
     // teresisht klasen e gabimeve qe kishim me JSON.parse() (newline real,
     // thonjeza te pa-escape-uara, apostrofa brenda description-it). Modeli
