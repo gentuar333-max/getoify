@@ -1705,6 +1705,65 @@ async function translateFieldWithGemini(text, fieldKey, targetLang) {
   return translated;
 }
 
+// FEATURE: Alt text — gjeneron pershkrim te shkurter (per aksesueshmeri + SEO
+// Google Images) DIREKT nga vete imazhi, permes Gemini vision. E kufizuar
+// qellimisht te "cka SHIHET ne foto" (materiale, ngjyra, forme) — jo specifika
+// produkti — sepse eshte detyre me rrezik shume me te ulet halucinacioni se
+// gjenerimi i description-it (s'kerkohet "kujtese" e specifikave, vetem
+// verifikim vizual i drejtperdrejte). Perdor inline_data (base64) — jo
+// file_data me URL publike — sepse eshte metoda e vetme e konfirmuar te
+// punoje ne çdo rast permes REST API-se se thjeshte (jo SDK-ja zyrtare, qe
+// mund ta trajtoje URL-ne ndryshe pas skenave).
+async function generateAltTextWithGemini(imageUrl, productTitle, targetLang) {
+  const imgRes = await axios.get(imageUrl, { responseType: 'arraybuffer', timeout: 15000 });
+  const base64Image = Buffer.from(imgRes.data).toString('base64');
+  const mimeType = imgRes.headers['content-type'] || 'image/jpeg';
+
+  const prompt = `Write concise, descriptive alt text (for accessibility and SEO) for this product image, in ${targetLang}.
+Product name for context: "${productTitle}"
+
+RULES:
+- Describe ONLY what is visibly shown in the image (materials, colors, shape, setting)
+- Do NOT invent specs or claims not visible in the image
+- Maximum 125 characters
+- No "image of" / "photo of" prefix — describe the subject directly
+- Return ONLY the alt text, nothing else`;
+
+  const res = await axios.post(
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent',
+    {
+      contents: [{
+        parts: [
+          { inline_data: { mime_type: mimeType, data: base64Image } },
+          { text: prompt }
+        ]
+      }],
+      generationConfig: { maxOutputTokens: 100, temperature: 0 }
+    },
+    {
+      headers: { 'x-goog-api-key': process.env.GEMINI_API_KEY, 'content-type': 'application/json' },
+      timeout: 20000
+    }
+  );
+  const altText = res.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+  if (!altText) throw new Error('Empty alt text response from Gemini');
+  return altText.replace(/^["']|["']$/g, '').slice(0, 125); // hiq thonjeza rastesore, siguro kufirin e Shopify
+}
+
+// Vendos alt text te imazhi i pare permes REST, VETEM nese eshte bosh —
+// njesoj si updateShopifyProductBodyIfEmpty, s'mbishkruan kurre nje alt text
+// qe merchant-i e ka vendosur vete.
+async function updateShopifyImageAltIfEmpty(shop, token, pid, image, altText) {
+  if (image.alt) return false;
+  await axios.put(
+    `https://${shop}/admin/api/2026-07/products/${pid}/images/${image.id}.json`,
+    { image: { id: image.id, alt: altText } },
+    { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
+  );
+  console.log(`[alt-text] Vendosur per imazhin e pare te produktit ${pid}`);
+  return true;
+}
+
 // Perkthen nje pershkrim produkti te plote DREJTPERDREJT ne Gemini per
 // gjuhen primare (body_html). NUK kalon neper generateProductCopy —
 // kjo eliminon 100% mundësine qe primaryCopy te bjerë rastesisht te
@@ -3554,12 +3613,30 @@ async function localizeProductBody(shop, token, pid, targetLang, locale, tone, g
   const cleanBody = (product.body_html || '').replace(/<[^>]*>/g, '').trim();
   const hadNoDescription = !cleanBody;
 
-  // Nxjerr URL-in e imazhit te pare (nese ekziston) — perdoret per Sonnet 4.6
+  // Nxjerr URL-in e imazhit te pare (nese ekziston) — perdoret per Sonnet 5
   const imageUrl = product.images && product.images.length > 0
     ? product.images[0].src
     : null;
   if (imageUrl && !cleanBody) {
-    console.log(`[image] "${product.title}" has image + no body — routing to Sonnet 4.6`);
+    console.log(`[image] "${product.title}" has image + no body — routing to Sonnet 5`);
+  }
+
+  // FEATURE: Alt text (gjuha primare) — gjenerohet NJE HERE per produkt, nga
+  // vete imazhi (Gemini vision). Lokalja e PARE qe e proceson kete produkt
+  // e mbush; lokalet pasuese e shohin tashme te mbushur (product.images[0].alt)
+  // dhe s'e rigjenerojne. Best-effort/jo-fatale — nese deshton, s'e ndalon
+  // fare gjenerimin kryesor te title/description.
+  const firstImage = product.images && product.images.length > 0 ? product.images[0] : null;
+  if (firstImage && !firstImage.alt) {
+    try {
+      const primaryLocaleForAlt = await getPrimaryLocale(shop, token);
+      const primaryLangForAlt = LOCALE_MAP[primaryLocaleForAlt.split('-')[0]] || 'English';
+      const altText = await generateAltTextWithGemini(firstImage.src, product.title, primaryLangForAlt);
+      const wasSet = await updateShopifyImageAltIfEmpty(shop, token, pid, firstImage, altText);
+      if (wasSet) firstImage.alt = altText; // per referencen me poshte (perkthimi per lokalen aktuale)
+    } catch(e) {
+      console.warn('[alt-text] Gjenerimi i alt text-it primar deshtoi (jo kritike):', e.response?.data || e.message);
+    }
   }
 
   let translated = await generateProductCopy(product, targetLang, glossary, cleanBody, imageUrl, metafields, shop);
@@ -3743,6 +3820,47 @@ async function localizeProductBody(shop, token, pid, targetLang, locale, tone, g
       } catch(e) {
         console.warn(`[metafields] Register failed for "${mf.key}":`, e.message);
       }
+    }
+  }
+
+  // FEATURE: Alt text — perkthimi per lokalen AKTUALE (jo primary). Perdor
+  // te njejtin pattern translatableResource + translationsRegister si titulli/
+  // body_html/metafields, thjesht me resourceId te imazhit. "Image" eshte
+  // TranslatableResourceType zyrtar i Shopify (fusha "alt") qe nga API 2025-10.
+  // SHENIM: gid://shopify/ProductImage/{id} eshte hamendesimi im per llojin e
+  // sakte GID — verifikohet ne GraphQL explorer pas deploy-it. Nese digest-i
+  // s'gjendet (lloj i gabuar GID, ose Shopify e ka zhvendosur drejt MediaImage
+  // ne kete version API), anashkalohet vetem PERKTHIMI per kete lokale —
+  // alt text-i primar (me lart) mbetet i paprekur dhe s'ndalon asgje tjeter.
+  if (firstImage?.alt && !isTargetPrimaryLocale) {
+    try {
+      const translatedAlt = await translateFieldWithGemini(firstImage.alt, 'image alt text', targetLang);
+      const imgResourceId = `gid://shopify/ProductImage/${firstImage.id}`;
+      const imgDigestRes = await axios.post(
+        `https://${shop}/admin/api/2026-07/graphql.json`,
+        { query: digestQuery, variables: { resourceId: imgResourceId } },
+        { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
+      );
+      const imgContents = imgDigestRes.data.data?.translatableResource?.translatableContent || [];
+      const imgDigest = imgContents.find(c => c.key === 'alt')?.digest;
+      if (!imgDigest) {
+        console.warn(`[alt-text] S'u gjet digest per ${imgResourceId} — verifiko llojin e sakte GID ne GraphQL explorer, anashkalohet perkthimi per ${locale}`);
+      } else {
+        await axios.post(
+          `https://${shop}/admin/api/2026-07/graphql.json`,
+          {
+            query: mutation,
+            variables: {
+              resourceId: imgResourceId,
+              translations: [{ key: 'alt', value: translatedAlt, locale, translatableContentDigest: imgDigest }]
+            }
+          },
+          { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
+        );
+        console.log(`[alt-text] Perkthyer dhe regjistruar per ${locale}: "${translatedAlt}"`);
+      }
+    } catch(e) {
+      console.warn('[alt-text] Perkthimi per lokalen deshtoi (jo kritike):', e.response?.data || e.message);
     }
   }
 
