@@ -618,8 +618,16 @@ const PLAN_PRICES = {
 // Thirret kur merchant paguan plan te ri ose arrin limitin
 async function sendNotification(subject, html) {
   const apiKey = process.env.RESEND_API_KEY;
-  const to = process.env.NOTIFY_EMAIL || 'contact@premiumartisan.fr';
-  if (!apiKey) return; // Nese RESEND_API_KEY nuk eshte vendosur, kaperceje
+  // FIX: fallback-u i vjeter ishte 'contact@premiumartisan.fr' — nje domain
+  // krejt tjeter nga getoify.com, me siguri leftover nga nje projekt tjeter.
+  // Nese NOTIFY_EMAIL mungon ne env, me mire njoftim i humbur (me warning te
+  // dukshem ne logs) se sa njoftime biznesi (subscriptions, limits) te
+  // shkojne heshtazi ne nje inbox te panjohur/te gabuar.
+  const to = process.env.NOTIFY_EMAIL;
+  if (!apiKey || !to) {
+    if (!to) console.warn('[notify] NOTIFY_EMAIL nuk eshte vendosur ne env — njoftimi anashkalohet:', subject);
+    return;
+  }
   try {
     await axios.post('https://api.resend.com/emails', {
       from: 'Getoify <notifications@getoify.com>',
@@ -653,31 +661,6 @@ app.get('/plan', requireShopAuth, async (req, res) => {
     res.json({ plan: 'free', billing_cycle: null, has_subscription: false });
   }
 });
-
-// Zbulon nese dyqani eshte development/test store i Shopify Partners —
-// keto NUK mund te krijojne RecurringApplicationCharge me test:false, Shopify
-// e refuzon. Shopify reviewer-at GJITHMONE testojne ne dev stores — kjo eshte
-// shkaku i sakte i "billing failed when attempting to subscribe" te raportuar.
-// Default i sigurt kur s'mund te percaktohet: test:true (ne kete faze pa
-// klient pagues real, kjo eshte gjithmone zgjedhja e duhur — false negative
-// (test:true ne dyqan real) thjesht s'mbledh para njehere, false positive
-// (test:false ne dev store) e bllokon plotesisht flow-in e billing-ut).
-async function isDevelopmentStore(shop, token) {
-  try {
-    const shopRes = await axios.get(
-      `https://${shop}/admin/api/2026-07/shop.json`,
-      { headers: { 'X-Shopify-Access-Token': token } }
-    );
-    const planName = (shopRes.data.shop?.plan_name || '').toLowerCase();
-    const planDisplay = (shopRes.data.shop?.plan_display_name || '').toLowerCase();
-    return planName.includes('partner_test') || planName.includes('dev') ||
-      planName === 'staff_business' || planDisplay.includes('development') ||
-      planDisplay.includes('partner');
-  } catch(e) {
-    console.warn('[billing] Could not determine store plan type, defaulting to test:true for safety:', e.message);
-    return true;
-  }
-}
 
 app.get('/checkout', async (req, res) => {
   const { plan, billing, shop } = req.query;
@@ -1577,6 +1560,23 @@ async function refreshShopifyToken(shop, refreshToken) {
   return accessToken;
 }
 
+// FIX: Shopify ROTULLON refresh_token-in ne çdo perdorim (i vjetri behet i
+// pavlefshem menjehere). BULK_CONCURRENCY=4 do te thote localizeProduct (dhe
+// brenda tij getStore()) mund te thirret disa here paralelisht per te
+// NJEJTIN shop (bulk-localize-all, processQueuedTranslations) — nese token-i
+// eshte afer skadimit, 2+ thirrje konkurruese do te provonin refreshShopifyToken
+// me te NJEJTIN refresh_token, e para fiton, e dyta merr invalid_grant dhe
+// e shenon gabimisht token_invalid, pavaresisht se s'ka problem real. Lock-u
+// ben qe thirrjet konkurruese (brenda te njejtit invokim/instance) te presin
+// te NJEJTIN rifreskim ne vend qe secila te niste te vetin.
+const refreshLocks = new Map();
+function refreshShopifyTokenLocked(shop, refreshToken) {
+  if (refreshLocks.has(shop)) return refreshLocks.get(shop);
+  const p = refreshShopifyToken(shop, refreshToken).finally(() => refreshLocks.delete(shop));
+  refreshLocks.set(shop, p);
+  return p;
+}
+
 async function getStore(shop) {
   const { data, error } = await supabase.from('stores').select('*').eq('shop', shop).single();
   if (error) throw new Error('Store not found: ' + shop);
@@ -1590,7 +1590,7 @@ async function getStore(shop) {
     const fiveMinMs = 5 * 60 * 1000;
     if (Date.now() >= expiresAt - fiveMinMs) {
       try {
-        const freshToken = await refreshShopifyToken(shop, data.refresh_token);
+        const freshToken = await refreshShopifyTokenLocked(shop, data.refresh_token);
         data.access_token = freshToken;
       } catch(refreshErr) {
         console.warn(`[token-refresh] Deshtoi per ${shop}, ka nevoje re-auth:`, refreshErr.response?.data || refreshErr.message);
@@ -1628,14 +1628,37 @@ function productBodyIsEmpty(bodyHtml) {
   return !(bodyHtml || '').replace(/<[^>]*>/g, '').trim();
 }
 
+// FIX: perpara, gjithcka (intro + 4 bullet, te ndara me \n literal sipas
+// promptit) mbeshtillej ne NJE <p> te vetem, pa e konvertuar \n ne <br>.
+// HTML e "shembullon" whitespace-in ne default (perfshi \n) — pra ne
+// storefront-in real ky tekst ka gjasa te medha te shfaqet si NJE rresht
+// i vetem i vazhdueshem ("Intro. • Bullet 1 • Bullet 2..."), duke humbur
+// gjithe formatimin qe prompti kaq i kujdesshem prodhon. Tani ndahet ne
+// rreshta: rreshtat qe fillojne me • behen <li> brenda <ul>, pjesa tjeter
+// (intro) behet <p>. Permbajtja/faktet e AI-t mbeten plotesisht te
+// paprekura — prekur eshte VETEM formati HTML i output-it.
 function formatBodyHtml(text) {
   if (!text) return '';
-  if (/<[a-z][\s\S]*>/i.test(text)) return text;
-  const escaped = String(text)
+  if (/<[a-z][\s\S]*>/i.test(text)) return text; // tashme HTML, mos e prek
+
+  const escape = s => String(s)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
-  return `<p>${escaped}</p>`;
+
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  const introLines = [];
+  const bulletLines = [];
+  for (const line of lines) {
+    if (line.startsWith('•')) bulletLines.push(line.replace(/^•\s*/, ''));
+    else introLines.push(line);
+  }
+
+  let html = introLines.map(l => `<p>${escape(l)}</p>`).join('');
+  if (bulletLines.length > 0) {
+    html += '<ul>' + bulletLines.map(l => `<li>${escape(l)}</li>`).join('') + '</ul>';
+  }
+  return html || `<p>${escape(text)}</p>`; // fallback, s'duhet arritur normalisht
 }
 
 async function updateShopifyProductBodyIfEmpty(shop, token, pid, descriptionText) {
@@ -2768,6 +2791,11 @@ ${fashionApparel ? `
 FASHION & APPAREL SPECIFIC RULES:
 This is a clothing, footwear, or accessory product. Apply these rules:
 
+TONE RATIO OVERRIDE — for this category ONLY, replace the general "80% facts, 20% tone" rule with:
+60% specs + 40% lifestyle/aspirational tone. Every bullet still needs a real, confirmed spec (material, fit, sole tech, capacity, etc. — never dropped or invented), but the surrounding language should lean toward how the piece looks, feels, and fits into the buyer's life, not read like a spec sheet. This matches the "aspirational but grounded" tone stated below — without this override the general 80/20 rule silently wins and undercuts that tone.
+  WRONG (too clinical for this category): "Mesh upper — breathable synthetic overlays. EVA midsole — 10mm drop."
+  RIGHT (same facts, warmer): "Built for the daily miles you actually run. A breathable mesh upper and 10mm-drop EVA midsole keep things light from the first step to the last."
+
 PRIORITY SPECS by product type:
 
 FOOTWEAR (sneakers, running shoes, boots):
@@ -3622,8 +3650,12 @@ async function localizeProductBody(shop, token, pid, targetLang, locale, tone, g
         resourceId: `gid://shopify/Product/${pid}`,
         translations: [
           { key: 'title', value: translated.title, locale, translatableContentDigest: digests['title'] },
+          // FIX: formatBodyHtml() ketu tani — perpara shkonte translated.description
+          // krejt i papërpunuar (tekst i sheshte me \n dhe •), pa asnje HTML,
+          // per çdo lokale jo-primare. formatBodyHtml() e kthen ne <p>/<ul><li>
+          // real, njesoj si per lokalen primare (updateShopifyProductBodyIfEmpty).
           ...(digests['body_html']
-            ? [{ key: 'body_html', value: translated.description, locale, translatableContentDigest: digests['body_html'] }]
+            ? [{ key: 'body_html', value: formatBodyHtml(translated.description), locale, translatableContentDigest: digests['body_html'] }]
             : []),
           // meta_title: push ONLY if Shopify has its own digest — fallback digest causes "hash invalid" error
           ...(translated.meta_title && digests['meta_title'] ? [{ key: 'meta_title', value: translated.meta_title, locale, translatableContentDigest: digests['meta_title'] }] : []),
@@ -3767,9 +3799,17 @@ app.post('/bulk-localize-blogs', requireShopAuth, async (req, res) => {
 
 app.post('/bulk-localize-all', requireShopAuth, async (req, res) => {
   const shop = req.verifiedShop;
-  const { token, tone, glossary } = req.body;
+  const { tone, glossary } = req.body;
   try {
     const store = await getStore(shop);
+    // SSRF/trust fix: njesoj si /locales, /products, /localize — token real
+    // merret GJITHMONE nga Supabase (getStore), kurre nga trupi i kerkeses.
+    // Perpara, kjo rruge (ndryshe nga te gjitha te tjerat) besonte token nga
+    // req.body pa asnje fallback — nese frontend s'e dergon me (siç eshte
+    // rasti pas hardening-ut te aplikuar gjetkun), thjesht deshtonte ne
+    // heshtje me 401 nga Shopify per çdo produkt.
+    const token = store.access_token;
+    if (!token) return res.status(400).json({ error: 'Store not connected or token missing' });
     const savedLocales = store.selected_locales || [];
 
     // Hard plan limit — slice products to plan maximum
@@ -4001,7 +4041,11 @@ app.post('/webhook/product-create', requireWebhookHmac, async (req, res) => {
 });
 
 // Product delete — fshi nga Supabase
-app.post('/webhook/product-delete', async (req, res) => {
+// FIX: shtuar requireWebhookHmac — ky route s'e kishte, ndryshe nga
+// product-create/customers/shop-redact, dhe pranonte cdo POST te falsifikuar
+// (shop + product_id te zgjedhur nga sulmuesi) qe do te fshinte perkthimet
+// e cdo dyqani, pa asnje autentikim.
+app.post('/webhook/product-delete', requireWebhookHmac, async (req, res) => {
   res.status(200).send('OK');
   const rawBody = req.body;
   const shop = req.headers['x-shopify-shop-domain'];
@@ -4218,7 +4262,7 @@ async function pollNewProducts() {
         const fiveMinMs = 5 * 60 * 1000;
         if (Date.now() >= expiresAt - fiveMinMs) {
           try {
-            token = await refreshShopifyToken(shop, store.refresh_token);
+            token = await refreshShopifyTokenLocked(shop, store.refresh_token);
             console.log(`[poll] Token i rifreskuar per ${shop}`);
           } catch (refreshErr) {
             console.warn(`[poll] Rifreskimi deshtoi per ${shop}:`, refreshErr.response?.data || refreshErr.message);
@@ -4310,7 +4354,10 @@ async function pollNewProducts() {
 }
 
 // Collection webhook
-app.post('/webhook/collection-create', async (req, res) => {
+// FIX: shtuar requireWebhookHmac — mungonte, dhe lejonte dikend te forconte
+// gjenerim AI (kosto) + perkthim te panevojshem te nje koleksioni real,
+// vetem duke ditur/hamendesuar collection ID publike te dyqanit.
+app.post('/webhook/collection-create', requireWebhookHmac, async (req, res) => {
   res.status(200).send('OK');
   const rawBody = req.body;
   const shop = req.headers['x-shopify-shop-domain'];
@@ -4429,7 +4476,7 @@ async function autoResetWebhooks() {
         if (fullStore?.token_expires_at && fullStore?.refresh_token) {
           const expiresAt = new Date(fullStore.token_expires_at).getTime();
           if (Date.now() >= expiresAt - 5 * 60 * 1000) {
-            accessToken = await refreshShopifyToken(store.shop, fullStore.refresh_token);
+            accessToken = await refreshShopifyTokenLocked(store.shop, fullStore.refresh_token);
           }
         }
       } catch (refreshErr) {
