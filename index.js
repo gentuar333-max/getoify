@@ -2678,7 +2678,16 @@ function isHomeKitchenProduct(product) {
   return HOME_KITCHEN_TITLE_KEYWORDS.some(k => title.includes(k));
 }
 
-async function generateProductCopy(product, targetLang, glossary, cleanBody, imageUrl, metafields = [], shop = null) {
+// forceProvider: PARAMETER VETEM PER TESTIM — 'openai' | 'gemini' | 'sonnet' | null.
+// Kur eshte vendosur, ANASHKALON krejt logjiken normale te routing-ut
+// (hasExternalConfirmation/hasImage gating) dhe detyron providerin e zgjedhur
+// per KETE thirrje te vetme. Asnje pike hyrjeje prodhimi (webhook, poll, bulk,
+// /localize, /process-product) s'e kalon kete parameter fare — mbeten te
+// paprekura, marrin gjithmone 'null' (default), routing normal aplikohet.
+// Vetem /test-prompt e perdor, per te testuar nje provider te caktuar edhe
+// mbi produkte me specs te konfirmuara (rast qe routing-u normal do ta
+// mbante gjithmone te Sonnet).
+async function generateProductCopy(product, targetLang, glossary, cleanBody, imageUrl, metafields = [], shop = null, forceProvider = null) {
 
   // KILL SWITCH GLOBAL — vendos GENERATION_PAUSED=true te Vercel Environment
   // Variables per te ndaluar ÇDO gjenerim menjëherë, pavarësisht rrugës.
@@ -3531,13 +3540,12 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
       // vendoseshin gabimisht 'true' njekohesisht, OpenAI merr prioritet
       // (kontrolli i pare) — thjesht per te shmangur ambiguitet, jo per
       // ndonje arsye teknike specifike.
-      const useOpenAIForGeneration =
-        process.env.OPENAI_GENERATION_ENABLED === 'true' &&
-        !hasExternalConfirmation && !hasImage;
-      const useGeminiForGeneration =
-        !useOpenAIForGeneration &&
-        process.env.GEMINI_GENERATION_ENABLED === 'true' &&
-        !hasExternalConfirmation && !hasImage;
+      const useOpenAIForGeneration = forceProvider
+        ? forceProvider === 'openai'
+        : (process.env.OPENAI_GENERATION_ENABLED === 'true' && !hasExternalConfirmation && !hasImage);
+      const useGeminiForGeneration = forceProvider
+        ? forceProvider === 'gemini'
+        : (!useOpenAIForGeneration && process.env.GEMINI_GENERATION_ENABLED === 'true' && !hasExternalConfirmation && !hasImage);
 
       const callSonnet = async (content) => {
         const claudeRes = await axios.post('https://api.anthropic.com/v1/messages', {
@@ -4893,7 +4901,13 @@ async function autoResetWebhooks() {
 
 // TEST ENDPOINT — remove after testing
 app.post('/test-prompt', async (req, res) => {
-  const { title, lang, shop } = req.body;
+  // forceProvider (opsionale): 'openai' | 'gemini' | 'sonnet' — per te testuar
+  // NJE provider specifik mbi te njejtin titull, PAVARESISHT nese ka specs
+  // te konfirmuara (Tavily/titull) — routing-u normal do ta mbante gjithmone
+  // te Sonnet ne ate rast. Perdor kete per te krahasuar cilesine anash-anash
+  // para se te vendosesh nese GPT-4o mini/Gemini jane te qendrueshem edhe per
+  // produkte me specs reale.
+  const { title, lang, shop, forceProvider } = req.body;
 
   // Kontroll limiti edhe per test-prompt — kjo ishte rruga e vetme e mbetur
   // e pabllokuar. Pa shop, nuk mund te kontrollojme; nese shop eshte dhene,
@@ -4927,7 +4941,7 @@ app.post('/test-prompt', async (req, res) => {
 
   const product = { title, product_type: '', tags: '', body_html: '' };
   try {
-    const result = await generateProductCopy(product, lang, 'checkout, Shopify', '', null, [], shop);
+    const result = await generateProductCopy(product, lang, 'checkout, Shopify', '', null, [], shop, forceProvider || null);
     res.json(result);
   } catch(e) {
     if (e.message?.startsWith('PLAN_LIMIT')) {
