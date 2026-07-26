@@ -2186,9 +2186,14 @@ function findSpecMatches(text) {
   const matches = [];
   const numberUnitPattern = /\d+(?:[.,]\d+)?\s*(mah|gb|tb|"|inch(?:es)?|hz|mp|h\b|hours?|w\b|watts?|g\b|grams?|%|rpm)/gi;
   const aperturePattern = /f\/\d+(?:\.\d+)?/gi;
+  // IP67/IP68/IP69K etj — forme "shkronja pastaj numra", jo "numer pastaj
+  // njesi" — numberUnitPattern s'e kap fare (zbuluar nga rasti real "IP68"
+  // qe kaloi pa u kapur/hedge-uar). Kjo eshte pikerisht shtresa qe mungonte.
+  const ipRatingPattern = /\bIP\d{2}[KX]?\b/gi;
   let m;
   while ((m = numberUnitPattern.exec(text)) !== null) matches.push({ index: m.index, text: m[0] });
   while ((m = aperturePattern.exec(text)) !== null) matches.push({ index: m.index, text: m[0] });
+  while ((m = ipRatingPattern.exec(text)) !== null) matches.push({ index: m.index, text: m[0] });
   matches.sort((a, b) => a.index - b.index);
   return matches;
 }
@@ -2319,6 +2324,57 @@ function enforceConfirmedSpecValues(text, confirmedSpecs) {
   }
   return result;
 }
+
+// Rrjete sigurie DETERMINISTIKE — ZBULUAR NGA TEST REAL: edhe pas paralajmerimit
+// tekstual "CONFIRMATION IS PER-SPEC, NOT PER-PRODUCT" (shtuar ne prompt),
+// GPT-4o mini VAZHDOI te shkruaje "6.3\" display" dhe "IP68" si fakte te
+// sigurta — asnjera s'ishte te lista e konfirmuar (vetem Battery/Camera/
+// Chipset/OS/Weight/WiFi ishin). Udhezimi tekstual VETEM s'mjafton — kjo
+// eshte shtresa mekanike qe e garanton, njesoj si forceHedgeSpecNumbers.
+//
+// NDRYSHE nga forceHedgeSpecNumbers (qe hedge-on TE GJITHA numrat kur
+// hasExternalConfirmation=false), kjo funksionon KUR ka disa specs te
+// konfirmuara — DHE lë te paprekura VETEM ato qe perputhen SAKTESISHT me
+// listen e konfirmuar (200MP, 5000mAh mbeten te paprekura), hedge-on çdo
+// gje TJETER (6.3" display, IP68 — s'ishin te konfirmuara).
+function hedgeUnconfirmedSpecsAmongConfirmed(text, targetLang, confirmedSpecs) {
+  if (!text || !confirmedSpecs?.length) return text;
+
+  // Normalizo specat e konfirmuara ne "numer+njesi" pa hapesira, lowercase
+  // (p.sh. "5000mAh" -> "5000mah", "200MP" -> "200mp") per krahasim te sakte.
+  const confirmedNormalized = new Set(
+    confirmedSpecs
+      .map(s => String(s.value).replace(/\s+/g, '').toLowerCase())
+      .filter(v => /\d/.test(v))
+  );
+
+  const hedgeDisplay = UP_TO_HEDGES[targetLang]?.display || 'up to';
+  const localHedge = UP_TO_HEDGES[targetLang]?.match;
+  const hedgeWords = ['up to', localHedge].filter(Boolean)
+    .map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  const hedgeRegex = new RegExp(hedgeWords.join('|'), 'i');
+
+  const matches = findSpecMatches(text);
+  let result = '';
+  let lastIndex = 0;
+  for (const m of matches) {
+    const normalized = m.text.replace(/\s+/g, '').toLowerCase();
+    const before = text.slice(Math.max(0, m.index - 25), m.index);
+    const alreadyHedged = hedgeRegex.test(before);
+    const isConfirmed = confirmedNormalized.has(normalized);
+    result += text.slice(lastIndex, m.index);
+    if (!isConfirmed && !alreadyHedged) {
+      console.warn(`[unconfirmed-spec] Hedge-uar ne output: "${m.text}" — s'ishte te lista e specave te konfirmuara`);
+      result += `${hedgeDisplay} `;
+    }
+    result += m.text;
+    lastIndex = m.index + m.text.length;
+  }
+  result += text.slice(lastIndex);
+  return result;
+}
+
+// Prit fjalen e fundit te plote para 'limit' karaktere — s'e pret ne mes te
 // nje fjale. Perdoret nga enforceMetaDescriptionLength me poshte.
 function truncateAtWordBoundary(text, limit, minAcceptable) {
   if (text.length <= limit) return text;
@@ -3699,6 +3755,21 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
       parsed.description = enforceConfirmedSpecValues(parsed.description, allConfirmedSpecs);
       if (parsed.meta_description) {
         parsed.meta_description = enforceConfirmedSpecValues(parsed.meta_description, allConfirmedSpecs);
+      }
+    }
+
+    // Shtresa e fundit deterministike per RASTIN E ZBULUAR ME TEST REAL:
+    // edhe kur disa specs JANE konfirmuar (hasExternalConfirmation=true),
+    // modeli (GPT-4o mini, verifikuar; ka gjasa edhe te tjere) vazhdon te
+    // shpike specifika krejt te tjera (6.3" display, IP68) pavaresisht
+    // paralajmerimit tekstual ne prompt. Zbatohet VETEM kur hasExternalConfirmation
+    // eshte true (rasti ku !hasExternalConfirmation tashme e mbulon
+    // forceHedgeSpecNumbers me lart) dhe VETEM per gjenerim (jo perkthim,
+    // qe thjesht rendon tekst tashme te kontrolluar).
+    if (!isTranslation && hasExternalConfirmation) {
+      parsed.description = hedgeUnconfirmedSpecsAmongConfirmed(parsed.description, targetLang, allConfirmedSpecs);
+      if (parsed.meta_description) {
+        parsed.meta_description = hedgeUnconfirmedSpecsAmongConfirmed(parsed.meta_description, targetLang, allConfirmedSpecs);
       }
     }
 
