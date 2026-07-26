@@ -3702,6 +3702,12 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
       }
     }
 
+    // Bashkangjit providerin real qe u perdor — fushe shtese e sigurt (nuk
+    // prish asgje per konsumatoret ekzistues qe lexojne vetem title/description/
+    // meta_*), lejon /test-prompt te tregoje konfirmim te prere pa pasur nevoje
+    // te kontrollohen logs e serverit per çdo test.
+    parsed.provider = actualProvider;
+
     return parsed;
   } catch (apiErr) {
     // Dikur kthente product.title si "perkthim" gjatë dështimit të Gemini/Claude,
