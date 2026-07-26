@@ -3361,7 +3361,14 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
             type: 'text',
             text: `Your previous response violated a critical rule: it stated exact numeric specs (RAM, storage, screen size, battery, etc.) OR a specific chip/processor generation name (e.g. "A18", "Snapdragon 8 Elite") as confirmed facts, even though there is NO external confirmation for this product (no title override, no metafields). Rewrite the ENTIRE response. Every single numeric spec MUST use "up to" / "${UP_TO_HEDGES[targetLang]?.display || 'up to'}" framing or be omitted. Any chip/processor MUST be described generically (e.g. "Apple silicon chip", "octa-core processor") WITHOUT the generation number, unless it cannot be phrased that way, in which case omit it. Respond ONLY with the corrected version, same ###TITLE###/###DESCRIPTION###/###META_TITLE###/###META_DESCRIPTION###/###END### format as before.`
           };
-          rawText = await callSonnet([...userContent, correction]);
+          // FIX (kosto): mos e ridergo imazhin ne retry — korrigjimi eshte
+          // vetem per hedging te tekstit (numra te pa-mbrojtur), s'ka nevoje
+          // te rishihet imazhi. Imazhi s'ka cache_control, pra ridergimi i tij
+          // paguhej i plote SECOND HERE, pa asnje perfitim per vete korrigjimin.
+          const retryContent = Array.isArray(userContent)
+            ? [...userContent.filter(block => block.type !== 'image'), correction]
+            : [...userContent, correction];
+          rawText = await callSonnet(retryContent);
         }
       }
     }
