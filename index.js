@@ -3518,17 +3518,24 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
       );
       rawText = geminiRes.data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     } else {
-      // FEATURE (kosto, me flag sigurie): route-im opsional drejt Gemini per
-      // gjenerimin e PARE kur s'ka konfirmim te jashtem specash (STEP B/C —
-      // rasti ku prompti VETE detyron hedging "up to"/pa specs, pra rreziku
-      // halucinacioni eshte tashme i kufizuar nga formulimi, jo nga modeli).
-      // I ANASHKALUAR fare (=sjellje identike me sot, Sonnet per gjithcka)
-      // PERVEQSE GEMINI_GENERATION_ENABLED='true' eshte vendosur EKSPLICITISHT
-      // ne env — kjo do te thote deploy-i i ketij kodi VETE s'ndryshon asgje
+      // FEATURE (kosto, me flag sigurie): route-im opsional drejt Gemini OSE
+      // GPT-4o mini per gjenerimin e PARE kur s'ka konfirmim te jashtem specash
+      // (STEP B/C — rasti ku prompti VETE detyron hedging "up to"/pa specs,
+      // pra rreziku halucinacioni eshte tashme i kufizuar nga formulimi, jo
+      // nga modeli). TE DYJA jane te ANASHKALUARA fare (=sjellje identike me
+      // sot, Sonnet per gjithcka) PERVEQSE flag-u perkates eshte vendosur
+      // EKSPLICITISHT ne env — deploy-i i ketij kodi VETE s'ndryshon asgje
       // derisa TI vete e aktivizosh, pasi te kesh testuar. Rastet me imazh
-      // (hasImage) MBETEN gjithmone te Sonnet — s'jane testuar me Gemini vision
-      // per kete perdorim specifik ende.
+      // (hasImage) MBETEN gjithmone te Sonnet — asnjeri s'eshte testuar per
+      // vizion ne kete perdorim specifik ende. Nese te dyja flags do te
+      // vendoseshin gabimisht 'true' njekohesisht, OpenAI merr prioritet
+      // (kontrolli i pare) — thjesht per te shmangur ambiguitet, jo per
+      // ndonje arsye teknike specifike.
+      const useOpenAIForGeneration =
+        process.env.OPENAI_GENERATION_ENABLED === 'true' &&
+        !hasExternalConfirmation && !hasImage;
       const useGeminiForGeneration =
+        !useOpenAIForGeneration &&
         process.env.GEMINI_GENERATION_ENABLED === 'true' &&
         !hasExternalConfirmation && !hasImage;
 
@@ -3582,11 +3589,39 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
         return geminiRes.data.candidates?.[0]?.content?.parts?.[0]?.text || '';
       };
 
-      const generationProvider = useGeminiForGeneration ? 'gemini-3.1-flash-lite' : 'claude-sonnet-4-6';
+      // GPT-4o mini — $0.15/$0.60 per milion, ~95% me lire se Sonnet 4.6 per
+      // gjenerimin e pare. Kerkon OPENAI_API_KEY ne env (provider i ri, s'ka
+      // ekzistuar me pare ne kete kod). Format Chat Completions standard.
+      const callGPT4oMiniGeneration = async (content) => {
+        const promptText = Array.isArray(content) ? content.map(b => b.text).join('\n\n') : content;
+        const openaiRes = await axios.post(
+          'https://api.openai.com/v1/chat/completions',
+          {
+            model: 'gpt-4o-mini',
+            messages: [{ role: 'user', content: promptText }],
+            max_tokens: 2500,
+            temperature: 0
+          },
+          {
+            headers: {
+              'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+              'Content-Type': 'application/json'
+            },
+            timeout: 45000
+          }
+        );
+        return openaiRes.data.choices?.[0]?.message?.content || '';
+      };
+
+      const generationProvider = useOpenAIForGeneration
+        ? 'gpt-4o-mini'
+        : (useGeminiForGeneration ? 'gemini-3.1-flash-lite' : 'claude-sonnet-4-6');
       actualProvider = generationProvider;
       console.log(`[generation-routing] "${product.title}" (${targetLang}) hasExternalConfirmation:${hasExternalConfirmation} hasImage:${hasImage} → ${generationProvider}`);
 
-      rawText = useGeminiForGeneration
+      rawText = useOpenAIForGeneration
+        ? await callGPT4oMiniGeneration(userContent)
+        : useGeminiForGeneration
         ? await callGeminiGeneration(userContent)
         : await callSonnet(userContent);
 
@@ -3614,11 +3649,11 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
             ? [...userContent.filter(block => block.type !== 'image'), correction]
             : [...userContent, correction];
           // Retry-i duhet te shkoje te I NJEJTI provider qe gjeneroi pergjigjen
-          // e pare — nese Gemini e shkeli gate-in, retry-i shkon te Gemini,
-          // jo te Sonnet (perndryshe do te ndryshonim edhe modelin edhe
-          // gjenerimin ne te njejten kohe, duke e beri korrigjimin te
-          // paparashikueshem).
-          rawText = useGeminiForGeneration
+          // e pare — perndryshe do te ndryshonim edhe modelin edhe gjenerimin
+          // ne te njejten kohe, duke e beri korrigjimin te paparashikueshem.
+          rawText = useOpenAIForGeneration
+            ? await callGPT4oMiniGeneration(retryContent)
+            : useGeminiForGeneration
             ? await callGeminiGeneration(retryContent)
             : await callSonnet(retryContent);
         }
