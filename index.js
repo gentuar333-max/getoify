@@ -3766,18 +3766,32 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
     // eshte true (rasti ku !hasExternalConfirmation tashme e mbulon
     // forceHedgeSpecNumbers me lart) dhe VETEM per gjenerim (jo perkthim,
     // qe thjesht rendon tekst tashme te kontrolluar).
+    let unconfirmedSpecsHedged = false;
     if (!isTranslation && hasExternalConfirmation) {
+      const beforeDesc = parsed.description;
       parsed.description = hedgeUnconfirmedSpecsAmongConfirmed(parsed.description, targetLang, allConfirmedSpecs);
+      if (parsed.description !== beforeDesc) unconfirmedSpecsHedged = true;
       if (parsed.meta_description) {
+        const beforeMeta = parsed.meta_description;
         parsed.meta_description = hedgeUnconfirmedSpecsAmongConfirmed(parsed.meta_description, targetLang, allConfirmedSpecs);
+        if (parsed.meta_description !== beforeMeta) unconfirmedSpecsHedged = true;
       }
     }
 
     // Bashkangjit providerin real qe u perdor — fushe shtese e sigurt (nuk
     // prish asgje per konsumatoret ekzistues qe lexojne vetem title/description/
     // meta_*), lejon /test-prompt te tregoje konfirmim te prere pa pasur nevoje
-    // te kontrollohen logs e serverit per çdo test.
+    // te kontrollohen logs e serverit per çdo test. FIX (diagnostik): shtuar
+    // edhe _debug — logs u treguan te pabesueshem per t'u inspektuar (CLI
+    // bug i njohur qe tregon vetem rreshtin e pare per kerkese), pra kjo
+    // informacion tani eshte i dukshem DIREKT ne pergjigjen JSON.
     parsed.provider = actualProvider;
+    parsed._debug = {
+      hasExternalConfirmation,
+      confirmedSpecsCount: allConfirmedSpecs.length,
+      confirmedSpecsKeys: allConfirmedSpecs.map(s => s.key),
+      unconfirmedSpecsHedged
+    };
 
     return parsed;
   } catch (apiErr) {
