@@ -225,6 +225,12 @@
   const langFlags = { de: '🇩🇪', fr: '🇫🇷', it: '🇮🇹', es: '🇪🇸', nl: '🇳🇱', pt: '🇵🇹', 'pt-BR': '🇧🇷', 'pt-br': '🇧🇷', pl: '🇵🇱', ja: '🇯🇵', hi: '🇮🇳', id: '🇮🇩', en: '🇺🇸', 'en-GB': '🇺🇸', 'en-US': '🇺🇸', 'en-AU': '🇺🇸', 'en-CA': '🇺🇸', zh: '🇨🇳', ar: '🇸🇦', ko: '🇰🇷', sv: '🇸🇪', da: '🇩🇰', fi: '🇫🇮', nb: '🇳🇴' };
   let allProducts = [];
   let translatedMap = {};
+  // FIX: mape e re, plotesuar nga statusi REAL 'processing' qe backend-i e
+  // ruan tashme ne Supabase (lock-u i localizeProduct) — perpara, statusi
+  // "Processing" ishte hamendesim koherë-bazuar (produkt < 5 min i ri, zero
+  // gjuhë te mbaruara), qe s'perputhej domosdo me çka po ndodhte realisht
+  // ne backend (p.sh. nese bulk i madh zgjat me shume se 5 min).
+  let processingMap = {};
   let activeFilter = 'all';
   let currentPage = 1;
   const perPage = 100;
@@ -251,15 +257,21 @@
   async function loadData() {
     try {
       translatedMap = {};
+      processingMap = {};
       // Always fetch status first to get translations
       const statusRes = await authedFetch('/status?shop=' + shop);
       const statusData = await statusRes.json();
 
       statusData.translations.forEach(t => {
-        if (t.status !== 'done') return;
         const pid = String(t.product_id);
-        if (!translatedMap[pid]) translatedMap[pid] = [];
-        if (!translatedMap[pid].includes(t.locale)) translatedMap[pid].push(t.locale);
+        if (t.status === 'done') {
+          if (!translatedMap[pid]) translatedMap[pid] = [];
+          if (!translatedMap[pid].includes(t.locale)) translatedMap[pid].push(t.locale);
+        } else if (t.status === 'processing') {
+          // FIX: sinjal REAL nga backend (jo hamendesim kohe) — çdo rresht
+          // 'processing' per kete produkt numerohet, perdoret te getStatus().
+          processingMap[pid] = (processingMap[pid] || 0) + 1;
+        }
       });
 
       // Try to get token from URL or localStorage or store settings
@@ -330,9 +342,16 @@
   function getStatus(p) {
     const locales = getLocalesForProduct(p.id);
     if (locales.length > 0) return 'done';
+    // FIX: sinjali REAL i backend-it (rreshta 'processing' ne Supabase) merret
+    // PARA hamendesimit te kohes — kjo eshte e sakte pavaresisht sa zgjat
+    // gjenerimi (perpara, produktet qe zgjasnin >5 min shfaqeshin gabimisht
+    // "Not started", edhe pse ishin duke u perpunuar realisht).
+    if ((processingMap[String(p.id)] || 0) > 0) return 'processing';
+    // Fallback: dritare e vogel kohe (0-2 min) para se rreshti i pare
+    // 'processing' te arrije te shkruhet ne Supabase nga webhook/poll.
     if (p.created_at) {
       const ageMs = Date.now() - new Date(p.created_at).getTime();
-      if (ageMs >= 0 && ageMs < 5 * 60 * 1000) return 'processing';
+      if (ageMs >= 0 && ageMs < 2 * 60 * 1000) return 'processing';
     }
     return 'none';
   }
@@ -530,23 +549,32 @@
         const res = await authedFetch('/status?shop=' + shop);
         const data = await res.json();
         const newMap = {};
+        const newProcessingMap = {};
         data.translations.forEach(t => {
-          if (t.status !== 'done') return;
           const pid = String(t.product_id);
-          if (!newMap[pid]) newMap[pid] = [];
-          if (!newMap[pid].includes(t.locale)) newMap[pid].push(t.locale);
+          if (t.status === 'done') {
+            if (!newMap[pid]) newMap[pid] = [];
+            if (!newMap[pid].includes(t.locale)) newMap[pid].push(t.locale);
+          } else if (t.status === 'processing') {
+            newProcessingMap[pid] = (newProcessingMap[pid] || 0) + 1;
+          }
         });
 
-        // Kontrollo nëse ka ndryshime
+        // Kontrollo nëse ka ndryshime (done COUNT ose processing presence —
+        // te dyja tregojne diçka qe duhet rifreskuar ne ekran).
         let hasChanges = false;
-        for (const pid of Object.keys(newMap)) {
+        const allPids = new Set([...Object.keys(newMap), ...Object.keys(processingMap), ...Object.keys(newProcessingMap)]);
+        for (const pid of allPids) {
           const oldCount = (translatedMap[pid] || []).length;
-          const newCount = newMap[pid].length;
-          if (newCount !== oldCount) { hasChanges = true; break; }
+          const newCount = (newMap[pid] || []).length;
+          const wasProcessing = !!processingMap[pid];
+          const isProcessing = !!newProcessingMap[pid];
+          if (newCount !== oldCount || wasProcessing !== isProcessing) { hasChanges = true; break; }
         }
 
         if (hasChanges) {
           translatedMap = newMap;
+          processingMap = newProcessingMap;
           renderTable();
           updateStats();
         }

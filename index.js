@@ -2294,7 +2294,14 @@ function enforceConfirmedSpecValues(text, confirmedSpecs) {
   for (const [unitLower, { nums, originalUnit }] of Object.entries(byUnit)) {
     if (nums.length !== 1) continue; // ambig (2+ specs te NJEJTES njesi) — anashkalohet per siguri
     const confirmedNum = nums[0];
-    const findRegex = new RegExp(`(\\d+(?:[.,]\\d+)?)\\s?${unitLower}\\b`, 'gi');
+    // FIX KRITIK (zbuluar ne test real): "g" (gram) ishte case-insensitive,
+    // pra perputhte edhe "G" e madhe — duke kthyer gabimisht "5G" (rrjeti
+    // celular) ne "214g" (pesha)! Konvencioni real: gram = shkronje e
+    // vogel, brez rrjeti (5G/4G/3G) = shkronje e madhe. "g" tani perputhet
+    // VETEM me shkronje te vogel; njesite e tjera mbeten case-insensitive
+    // (s'kane konflikt te ngjashem — mAh/MAh/mah jane e njejta gje realisht).
+    const caseFlags = unitLower === 'g' ? 'g' : 'gi';
+    const findRegex = new RegExp(`(\\d+(?:[.,]\\d+)?)\\s?${unitLower}\\b`, caseFlags);
     result = result.replace(findRegex, (fullMatch, foundNum) => {
       if (foundNum.replace(',', '.') !== confirmedNum.replace(',', '.')) {
         console.warn(`[spec-mismatch] Korrigjuar ne output: "${fullMatch}" → "${confirmedNum}${originalUnit}" (konfirmuar nga titull/Tavily/metafields)`);
