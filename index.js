@@ -1687,7 +1687,12 @@ async function updateShopifyProductBodyIfEmpty(shop, token, pid, descriptionText
 async function translateFieldWithGemini(text, fieldKey, targetLang) {
   const prompt = `Translate this product field value into ${targetLang}. Return ONLY the translated text, nothing else. Keep brand names, technical terms, and numbers unchanged. Field: "${fieldKey}". Value: ${text}`;
   const res = await axios.post(
-    'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent',
+    // FIX (kosto): gemini-3.1-flash-lite -> gemini-2.5-flash-lite — ~68% me
+    // lire ($0.10/$0.40 ne vend te $0.25/$1.50), per detyre perkthimi (jo
+    // gjenerim) rreziku eshte i ulet. KUJDES: 2.5 Flash-Lite mbyllet 16
+    // tetor 2026 — do te duhet migrim tjeter atehere (3.1 Flash-Lite mbetet
+    // pa date mbyllje ende, nese preferohet stabilitet mbi kursim afatshkurter).
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent',
     {
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: { maxOutputTokens: 150, temperature: 0 }
@@ -1792,8 +1797,10 @@ DESCRIPTION TO TRANSLATE:
 ${description}`;
 
   try {
+    // FIX (kosto): njesoj si translateFieldWithGemini — perkthim, jo gjenerim,
+    // 2.5 Flash-Lite eshte ~68% me e lire, mbyllet 16 tetor 2026.
     const res = await axios.post(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent',
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent',
       {
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: { maxOutputTokens: 600, temperature: 0 }
@@ -2988,9 +2995,7 @@ DESCRIPTION RULES:
 - Opening sentence: always start with what the customer GETS or FEELS, not what the product IS.
   WRONG: "Yogurt is a fermented dairy product..." RIGHT: "Smooth and creamy — ideal for breakfast, cooking, or a quick snack."
 - Write 1-2 opening sentences MAX — SHORT and grounded. Lead with the product's KEY DIFFERENTIATOR (main confirmed spec, target use, or brand promise). Never write "The large screen provides..." or vague statements — always anchor to a real spec or concrete benefit. Examples of GOOD intros: "Run all-day on a single charge." / "48MP precision in every shot." / "The A18 Pro chip handles what others can't."
-- The intro should state an OUTCOME the spec produces, not restate the spec's name. When two specs work together, combine them into one outcome sentence instead of just naming the strongest one.
-  WRONG (restates spec name): "The i9-14900HX puts serious processing headroom under every session."
-  RIGHT (states outcome): "240Hz visuals stay locked in even when the RTX 4080 is pushed to its limit."
+- The intro should state an OUTCOME the spec produces, not restate the spec's name (same principle as SPEC-TO-BENEFIT RULE below, applied to the intro sentence). When two specs work together, combine them into one outcome sentence instead of just naming the strongest one.
 - PREFERRED PATTERN when the product serves two distinct use-cases (e.g. gaming + creative work, everyday + travel, professional + casual): use both allowed sentences as one connected pair, not two separate thoughts.
   Sentence 1: name the two use-cases this product serves — short, general framing, no spec yet.
   Sentence 2: name the product, then connect 2 real confirmed specs directly to the 2 outcomes named in sentence 1.
@@ -3013,11 +3018,11 @@ DESCRIPTION RULES:
 - Each bullet MUST contain a number, measurement, or confirmed technical fact. Poetry bullets are FORBIDDEN.
   EXCEPTION for unknown/generic products (Step C): if no number is confirmed, write the most specific functional or sensory fact available — never invent a number.
 - RATIO: 80% technical facts, 20% tone. Not the reverse.
-- SPEC-TO-BENEFIT RULE: every bullet must contain a real spec (never remove this), but state WHY it matters to the buyer, not just WHAT it is. This is not about adding vague adjectives — it's about connecting the number to a concrete outcome the customer experiences.
+- SPEC-TO-BENEFIT RULE: every bullet must contain a real spec (never remove this), but state WHY it matters to the buyer, not just WHAT it is. This is not about adding vague adjectives — it's about connecting the number to a concrete outcome the customer experiences. Apply this with EQUAL rigor to bullet 4 — it's the most common place this rule gets dropped, becoming a fact-dump with no outcome attached.
   WRONG (dry spec sheet): "Intel Core i9-14900HX — 24-core architecture for sustained workloads"
   RIGHT (spec + outcome): "Intel Core i9-14900HX — 24 cores keep frame rates steady through heavy multitasking"
-  WRONG: "16" QHD display — 240Hz refresh rate for fluid, frame-accurate visuals" (restates the spec twice, no outcome)
-  RIGHT: "16" QHD display — 240Hz keeps fast-paced action sharp, zero motion blur"
+  WRONG (bullet 4 as fact-dump, also violates one-spec-per-bullet): "7500mAh — 66W wired and wireless charging, IP69K rating, Android 15"
+  RIGHT: pick the ONE most relevant fact for bullet 4 and give it the same spec+outcome treatment as bullets 1-3 — drop the rest rather than cramming them in unexplained.
   The spec is never sacrificed for tone — both must be present in every bullet.
 - STRUCTURAL VARIATION: do not build every bullet as "Spec — outcome" with the
   same dash. Repeated identically four times in a row, it reads as a template,
@@ -3029,7 +3034,6 @@ DESCRIPTION RULES:
   Aim for at least 1-2 of the 4 bullets to break from the dash pattern this
   way. The spec and the outcome must both still be present — only the
   sentence construction changes, never the accuracy.
-- BULLET 4 CHECK — apply this rule with EQUAL rigor to the 4th bullet as to bullets 1-3. Confirmed real-world failure pattern: the last bullet is where this rule is most often dropped, becoming a list of remaining facts with no outcome attached (e.g., "7500mAh — 66W wired and wireless charging, IP69K rating, Android 15" — four facts, zero benefit, and also violates the one-spec-per-bullet rule below). Before finishing, check bullet 4 specifically: does it state an outcome, or did it become a dumping ground for whatever specs didn't fit earlier? If the latter, rewrite it with the same spec-to-benefit treatment, and drop any extra fact that doesn't fit rather than cramming it in unexplained.
 - Total description max 120 words
 
 CATEGORY KNOWLEDGE RULE:
@@ -3455,7 +3459,7 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
     ];
   }
 
-  console.log(`[provider] ${isTranslation ? 'gemini-3.1-flash-lite (perkthim)' : 'claude-sonnet-4-6 (gjenerim i pare)'} — image:${hasImage} body:${!!cleanBody} product:"${product.title}"`);
+  console.log(`[provider] ${isTranslation ? 'gemini-2.5-flash-lite (perkthim)' : 'claude-sonnet-4-6 (gjenerim i pare)'} — image:${hasImage} body:${!!cleanBody} product:"${product.title}"`);
 
   // FIX (bug urgjent, konfirmuar ne prod): 'let'/'const' brenda try{} S'JANE
   // TE DUKSHME brenda catch{} ne JavaScript — jane blloqe te veçanta scope-i.
@@ -3464,7 +3468,7 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
   // I RI) SECILEHERE qe ndodhte ndonje gabim real (API, parsing, etj.), duke
   // FSHEHUR gabimin e vertete pas ketij mesazhi te gabuar. Tani eshte KETU,
   // JASHTE try/catch, e dukshme ne te dyja.
-  let actualProvider = isTranslation ? 'gemini-3.1-flash-lite' : 'claude-sonnet-4-6';
+  let actualProvider = isTranslation ? 'gemini-2.5-flash-lite' : 'claude-sonnet-4-6';
 
   try {
     let rawText = '';
@@ -3495,8 +3499,11 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
     };
 
     if (isTranslation) {
+      // FIX (kosto): njesoj si translateFieldWithGemini me lart — ky eshte
+      // thirrja me vellim me te larte (19x per produkt), pra ku kursimi
+      // real peshon me shume. Perkthim, jo gjenerim — rrezik i ulet.
       const geminiRes = await axios.post(
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent',
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent',
         {
           contents: [{ parts: [{ text: userContent }] }],
           generationConfig: { maxOutputTokens: 1500, temperature: 0 }
