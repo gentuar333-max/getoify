@@ -1909,11 +1909,12 @@ function isTechElectronicsProduct(product) {
   return TECH_ELECTRONICS_TITLE_KEYWORDS.some(k => title.includes(k));
 }
 
-// Grup i ngushte i produkteve ku halucinimi i specifikave eshte i
-// konfirmuar ne testim real (Galaxy S26 Ultra, MacBook Neo, Dell XPS 13).
-// NE MOD QELLIMISHT te kufizuar: vetem telefona, laptop/PC.
-// Earbuds, smartwatch, gaming etj. NUKE perfshihen — keta kane dal
-// mire ne testime dhe nuk justifikojne kosto shtese Tavily.
+// Grup i produkteve ku halucinimi i specifikave eshte i konfirmuar ne testim
+// real (Galaxy S26 Ultra, MacBook Neo, Dell XPS 13) — dhe eshte zgjeruar qe
+// atehere (KOMENTI I VJETER thoshte "vetem telefona/laptop, earbuds/smartwatch
+// NUK perfshihen" — nuk eshte me e vertete, lista poshte tashme mbulon wearables,
+// robot vacuum, e-bike, connected fitness etj. i azhornova kete koment qe te
+// mos ngaterrojme zhvillim te ardhshem).
 const COMPLEX_TECH_KEYWORDS = [
   // Telefona
   'iphone', 'galaxy', 'pixel', 'oneplus', 'xiaomi', 'redmi', 'oppo',
@@ -2001,7 +2002,15 @@ function needsTavilySearch(product) {
   if (!product?.title) return false;
   const t = product.title.toLowerCase();
   if (COMPLEX_TECH_EXCLUSIONS.some(k => t.includes(k))) return false;
-  return COMPLEX_TECH_KEYWORDS.some(k => t.includes(k));
+  if (COMPLEX_TECH_KEYWORDS.some(k => t.includes(k))) return true;
+  // ZGJERIM: pajisje shtepie/kuzhine me marke te njohur (Dyson, KitchenAid,
+  // Nespresso, DeLonghi, Tefal, Bosch, Siemens, Braun...) — keto s'jane te
+  // COMPLEX_TECH_KEYWORDS (fokusuar ne elektronike/wearables), por kane
+  // specifika reale (W motori, L kapacitet, RPM) qe Tavily i verifikon mire,
+  // njesoj si telefonat. Reuse i isHomeKitchenProduct + titleHasKnownBrand
+  // ekzistuese — ZERO fjale te reja te shtuara/dubluara.
+  if (isHomeKitchenProduct(product) && titleHasKnownBrand(product.title)) return true;
+  return false;
 }
 
 // Kerkon specs reale te produktit nepermjet Tavily dhe i kthen si nje
