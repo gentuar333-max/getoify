@@ -3479,9 +3479,14 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
           // hedging-ut (forceHedgeSpecNumbers, detectGateViolation) mbeten te
           // paprekura — funksionojne njesoj pavaresisht cilit model Claude
           // po i pergjigjet, sepse skanojne vetem TEKSTIN e output-it.
+          //
+          // FIX URGJENT (konfirmuar ne prod): Claude Sonnet 5 E REFUZON
+          // parametrin 'temperature' — API kthente "temperature is deprecated
+          // for this model", duke deshtuar CDO thirrje. Hequr plotesisht.
+          // Rrjetat e hedging-ut (forceHedgeSpecNumbers) mbeten garancia
+          // reale kunder variacionit, jo temperature=0.
           model: 'claude-sonnet-5',
           max_tokens: 2500,
-          temperature: 0,
           messages: [{ role: 'user', content }]
         }, {
           headers: {
