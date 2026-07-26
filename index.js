@@ -2257,7 +2257,54 @@ function forceHedgeSpecNumbers(text, targetLang) {
   return result;
 }
 
-// Prit fjalen e fundit te plote para 'limit' karaktere — s'e pret ne mes te
+// Rrjete sigurie DETERMINISTIKE — RASTI REAL QE E ZBULOI: Tavily konfirmoi
+// Battery=5000mAh per Samsung Galaxy S26 Ultra, por Sonnet shkroi "4175mAh"
+// ne output — pra edhe kur hasExternalConfirmation=true dhe modelit i eshte
+// dhene VLERA E SAKTE ne confirmedSpecsBlock, ai mund ta "kujtoje" gabim ne
+// vend ta kopjoje. hasExternalConfirmation eshte NJE boolean per TE GJITHE
+// produktin — sapo NJE spec konfirmohet, "STEP A suspended" çaktivizohet
+// PER TE GJITHA, duke lejuar modelin te shkruaje edhe specifika krejt te
+// pakonfirmuara (p.sh. "5G", madhesi ekrani) si fakte te sigurta.
+//
+// Kjo funksion skanon output-in per NJESI (mAh, MP, W, GB, TB, Hz, g, %) qe
+// PERPUTHEN me nje spec te konfirmuar, dhe DETYRON numrin e SAKTE nese
+// modeli ka shkruar nje tjeter. SIGURI: nese 2+ specs te konfirmuara ndajne
+// te NJEJTEN njesi (p.sh. Charging 60W + Wireless Charging 25W), ANASHKALOHET
+// zbatimi per ate njesi teresisht — s'ka menyre te sigurt te dallosh cilin
+// numer duhet te korrigjoje cilin, dhe nje korrigjim i gabuar eshte me i
+// keq se asnje korrigjim.
+function enforceConfirmedSpecValues(text, confirmedSpecs) {
+  if (!text || !confirmedSpecs?.length) return text;
+
+  const unitValuePattern = /^(\d+(?:[.,]\d+)?)\s*(mah|gb|tb|mp|hz|w|g|%)$/i;
+  // Ruaj njesine ORIGJINALE (p.sh. "mAh") krahas versionit lowercase (per
+  // perputhje case-insensitive) — perndryshe zevendesimi del "5000mah" ne
+  // vend te "5000mAh", casing i gabuar krahasuar me burimin real.
+  const byUnit = {};
+  for (const spec of confirmedSpecs) {
+    const match = String(spec.value).match(unitValuePattern);
+    if (!match) continue; // spec jo numerike (p.sh. emer çipi, OS) — anashkalohet
+    const [, num, unit] = match;
+    const unitLower = unit.toLowerCase();
+    if (!byUnit[unitLower]) byUnit[unitLower] = { nums: [], originalUnit: unit };
+    byUnit[unitLower].nums.push(num);
+  }
+
+  let result = text;
+  for (const [unitLower, { nums, originalUnit }] of Object.entries(byUnit)) {
+    if (nums.length !== 1) continue; // ambig (2+ specs te NJEJTES njesi) — anashkalohet per siguri
+    const confirmedNum = nums[0];
+    const findRegex = new RegExp(`(\\d+(?:[.,]\\d+)?)\\s?${unitLower}\\b`, 'gi');
+    result = result.replace(findRegex, (fullMatch, foundNum) => {
+      if (foundNum.replace(',', '.') !== confirmedNum.replace(',', '.')) {
+        console.warn(`[spec-mismatch] Korrigjuar ne output: "${fullMatch}" → "${confirmedNum}${originalUnit}" (konfirmuar nga titull/Tavily/metafields)`);
+        return `${confirmedNum}${originalUnit}`;
+      }
+      return fullMatch;
+    });
+  }
+  return result;
+}
 // nje fjale. Perdoret nga enforceMetaDescriptionLength me poshte.
 function truncateAtWordBoundary(text, limit, minAcceptable) {
   if (text.length <= limit) return text;
@@ -3584,6 +3631,17 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
     // pa "deri ne" detyrohet mekanikisht ketu. Garanci, jo shprese.
     if (!isTranslation && !hasExternalConfirmation) {
       parsed.description = forceHedgeSpecNumbers(parsed.description, targetLang);
+    }
+
+    // Shtresa e fundit deterministike per SAKTESINE e vleres (jo vetem
+    // hedging) — RASTI REAL: Tavily konfirmoi Battery=5000mAh, modeli shkroi
+    // "4175mAh". Zbatohet PAVARESISHT hasExternalConfirmation, sepse gabimi
+    // ndodhi pikerisht kur ishte true (shih komentin te vete funksioni).
+    if (allConfirmedSpecs.length > 0) {
+      parsed.description = enforceConfirmedSpecValues(parsed.description, allConfirmedSpecs);
+      if (parsed.meta_description) {
+        parsed.meta_description = enforceConfirmedSpecValues(parsed.meta_description, allConfirmedSpecs);
+      }
     }
 
     return parsed;
