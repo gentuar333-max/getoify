@@ -3401,7 +3401,7 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
     ];
   }
 
-  console.log(`[provider] ${isTranslation ? 'gemini-3.1-flash-lite (perkthim)' : 'claude-sonnet-5 (gjenerim i pare)'} — image:${hasImage} body:${!!cleanBody} product:"${product.title}"`);
+  console.log(`[provider] ${isTranslation ? 'gemini-3.1-flash-lite (perkthim)' : 'claude-sonnet-4-6 (gjenerim i pare)'} — image:${hasImage} body:${!!cleanBody} product:"${product.title}"`);
 
   // FIX (bug urgjent, konfirmuar ne prod): 'let'/'const' brenda try{} S'JANE
   // TE DUKSHME brenda catch{} ne JavaScript — jane blloqe te veçanta scope-i.
@@ -3410,7 +3410,7 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
   // I RI) SECILEHERE qe ndodhte ndonje gabim real (API, parsing, etj.), duke
   // FSHEHUR gabimin e vertete pas ketij mesazhi te gabuar. Tani eshte KETU,
   // JASHTE try/catch, e dukshme ne te dyja.
-  let actualProvider = isTranslation ? 'gemini-3.1-flash-lite' : 'claude-sonnet-5';
+  let actualProvider = isTranslation ? 'gemini-3.1-flash-lite' : 'claude-sonnet-4-6';
 
   try {
     let rawText = '';
@@ -3473,20 +3473,17 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
 
       const callSonnet = async (content) => {
         const claudeRes = await axios.post('https://api.anthropic.com/v1/messages', {
-          // FIX: claude-sonnet-4-6 -> claude-sonnet-5 — model me i ri, $2/$10
-          // per milion token (ne vend te $3/$15) deri me 31 gusht 2026, pastaj
-          // kthehet ne te njejtin $3/$15 si 4.6. Rrjetat deterministike te
-          // hedging-ut (forceHedgeSpecNumbers, detectGateViolation) mbeten te
-          // paprekura — funksionojne njesoj pavaresisht cilit model Claude
-          // po i pergjigjet, sepse skanojne vetem TEKSTIN e output-it.
-          //
-          // FIX URGJENT (konfirmuar ne prod): Claude Sonnet 5 E REFUZON
-          // parametrin 'temperature' — API kthente "temperature is deprecated
-          // for this model", duke deshtuar CDO thirrje. Hequr plotesisht.
-          // Rrjetat e hedging-ut (forceHedgeSpecNumbers) mbeten garancia
-          // reale kunder variacionit, jo temperature=0.
-          model: 'claude-sonnet-5',
+          // REVERT URGJENT: u provua claude-sonnet-5 per kursim kostoje, por
+          // tregoi DY probleme rresht ne prod (1: refuzonte parametrin
+          // 'temperature' — "temperature is deprecated for this model"; 2:
+          // pas heqjes se temperature, s'e respektonte qendrueshem formatin
+          // ###TITLE###/###DESCRIPTION### — deshtim i perseritur ne çdo /poll).
+          // Kthim te 4.6 (i njohur, i testuar gjere, temperature:0 punon
+          // normalisht) per stabilitet. Sonnet 5 duhet testuar veç (thirrje
+          // manuale /test-prompt, jashte prod) para se te rikonsiderohet.
+          model: 'claude-sonnet-4-6',
           max_tokens: 2500,
+          temperature: 0,
           messages: [{ role: 'user', content }]
         }, {
           headers: {
@@ -3524,7 +3521,7 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
         return geminiRes.data.candidates?.[0]?.content?.parts?.[0]?.text || '';
       };
 
-      const generationProvider = useGeminiForGeneration ? 'gemini-3.1-flash-lite' : 'claude-sonnet-5';
+      const generationProvider = useGeminiForGeneration ? 'gemini-3.1-flash-lite' : 'claude-sonnet-4-6';
       actualProvider = generationProvider;
       console.log(`[generation-routing] "${product.title}" (${targetLang}) hasExternalConfirmation:${hasExternalConfirmation} hasImage:${hasImage} → ${generationProvider}`);
 
