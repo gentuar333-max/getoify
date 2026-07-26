@@ -3405,6 +3405,11 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
 
   try {
     let rawText = '';
+    // Deklaruar ketu (jo brenda else-s) qe te jete i dukshem edhe ne catch
+    // me poshte — perdoret per te loguar SAKTE cili provider deshtoi, ne
+    // vend te supozimit te vjeter "isTranslation false = gjithmone Claude"
+    // (i gabuar tani qe gjenerimi mund te shkoje edhe te Gemini).
+    let actualProvider = isTranslation ? 'gemini-3.1-flash-lite' : 'claude-sonnet-5';
     // Format i ri me shenues (###TITLE### etj) ne vend te JSON — eliminon
     // teresisht klasen e gabimeve qe kishim me JSON.parse() (newline real,
     // thonjeza te pa-escape-uara, apostrofa brenda description-it). Modeli
@@ -3511,6 +3516,7 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
       };
 
       const generationProvider = useGeminiForGeneration ? 'gemini-3.1-flash-lite' : 'claude-sonnet-5';
+      actualProvider = generationProvider;
       console.log(`[generation-routing] "${product.title}" (${targetLang}) hasExternalConfirmation:${hasExternalConfirmation} hasImage:${hasImage} → ${generationProvider}`);
 
       rawText = useGeminiForGeneration
@@ -3582,8 +3588,8 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
     // anglisht. Tani hidhet error real — localizeProductBody/localizeProduct e
     // kap, fshin lock-un 'processing', dhe e lejon riprovim në ciklin tjetër
     // (poll ose webhook retry), në vend që të ruajë të dhëna të gabuara si sukses.
-    console.error(`${isTranslation ? 'Gemini' : 'Claude'} API failed:`, apiErr.response?.data || apiErr.message);
-    throw new Error(`${isTranslation ? 'Gemini' : 'Claude'} translation failed: ${apiErr.response?.data?.error?.message || apiErr.message}`);
+    console.error(`${actualProvider} API failed:`, apiErr.response?.data || apiErr.message);
+    throw new Error(`${actualProvider} generation/translation failed: ${apiErr.response?.data?.error?.message || apiErr.message}`);
   }
 }
 
