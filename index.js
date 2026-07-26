@@ -2637,6 +2637,32 @@ async function generateProductCopy(product, targetLang, glossary, cleanBody, ima
   // Nderto content array per API (tekst + imazh kur eshte Sonnet)
   let userContent;
 
+  // FIX (cache): kjo pjese varet nga hasExternalConfirmation/tavilySearchedButEmpty
+  // — te dyja specifike per PRODUKTIN, jo per gjuhen/kategorine. Perpara ishte
+  // brenda vete sharedRules (blloku qe merr cache_control me poshte), qe do
+  // te thote sharedRules NDRYSHONTE bajt-per-bajt per çdo produkt qe s'kishte
+  // specs te konfirmuara — duke thyer supozimin e cache-it "produkte te tjera
+  // te NJEJTES gjuhe+kategori brenda 5 min -90%", sepse ai supozim kerkon
+  // qe PREFIKSI i cache-uar te jete identik. Tani eshte ndare ne kontextBlock
+  // (poshte, per-produkt, PA cache_control) — sharedRules mbetet funksion
+  // I PASTER i (targetLang, kategoria) VETEM, pra cache-i godet realisht
+  // ne cdo produkt te njejtes gjuhe+kategori, pavaresisht statusit te specs.
+  // Rrjetat deterministike (detectGateViolation, forceHedgeSpecNumbers) s'jane
+  // prekur — ende skanojne output-in dhe garantojne hedging pavaresisht ku
+  // ndodhet ky tekst ne prompt.
+  const confirmationStatusBlock = `
+EXTERNAL CONFIRMATION STATUS: ${hasExternalConfirmation ? 'CONFIRMED — see CONFIRMED MERCHANT DATA below or merchant title for real spec data.' : 'NOT CONFIRMED — no merchant-provided specs exist for this product.'}
+${tavilySearchedButEmpty ? `
+⛔ NO-SPECS MODE ACTIVE: An external search was performed for this product but returned ZERO verified specifications. This means the product either does not exist yet, is too new, or its specs are unverifiable. In this case you MUST:
+- Write ZERO numeric specifications (no RAM, no storage, no battery mAh, no screen size in inches, no camera MP, no Hz, no watts, no weight)
+- Write ZERO chip/processor model names or generation numbers
+- Write ZERO OS version numbers
+- Write ONLY marketing-focused copy: design language, intended use case, target audience, brand positioning, what problem it solves
+- DO NOT use "up to" hedging — simply omit all specs entirely
+- If you cannot write a meaningful description without specs, write about the brand's reputation, the product category's benefits, and the experience of using this type of product
+This rule overrides STEP A, STEP B, and STEP C entirely.` : (!hasExternalConfirmation ? `Because there is no external confirmation, STEP A's permission to write an exact number from memory is SUSPENDED for VOLATILE specs (RAM, storage, battery mAh, screen Hz, camera MP, screen size, chip generation number, or any measurement that differs between similar models and is easy to confuse) — use "up to" / qualitative framing for these instead, even if you recognize the brand and model with high confidence. This suspension does NOT apply to STABLE IDENTIFIERS tied to release timing rather than hardware configuration — the current OS version (e.g. "iOS 26", "Android 16") or a platform feature/brand name (e.g. "Apple Intelligence", "Galaxy AI") may be stated directly if you are confident, since these carry far lower cross-model confusion risk than hardware measurements. If unsure about a stable identifier too, omit it rather than guess.` : '')}
+`;
+
   // Blloku i rregullave te perbashketa per te dy promptet
   const sharedRules = `
 TITLE RULES:
@@ -2716,17 +2742,6 @@ DESCRIPTION RULES:
 - Total description max 120 words
 
 CATEGORY KNOWLEDGE RULE:
-
-EXTERNAL CONFIRMATION STATUS: ${hasExternalConfirmation ? 'CONFIRMED — see CONFIRMED MERCHANT DATA below or merchant title for real spec data.' : 'NOT CONFIRMED — no merchant-provided specs exist for this product.'}
-${tavilySearchedButEmpty ? `
-⛔ NO-SPECS MODE ACTIVE: An external search was performed for this product but returned ZERO verified specifications. This means the product either does not exist yet, is too new, or its specs are unverifiable. In this case you MUST:
-- Write ZERO numeric specifications (no RAM, no storage, no battery mAh, no screen size in inches, no camera MP, no Hz, no watts, no weight)
-- Write ZERO chip/processor model names or generation numbers
-- Write ZERO OS version numbers
-- Write ONLY marketing-focused copy: design language, intended use case, target audience, brand positioning, what problem it solves
-- DO NOT use "up to" hedging — simply omit all specs entirely
-- If you cannot write a meaningful description without specs, write about the brand's reputation, the product category's benefits, and the experience of using this type of product
-This rule overrides STEP A, STEP B, and STEP C entirely.` : (!hasExternalConfirmation ? `Because there is no external confirmation, STEP A's permission to write an exact number from memory is SUSPENDED for VOLATILE specs (RAM, storage, battery mAh, screen Hz, camera MP, screen size, chip generation number, or any measurement that differs between similar models and is easy to confuse) — use "up to" / qualitative framing for these instead, even if you recognize the brand and model with high confidence. This suspension does NOT apply to STABLE IDENTIFIERS tied to release timing rather than hardware configuration — the current OS version (e.g. "iOS 26", "Android 16") or a platform feature/brand name (e.g. "Apple Intelligence", "Galaxy AI") may be stated directly if you are confident, since these carry far lower cross-model confusion risk than hardware measurements. If unsure about a stable identifier too, omit it rather than guess.` : '')}
 
 You are an ecommerce expert with deep product knowledge across all categories. Apply this logic:
 
@@ -3184,6 +3199,7 @@ Target language: ${targetLang}
 
 ${titleSection}
 ${confirmedSpecsBlock}
+${confirmationStatusBlock}
 Look carefully at the image. Identify ONLY what is clearly visible: materials, colors, shape, dimensions, text/branding, use case.
 Do NOT invent specifications that are not visible or stated.`;
 
@@ -3244,6 +3260,7 @@ Product name: "${product.title}"
 ${category ? `Category: ${category}` : ''}
 ${tags ? `Tags: ${tags}` : ''}
 ${confirmedSpecsBlock}
+${confirmationStatusBlock}
 No description exists. Write product copy in ${targetLang} based ONLY on the product name above — no invention.`;
 
     userContent = [
@@ -3252,7 +3269,7 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
     ];
   }
 
-  console.log(`[provider] ${isTranslation ? 'gemini-3.1-flash-lite (perkthim)' : 'claude-sonnet-4-6 (gjenerim i pare)'} — image:${hasImage} body:${!!cleanBody} product:"${product.title}"`);
+  console.log(`[provider] ${isTranslation ? 'gemini-3.1-flash-lite (perkthim)' : 'claude-sonnet-5 (gjenerim i pare)'} — image:${hasImage} body:${!!cleanBody} product:"${product.title}"`);
 
   try {
     let rawText = '';
@@ -3301,7 +3318,13 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
     } else {
       const callSonnet = async (content) => {
         const claudeRes = await axios.post('https://api.anthropic.com/v1/messages', {
-          model: 'claude-sonnet-4-6',
+          // FIX: claude-sonnet-4-6 -> claude-sonnet-5 — model me i ri, $2/$10
+          // per milion token (ne vend te $3/$15) deri me 31 gusht 2026, pastaj
+          // kthehet ne te njejtin $3/$15 si 4.6. Rrjetat deterministike te
+          // hedging-ut (forceHedgeSpecNumbers, detectGateViolation) mbeten te
+          // paprekura — funksionojne njesoj pavaresisht cilit model Claude
+          // po i pergjigjet, sepse skanojne vetem TEKSTIN e output-it.
+          model: 'claude-sonnet-5',
           max_tokens: 2500,
           temperature: 0,
           messages: [{ role: 'user', content }]
