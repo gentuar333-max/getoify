@@ -3609,10 +3609,16 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
       // (jo vetem !hasExternalConfirmation si perpara) — validuar me teste
       // reale te perseritura (Samsung Galaxy S26 Ultra, disa raunde, bugs
       // reale te gjetura e ndrequra: 4175mAh, 5G->214g, specs te shpikura).
-      // Rasti me IMAZH mbetet te Sonnet — s'eshte testuar aspak me mini ende.
+      // Rasti me IMAZH: flag i VEÇANTE (OPENAI_IMAGE_GENERATION_ENABLED),
+      // i pavarur nga OPENAI_GENERATION_ENABLED — eshte i vetmi rast s'eshte
+      // testuar aspak me mini ende, pra s'duhet te rrezikoje dy rastet tashme
+      // te validuara nese diçka del keq specifikisht per imazhin.
       const useOpenAIForGeneration = forceProvider
         ? (forceProvider === 'openai' || forceProvider === 'gpt-4o' || forceProvider === 'gpt-4o-mini')
-        : (process.env.OPENAI_GENERATION_ENABLED === 'true' && !hasImage);
+        : (
+            (process.env.OPENAI_GENERATION_ENABLED === 'true' && !hasImage) ||
+            (process.env.OPENAI_IMAGE_GENERATION_ENABLED === 'true' && hasImage)
+          );
       const useGeminiForGeneration = forceProvider
         ? forceProvider === 'gemini'
         : (!useOpenAIForGeneration && process.env.GEMINI_GENERATION_ENABLED === 'true' && !hasExternalConfirmation && !hasImage);
