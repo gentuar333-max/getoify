@@ -2190,10 +2190,16 @@ function findSpecMatches(text) {
   // njesi" — numberUnitPattern s'e kap fare (zbuluar nga rasti real "IP68"
   // qe kaloi pa u kapur/hedge-uar). Kjo eshte pikerisht shtresa qe mungonte.
   const ipRatingPattern = /\bIP\d{2}[KX]?\b/gi;
+  // Kohezgjatje garancie/afati — "1-year warranty", "2 years", "12-month" —
+  // RASTE REALE (Nespresso, Theragun) ku modeli shpiku nje kohezgjatje te
+  // sigurt pa asnje konfirmim. S'perputhet me "since 1995" (viti i vetem,
+  // pa fjalen year/month ngjitur), pra rrezik i ulet false-positive.
+  const durationPattern = /\d+[-\s]?(year|yr|month|mo)s?\b/gi;
   let m;
   while ((m = numberUnitPattern.exec(text)) !== null) matches.push({ index: m.index, text: m[0] });
   while ((m = aperturePattern.exec(text)) !== null) matches.push({ index: m.index, text: m[0] });
   while ((m = ipRatingPattern.exec(text)) !== null) matches.push({ index: m.index, text: m[0] });
+  while ((m = durationPattern.exec(text)) !== null) matches.push({ index: m.index, text: m[0] });
   matches.sort((a, b) => a.index - b.index);
   return matches;
 }
@@ -3165,6 +3171,7 @@ RULE: "up to" = typical range (Step B). Real confirmed numbers = Step A only. Ne
 
 ${fashionApparel ? `
 FASHION & APPAREL SPECIFIC RULES:
+⚠️ LANGUAGE NOTICE FOR THIS ENTIRE SECTION: some illustrations below are shown in French as examples of the claim/pattern, not literal text to output. If ${targetLang} is not French, write the equivalent claim in ${targetLang} vocabulary — reproducing literal French wording in a different target language is a CRITICAL ERROR.
 This is a clothing, footwear, or accessory product. Apply these rules:
 
 TONE RATIO OVERRIDE — for this category ONLY, replace the general "80% facts, 20% tone" rule with:
@@ -3175,10 +3182,10 @@ TONE RATIO OVERRIDE — for this category ONLY, replace the general "80% facts, 
 PRIORITY SPECS by product type:
 
 FOOTWEAR (sneakers, running shoes, boots):
-- Bullet 1: sole technology + material (e.g. "Semelle React + unité Air Max 270° — amorti réactif")
-- Bullet 2: upper material + construction (e.g. "Empeigne mesh respirant + renforts synthétiques")
-- Bullet 3: fit + sizing info (e.g. "Pointure fidèle — convient pour usage lifestyle quotidien")
-- Bullet 4: care instructions (e.g. "Nettoyage à la main recommandé — semelle caoutchouc durable")
+- Bullet 1: sole technology + material — pattern: "[sole tech name] + [cushioning unit] — [outcome]"
+- Bullet 2: upper material + construction — pattern: "[upper material] + [construction detail]"
+- Bullet 3: fit + sizing info — MANDATORY, never skip this topic or replace it with unrelated lifestyle filler. If true-to-size/runs-small/runs-large is NOT confirmed for this exact model, write an honest generic note instead (e.g. "check the size guide for the best fit") — but the bullet must still be ABOUT fit/sizing, not a substitute topic.
+- Bullet 4: care instructions — pattern: "[cleaning method] — [durability note]"
 - ALWAYS mention: sole type, upper material, occasion (running/lifestyle/training)
 - IF KNOWN: weight (g), drop (mm), "true to size" or "size up"
 
