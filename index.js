@@ -2433,6 +2433,32 @@ function stripUnconfirmedChipNumbers(text, confirmedSpecs) {
   return result;
 }
 
+// Rrjete sigurie DETERMINISTIKE — validuar me test real: udhezimi tekstual
+// "GENERIC FILLER BAN" (shtuar ne prompt) korrigjoi bullet-in e baterise
+// ("for your needs" -> "lasts through a full day of heavy use") por "for
+// peace of mind" (bullet-i i garancise, TE NJEJTIN test) i shpetoi — prompti
+// VETEM funksionon PJESERISHT, jo qendrueshem. Heqja e vetë frazes le fjali
+// te plote/te pastra ne çdo rast te testuar (nuk kerkon zevendesim teksti).
+function stripGenericFillerPhrases(text) {
+  if (!text) return text;
+  const genericPhrases = [
+    /\s*for your needs\b/gi,
+    /\s*for everyday use\b/gi,
+    /\s*for your activities\b/gi,
+    /\s*for peace of mind\b/gi,
+    /\s*for an immersive experience\b/gi,
+    /\s*for every shot\b/gi,
+  ];
+  let result = text;
+  for (const pattern of genericPhrases) {
+    result = result.replace(pattern, (match) => {
+      console.warn(`[generic-filler] Hequr fraze gjenerike: "${match.trim()}"`);
+      return '';
+    });
+  }
+  return result;
+}
+
 // Prit fjalen e fundit te plote para 'limit' karaktere — s'e pret ne mes te
 // nje fjale. Perdoret nga enforceMetaDescriptionLength me poshte.
 function truncateAtWordBoundary(text, limit, minAcceptable) {
@@ -3905,6 +3931,18 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
         parsed.meta_description = stripUnconfirmedChipNumbers(parsed.meta_description, allConfirmedSpecs);
         if (parsed.meta_description !== beforeMeta) unconfirmedSpecsHedged = true;
       }
+    }
+
+    // Shtresa e fundit deterministike per fraza gjenerike qe s'shpjegojne
+    // asgje specifike ("for peace of mind", "for your needs") — validuar
+    // me test real: udhezimi tekstual ne prompt funksionoi PJESERISHT (nje
+    // bullet u korrigjua, tjetri "for peace of mind" i shpetoi te NJEJTIN
+    // test). Zbatohet PAVARESISHT hasExternalConfirmation/isTranslation —
+    // eshte çeshtje stili, jo saktesie (efekt real vetem ne anglisht per
+    // momentin, s'demton gjuhët e tjera — thjesht s'gjen perputhje).
+    parsed.description = stripGenericFillerPhrases(parsed.description);
+    if (parsed.meta_description) {
+      parsed.meta_description = stripGenericFillerPhrases(parsed.meta_description);
     }
 
     // Bashkangjit providerin real qe u perdor — fushe shtese e sigurt (nuk
