@@ -3289,20 +3289,21 @@ MANDATORY for closed ecosystem products — treat all 4 as equally required, not
 
 ${beautyHealth ? `
 BEAUTY & HEALTH SPECIFIC RULES:
+⚠️ LANGUAGE NOTICE FOR THIS ENTIRE SECTION: many illustrations below are shown in French because that market's conventions are well-documented — they are EXAMPLES OF THE CLAIM/PATTERN, not literal text to output. If ${targetLang} is not French, you MUST write the equivalent claim in ${targetLang} using ${targetLang} vocabulary. Reproducing the literal French wording shown below when writing in a different target language is a CRITICAL ERROR — it means the customer receives text in the wrong language. Brand/technology proper nouns (e.g. "Nespresso", model numbers) are the only exception and may stay as originally branded.
 This is a skincare, beauty, or supplement product. Max description length: 150 words.
 
-PRIORITY — write these first if confirmed:
-1. Brand technology name (MVE Technology, Vitamin C stable form, Retinol 0.1%)
-2. Key active ingredients with % if known (3 Ceramides essentiels, Acide hyaluronique, Niacinamide 10%)
-3. Skin type target (peaux sensibles, peaux grasses, tous types de peau)
-4. Dermatologist / clinically tested claim if true for this brand
-5. Format value — never "plusieurs semaines": use "jusqu'à 3 mois" for 473ml+, "jusqu'à 6 semaines" for smaller
+PRIORITY — write these first if confirmed, IN ${targetLang} (concepts below are named in English/French only to identify them, not to dictate literal wording):
+1. Brand technology name (MVE Technology, Vitamin C stable form, Retinol 0.1%) — proper nouns/technology names stay as-is, rest of the sentence in ${targetLang}
+2. Key active ingredients with % if known (e.g. ceramides, hyaluronic acid, niacinamide 10%) — ingredient names translated naturally into ${targetLang}
+3. Skin type target (sensitive, oily, all skin types) — write in ${targetLang}
+4. Dermatologist / clinically tested claim if true for this brand — write in ${targetLang}
+5. Format value — never a vague "several weeks/months" — give a specific duration ("up to 3 months" for 473ml+ containers, "up to 6 weeks" for smaller ones), written in ${targetLang}, not copied from any other language
 
-BULLET ORDER for Beauty & Health:
-- Bullet 1: format + usage duration (e.g. "Flacon 473ml — jusqu'à 3 mois d'utilisation quotidienne")
-- Bullet 2: key active ingredients + technology (e.g. "3 Céramides essentiels + Technologie MVE — hydratation 24h")
-- Bullet 3: skin type + dermatologist claim (e.g. "Testé dermatologiquement — peaux sensibles et normales")
-- Bullet 4: texture/format + confirmed care (e.g. "Formule sans parfum, non-comédogène — sans rinçage")
+BULLET ORDER for Beauty & Health — write ENTIRELY in ${targetLang}. The patterns below use bracketed placeholders on purpose — they show STRUCTURE only, not wording to copy. Never reproduce literal French (or any other language) text from this instruction block itself in your output — that would be a critical error (wrong-language output for the customer):
+- Bullet 1: format + usage duration — pattern: "[container size] — [duration claim]"
+- Bullet 2: key active ingredients + technology — pattern: "[ingredient(s) + %] + [technology name] — [effect + duration]"
+- Bullet 3: skin type + dermatologist claim — pattern: "[clinical claim if confirmed] — [target skin type]"
+- Bullet 4: texture/format + confirmed care — pattern: "[formula claims, e.g. fragrance-free/non-comedogenic] — [usage note]"
 
 STRICTLY FORBIDDEN for Beauty & Health:
 - "aucune condition de stockage spéciale" — never mention storage unless required
@@ -3334,11 +3335,11 @@ MANDATORY rules — apply to every product from these brands:
    - La Roche-Posay → "Eau Thermale de La Roche-Posay" (in every product)
    - Avène → "Eau Thermale d'Avène"
    - Uriage → "Eau Thermale d'Uriage"
-   - CeraVe → "3 Céramides essentiels + Technologie MVE"
+   - CeraVe → 3 essential ceramides + "MVE Technology" (MVE is the proprietary tech name, keep as-is; "3 essential ceramides" is a description, translate into ${targetLang})
    - Other brands → identify their hero ingredient from your knowledge
 2. PATENTED TECHNOLOGY — mention if known:
    - LRP sunscreen → "Mexoryl SX + XL" or "UVMune 400"
-   - CeraVe → "Technologie MVE — libération sur 24h"
+   - CeraVe → "MVE Technology" (keep name) — releases over 24 hours (describe this claim in ${targetLang})
    - Other brands → use confirmed technology name only
 3. PRACTICAL INFO by product type:
    - SPF/sunscreen → "photostable", "résistant à l'eau", "réappliquer toutes les 2h"
@@ -3354,7 +3355,7 @@ MANDATORY rules — apply to every product from these brands:
 BRAND HERITAGE & AUTHORITY — if the brand has a founding claim, invention, or official positioning, mention it in prose or bullet:
 - Bioderma → "Inventeur de la micellaire depuis 1995" / "Inventore della micellare dal 1995"
 - La Roche-Posay → "N°1 en dermatologie recommandée par les dermatologues"
-- CeraVe → "Développé avec des dermatologues"
+- CeraVe → developed with dermatologists (describe this claim in ${targetLang})
 - Avène → "Source thermale depuis 1736"
 - Vichy → "Recommandé par les professionnels de santé"
 - Eucerin → "Plus de 100 ans d'expertise dermatologique"
