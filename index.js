@@ -3149,6 +3149,9 @@ DESCRIPTION RULES:
   WRONG (bullet 4 as fact-dump, also violates one-spec-per-bullet): "7500mAh — 66W wired and wireless charging, IP69K rating, Android 15"
   RIGHT: pick the ONE most relevant fact for bullet 4 and give it the same spec+outcome treatment as bullets 1-3 — drop the rest rather than cramming them in unexplained.
   The spec is never sacrificed for tone — both must be present in every bullet.
+  GENERIC FILLER BAN — validated real failure: a bullet technically had "spec + outcome" but the outcome half was a generic phrase that explains nothing specific ("5000mAh battery provides all-day power for your needs" — this could be copy-pasted onto ANY battery of ANY size and still sound true, which means it isn't really connected to the number 5000 at all).
+  FORBIDDEN generic endings unless followed by something concrete: "for your needs", "for everyday use", "for your activities", "for peace of mind", "for an immersive experience", "for every shot" — these phrases do not explain what the specific number changes.
+  SELF-TEST before finalizing each bullet: could this exact outcome phrase be copy-pasted onto a competitor's product that has a DIFFERENT number for this same spec, and still sound equally true? If yes, the outcome is too generic — rewrite it so it depends on THIS specific number (e.g. not "battery provides all-day power for your needs" but "battery lasts through a full day of heavy use without a midday charge" — a materially smaller battery could not honestly make this exact claim).
 - STRUCTURAL VARIATION: do not build every bullet as "Spec — outcome" with the
   same dash. Repeated identically four times in a row, it reads as a template,
   not writing. Vary the construction — some examples of other valid forms:
