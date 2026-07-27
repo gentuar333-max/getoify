@@ -2896,20 +2896,63 @@ async function generateProductCopy(product, targetLang, glossary, cleanBody, ima
   let tavilySpecs = [];
   let tavilySearchedButEmpty = false;
   if (!hasExternalConfirmation && !cleanBody && needsTavilySearch(product)) {
-    console.log(`[tavily] Duke kerkuar specs per "${product.title}" — Sonnet pret...`);
-    tavilySpecs = await searchProductSpecs(product.title);
-    if (tavilySpecs.length > 0) {
-      hasExternalConfirmation = true;
-      console.log(`[tavily] ${tavilySpecs.length} spec(e): ${tavilySpecs.map(s => `${s.key}=${s.value}`).join(', ')}`);
-    } else {
-      // NO-SPECS mode vetem per produkte pa brand te njohur —
-      // iPhone, Samsung etj. kane specs te besueshme ne training data te Sonnet
-      // dhe duhet te shkruaje me hedging "up to", jo zero specs
-      if (!titleHasKnownBrand(product.title)) {
-        tavilySearchedButEmpty = true;
-        console.log(`[tavily] Asnje spec + brand i panjohur → NO-SPECS mode`);
+    // FIX (kosto, RASTI REAL): pa cache, webhook + /poll (ose retries) mund
+    // te thërrasin Tavily VEÇ E VEÇ per te NJEJTIN produkt nese ndeshen para
+    // se njeri te shkruaje body_html mbrapsht te Shopify (cleanBody mbetet
+    // bosh per te dy). Cache i persistuar (Supabase, jo memorie — s'mbijeton
+    // mes thirrjeve te veçanta serverless) siguron Tavily thirret MAKSIMUMI
+    // 1 here per produkt. Kerkon product.id + shop; /test-prompt (produkt pa
+    // id) anashkalon cache-in dhe sillet si me pare — e sakte per testim te
+    // izoluar, ku duam gjithmone thirrje LIVE.
+    let usedCache = false;
+    if (product.id && shop) {
+      try {
+        const { data: cacheRow } = await supabase
+          .from('product_specs_cache')
+          .select('specs_json, searched_but_empty')
+          .eq('shop', shop)
+          .eq('product_id', String(product.id))
+          .maybeSingle();
+        if (cacheRow) {
+          tavilySpecs = cacheRow.specs_json || [];
+          tavilySearchedButEmpty = cacheRow.searched_but_empty || false;
+          if (tavilySpecs.length > 0) hasExternalConfirmation = true;
+          usedCache = true;
+          console.log(`[tavily-cache] Perdorur cache ekzistues per produkt ${product.id} — ${tavilySpecs.length} spec(e), pa thirrje te re Tavily`);
+        }
+      } catch(e) {
+        console.warn('[tavily-cache] Leximi i cache deshtoi, vazhdon me thirrje live:', e.message);
+      }
+    }
+
+    if (!usedCache) {
+      console.log(`[tavily] Duke kerkuar specs per "${product.title}" — Sonnet pret...`);
+      tavilySpecs = await searchProductSpecs(product.title);
+      if (tavilySpecs.length > 0) {
+        hasExternalConfirmation = true;
+        console.log(`[tavily] ${tavilySpecs.length} spec(e): ${tavilySpecs.map(s => `${s.key}=${s.value}`).join(', ')}`);
       } else {
-        console.log(`[tavily] Asnje spec nga Tavily por brand i njohur → hedged specs nga Sonnet`);
+        // NO-SPECS mode vetem per produkte pa brand te njohur —
+        // iPhone, Samsung etj. kane specs te besueshme ne training data te Sonnet
+        // dhe duhet te shkruaje me hedging "up to", jo zero specs
+        if (!titleHasKnownBrand(product.title)) {
+          tavilySearchedButEmpty = true;
+          console.log(`[tavily] Asnje spec + brand i panjohur → NO-SPECS mode`);
+        } else {
+          console.log(`[tavily] Asnje spec nga Tavily por brand i njohur → hedged specs nga Sonnet`);
+        }
+      }
+
+      if (product.id && shop) {
+        try {
+          await supabase.from('product_specs_cache').upsert({
+            shop, product_id: String(product.id),
+            specs_json: tavilySpecs,
+            searched_but_empty: tavilySearchedButEmpty
+          }, { onConflict: 'shop,product_id' });
+        } catch(e) {
+          console.warn('[tavily-cache] Ruajtja e cache deshtoi (jo kritike):', e.message);
+        }
       }
     }
   }
