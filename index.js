@@ -2396,6 +2396,43 @@ function hedgeUnconfirmedSpecsAmongConfirmed(text, targetLang, confirmedSpecs) {
   return result;
 }
 
+// Rrjete sigurie DETERMINISTIKE — GAP I RI I ZBULUAR: Tavily konfirmoi
+// "Chipset=Snapdragon chip" (GJENERIK, PA numer gjenerate), por modeli
+// (GPT-4o mini, verifikuar; STEP A e paralajmeronte per te njejtin rrezik
+// te Sonnet ne fillim te ketij projekti) shkroi "Snapdragon 8" — numer i
+// shpikur. As enforceConfirmedSpecValues (kerkon numer+njesi si mAh/MP) as
+// hedgeUnconfirmedSpecsAmongConfirmed (i njejti kufizim) e kapin kete —
+// "emer çipi + numer" eshte forme krejt tjeter. Kjo funksion e mbyll gapin:
+// nese specifika e konfirmuar per chipset EshTE gjenerike (pa numer), hiq
+// çdo numer/gjenerate te shtuar pas emrave te njohur te markave te çipeve.
+function stripUnconfirmedChipNumbers(text, confirmedSpecs) {
+  if (!text || !confirmedSpecs?.length) return text;
+
+  const chipSpec = confirmedSpecs.find(s => /chip|processor|soc/i.test(s.key));
+  if (!chipSpec) return text; // asnje spec chipset e konfirmuar — jashte scope-it te kesaj funksioni
+  if (/\d/.test(chipSpec.value)) return text; // konfirmuar ka VETE numer (p.sh. "Snapdragon 8 Elite") — OK te perputhet
+
+  // Konfirmuar eshte GJENERIK (p.sh. "Snapdragon chip", pa numer) — çdo
+  // numer/gjenerate i shtuar pas nje emri te njohur marke eshte i shpikur.
+  const chipBrandPattern = /\b(Snapdragon|Exynos|Dimensity|Tensor|Kirin|Bionic)\b(\s+(?:Gen\s*)?\d+[a-zA-Z]*)?(\s+(?:Elite|Pro|Ultra|Plus|Max))?/gi;
+  let result = text.replace(chipBrandPattern, (fullMatch, brand) => {
+    if (fullMatch.trim() === brand) return fullMatch; // s'kishte numer fare, asgje per te hequr
+    console.warn(`[chip-number] Hequr gjenerate i shpikur: "${fullMatch.trim()}" — konfirmuar vetem "${chipSpec.value}"`);
+    return brand;
+  });
+
+  // Renditje TJETER: Apple e vendos numrin PARA percaktuesit ("A18 Bionic",
+  // jo "Bionic A18") — pattern-i sipër s'e kap fare kete rast, prandaj
+  // nevojitet rregull i dyte i veçante per numra tipi A## / M##.
+  const appleChipPattern = /\bA\d+\s*(Bionic|Pro|Max)?\b/gi;
+  result = result.replace(appleChipPattern, (fullMatch) => {
+    console.warn(`[chip-number] Hequr gjenerate i shpikur: "${fullMatch.trim()}" — konfirmuar vetem "${chipSpec.value}"`);
+    return /Bionic/i.test(fullMatch) ? 'Apple Bionic' : 'Apple';
+  });
+
+  return result;
+}
+
 // Prit fjalen e fundit te plote para 'limit' karaktere — s'e pret ne mes te
 // nje fjale. Perdoret nga enforceMetaDescriptionLength me poshte.
 function truncateAtWordBoundary(text, limit, minAcceptable) {
@@ -3857,10 +3894,12 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
     if (!isTranslation && hasExternalConfirmation) {
       const beforeDesc = parsed.description;
       parsed.description = hedgeUnconfirmedSpecsAmongConfirmed(parsed.description, targetLang, allConfirmedSpecs);
+      parsed.description = stripUnconfirmedChipNumbers(parsed.description, allConfirmedSpecs);
       if (parsed.description !== beforeDesc) unconfirmedSpecsHedged = true;
       if (parsed.meta_description) {
         const beforeMeta = parsed.meta_description;
         parsed.meta_description = hedgeUnconfirmedSpecsAmongConfirmed(parsed.meta_description, targetLang, allConfirmedSpecs);
+        parsed.meta_description = stripUnconfirmedChipNumbers(parsed.meta_description, allConfirmedSpecs);
         if (parsed.meta_description !== beforeMeta) unconfirmedSpecsHedged = true;
       }
     }
