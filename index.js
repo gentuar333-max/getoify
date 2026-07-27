@@ -3606,11 +3606,19 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
       // (kontrolli i pare) — thjesht per te shmangur ambiguitet, jo per
       // ndonje arsye teknike specifike.
       const useOpenAIForGeneration = forceProvider
-        ? forceProvider === 'openai'
+        ? (forceProvider === 'openai' || forceProvider === 'gpt-4o' || forceProvider === 'gpt-4o-mini')
         : (process.env.OPENAI_GENERATION_ENABLED === 'true' && !hasExternalConfirmation && !hasImage);
       const useGeminiForGeneration = forceProvider
         ? forceProvider === 'gemini'
         : (!useOpenAIForGeneration && process.env.GEMINI_GENERATION_ENABLED === 'true' && !hasExternalConfirmation && !hasImage);
+      // Modeli specifik OpenAI per perdorim — 'gpt-4o' VETEM nese forceProvider
+      // e kerkon eksplicitisht (testim); prodhimi (OPENAI_GENERATION_ENABLED)
+      // perdor GJITHMONE gpt-4o-mini, i vetmi i testuar/validuar gjere ne
+      // 6 kategori produktesh. GPT-4o (full) s'eshte testuar aspak ende —
+      // kursimi eshte vetem ~21% kunder Sonnet (jo ~95% si mini), pra rrezik/
+      // perfitim ndryshe krejt — kerkon testim te vet para se te konsiderohet
+      // per rastet me specs te konfirmuara ose me imazh.
+      const openAIModelToUse = forceProvider === 'gpt-4o' ? 'gpt-4o' : 'gpt-4o-mini';
 
       const callSonnet = async (content) => {
         const claudeRes = await axios.post('https://api.anthropic.com/v1/messages', {
@@ -3662,15 +3670,17 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
         return geminiRes.data.candidates?.[0]?.content?.parts?.[0]?.text || '';
       };
 
-      // GPT-4o mini — $0.15/$0.60 per milion, ~95% me lire se Sonnet 4.6 per
-      // gjenerimin e pare. Kerkon OPENAI_API_KEY ne env (provider i ri, s'ka
-      // ekzistuar me pare ne kete kod). Format Chat Completions standard.
-      const callGPT4oMiniGeneration = async (content) => {
+      // GPT-4o mini — $0.15/$0.60 per milion, ~95% me lire se Sonnet 4.6.
+      // GPT-4o (full) — $2.50/$10, ~21% me lire, VETEM per testim
+      // (forceProvider:'gpt-4o'), s'perdoret ende ne prodhim. Kerkon
+      // OPENAI_API_KEY ne env. Format Chat Completions standard, i njejte
+      // per te dyja modelet — vetem stringu i modelit ndryshon.
+      const callOpenAIGeneration = async (content, modelName) => {
         const promptText = Array.isArray(content) ? content.map(b => b.text).join('\n\n') : content;
         const openaiRes = await axios.post(
           'https://api.openai.com/v1/chat/completions',
           {
-            model: 'gpt-4o-mini',
+            model: modelName,
             messages: [{ role: 'user', content: promptText }],
             max_tokens: 2500,
             temperature: 0
@@ -3687,13 +3697,13 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
       };
 
       const generationProvider = useOpenAIForGeneration
-        ? 'gpt-4o-mini'
+        ? openAIModelToUse
         : (useGeminiForGeneration ? 'gemini-3.1-flash-lite' : 'claude-sonnet-4-6');
       actualProvider = generationProvider;
       console.log(`[generation-routing] "${product.title}" (${targetLang}) hasExternalConfirmation:${hasExternalConfirmation} hasImage:${hasImage} → ${generationProvider}`);
 
       rawText = useOpenAIForGeneration
-        ? await callGPT4oMiniGeneration(userContent)
+        ? await callOpenAIGeneration(userContent, openAIModelToUse)
         : useGeminiForGeneration
         ? await callGeminiGeneration(userContent)
         : await callSonnet(userContent);
@@ -3725,7 +3735,7 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
           // e pare — perndryshe do te ndryshonim edhe modelin edhe gjenerimin
           // ne te njejten kohe, duke e beri korrigjimin te paparashikueshem.
           rawText = useOpenAIForGeneration
-            ? await callGPT4oMiniGeneration(retryContent)
+            ? await callOpenAIGeneration(retryContent, openAIModelToUse)
             : useGeminiForGeneration
             ? await callGeminiGeneration(retryContent)
             : await callSonnet(retryContent);
@@ -5001,13 +5011,16 @@ async function autoResetWebhooks() {
 
 // TEST ENDPOINT — remove after testing
 app.post('/test-prompt', async (req, res) => {
-  // forceProvider (opsionale): 'openai' | 'gemini' | 'sonnet' — per te testuar
-  // NJE provider specifik mbi te njejtin titull, PAVARESISHT nese ka specs
-  // te konfirmuara (Tavily/titull) — routing-u normal do ta mbante gjithmone
-  // te Sonnet ne ate rast. Perdor kete per te krahasuar cilesine anash-anash
-  // para se te vendosesh nese GPT-4o mini/Gemini jane te qendrueshem edhe per
-  // produkte me specs reale.
-  const { title, lang, shop, forceProvider } = req.body;
+  // forceProvider (opsionale): 'openai' (=gpt-4o-mini) | 'gpt-4o' (full,
+  // VETEM testim) | 'gemini' | 'sonnet' — per te testuar NJE provider
+  // specifik mbi te njejtin titull, PAVARESISHT nese ka specs te konfirmuara
+  // (Tavily/titull) apo imazh — routing-u normal do ta mbante gjithmone te
+  // Sonnet ne keto raste. Perdor kete per te krahasuar cilesine anash-anash
+  // para se te vendosesh nese ndonje provider tjeter eshte i qendrueshem
+  // edhe per rastet me te larta ne rrezik.
+  // imageUrl (opsionale): lejon testimin e rruges VIZION — perpara ishte
+  // gjithmone null, pra rruga me imazh s'testohej fare permes /test-prompt.
+  const { title, lang, shop, forceProvider, imageUrl } = req.body;
 
   // Kontroll limiti edhe per test-prompt — kjo ishte rruga e vetme e mbetur
   // e pabllokuar. Pa shop, nuk mund te kontrollojme; nese shop eshte dhene,
@@ -5041,7 +5054,7 @@ app.post('/test-prompt', async (req, res) => {
 
   const product = { title, product_type: '', tags: '', body_html: '' };
   try {
-    const result = await generateProductCopy(product, lang, 'checkout, Shopify', '', null, [], shop, forceProvider || null);
+    const result = await generateProductCopy(product, lang, 'checkout, Shopify', '', imageUrl || null, [], shop, forceProvider || null);
     res.json(result);
   } catch(e) {
     if (e.message?.startsWith('PLAN_LIMIT')) {
