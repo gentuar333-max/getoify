@@ -3605,9 +3605,14 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
       // vendoseshin gabimisht 'true' njekohesisht, OpenAI merr prioritet
       // (kontrolli i pare) — thjesht per te shmangur ambiguitet, jo per
       // ndonje arsye teknike specifike.
+      // ZGJERUAR: GPT-4o mini tani mbulon EDHE rastet me specs te konfirmuara
+      // (jo vetem !hasExternalConfirmation si perpara) — validuar me teste
+      // reale te perseritura (Samsung Galaxy S26 Ultra, disa raunde, bugs
+      // reale te gjetura e ndrequra: 4175mAh, 5G->214g, specs te shpikura).
+      // Rasti me IMAZH mbetet te Sonnet — s'eshte testuar aspak me mini ende.
       const useOpenAIForGeneration = forceProvider
         ? (forceProvider === 'openai' || forceProvider === 'gpt-4o' || forceProvider === 'gpt-4o-mini')
-        : (process.env.OPENAI_GENERATION_ENABLED === 'true' && !hasExternalConfirmation && !hasImage);
+        : (process.env.OPENAI_GENERATION_ENABLED === 'true' && !hasImage);
       const useGeminiForGeneration = forceProvider
         ? forceProvider === 'gemini'
         : (!useOpenAIForGeneration && process.env.GEMINI_GENERATION_ENABLED === 'true' && !hasExternalConfirmation && !hasImage);
