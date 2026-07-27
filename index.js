@@ -1708,7 +1708,7 @@ async function translateFieldWithGemini(text, fieldKey, targetLang) {
     // gjenerim) rreziku eshte i ulet. KUJDES: 2.5 Flash-Lite mbyllet 16
     // tetor 2026 — do te duhet migrim tjeter atehere (3.1 Flash-Lite mbetet
     // pa date mbyllje ende, nese preferohet stabilitet mbi kursim afatshkurter).
-    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent',
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent',
     {
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: { maxOutputTokens: 150, temperature: 0 }
@@ -1816,7 +1816,7 @@ ${description}`;
     // FIX (kosto): njesoj si translateFieldWithGemini — perkthim, jo gjenerim,
     // 2.5 Flash-Lite eshte ~68% me e lire, mbyllet 16 tetor 2026.
     const res = await axios.post(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent',
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent',
       {
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: { maxOutputTokens: 600, temperature: 0 }
@@ -3633,7 +3633,7 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
     ];
   }
 
-  console.log(`[provider] ${isTranslation ? 'gemini-2.5-flash-lite (perkthim)' : 'claude-sonnet-4-6 (gjenerim i pare)'} — image:${hasImage} body:${!!cleanBody} product:"${product.title}"`);
+  console.log(`[provider] ${isTranslation ? 'gemini-3.1-flash-lite (perkthim)' : 'claude-sonnet-4-6 (gjenerim i pare)'} — image:${hasImage} body:${!!cleanBody} product:"${product.title}"`);
 
   // FIX (bug urgjent, konfirmuar ne prod): 'let'/'const' brenda try{} S'JANE
   // TE DUKSHME brenda catch{} ne JavaScript — jane blloqe te veçanta scope-i.
@@ -3642,7 +3642,7 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
   // I RI) SECILEHERE qe ndodhte ndonje gabim real (API, parsing, etj.), duke
   // FSHEHUR gabimin e vertete pas ketij mesazhi te gabuar. Tani eshte KETU,
   // JASHTE try/catch, e dukshme ne te dyja.
-  let actualProvider = isTranslation ? 'gemini-2.5-flash-lite' : 'claude-sonnet-4-6';
+  let actualProvider = isTranslation ? 'gemini-3.1-flash-lite' : 'claude-sonnet-4-6';
   // Kosto REALE (USD) e llogaritur nga 'usage' i vertete i kthyer nga API-ja,
   // jo hamendesim tokenësh — plotesuar nga secili call funksion me poshte.
   let lastCallCost = null;
@@ -3680,7 +3680,7 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
       // thirrja me vellim me te larte (19x per produkt), pra ku kursimi
       // real peshon me shume. Perkthim, jo gjenerim — rrezik i ulet.
       const geminiRes = await axios.post(
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent',
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent',
         {
           contents: [{ parts: [{ text: userContent }] }],
           generationConfig: { maxOutputTokens: 1500, temperature: 0 }
@@ -3696,8 +3696,8 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
       rawText = geminiRes.data.candidates?.[0]?.content?.parts?.[0]?.text || '';
       const translationUsage = geminiRes.data.usageMetadata;
       if (translationUsage) {
-        lastCallCost = calculateCost('gemini-2.5-flash-lite', translationUsage.promptTokenCount, translationUsage.candidatesTokenCount);
-        console.log(`[cost] gemini-2.5-flash-lite (perkthim ${targetLang}): ${translationUsage.promptTokenCount} in + ${translationUsage.candidatesTokenCount} out = $${lastCallCost?.toFixed(5)}`);
+        lastCallCost = calculateCost('gemini-3.1-flash-lite', translationUsage.promptTokenCount, translationUsage.candidatesTokenCount);
+        console.log(`[cost] gemini-3.1-flash-lite (perkthim ${targetLang}): ${translationUsage.promptTokenCount} in + ${translationUsage.candidatesTokenCount} out = $${lastCallCost?.toFixed(5)}`);
       }
     } else {
       // FEATURE (kosto, me flag sigurie): route-im opsional drejt Gemini OSE
