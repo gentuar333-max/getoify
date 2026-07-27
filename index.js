@@ -2459,6 +2459,24 @@ function stripGenericFillerPhrases(text) {
   return result;
 }
 
+// Rrjete sigurie DETERMINISTIKE — RASTI REAL (Nike Air Max 270 test): modeli
+// shkroi "True to size fit" si fakt i sigurt ndersa hasExternalConfirmation
+// ishte false (asgje konfirmuar) — rrezik real biznesi: nese modeli VERTET
+// vjen i madh/vogel, klienti mashtrohet dhe rrezikon kthim produkti. Prompti
+// kerkon nje fallback te ndershem ne kete rast, por s'u respektua qendrueshem
+// (i njejti model dobesie si "for peace of mind" me lart).
+function hedgeUnconfirmedFitClaims(text, confirmedSpecs) {
+  if (!text) return text;
+  const hasFitConfirmation = confirmedSpecs?.some(s => /fit|siz/i.test(s.key));
+  if (hasFitConfirmation) return text; // ka konfirmim real specifik per fit — OK te qendroje
+
+  const fitClaimPattern = /\b(true to size|runs true to size|fits true to size)\b(\s+fit\b)?/gi;
+  return text.replace(fitClaimPattern, (match) => {
+    console.warn(`[fit-claim] Zevendesuar pretendim i pakonfirmuar: "${match}"`);
+    return 'check the size guide for the best fit';
+  });
+}
+
 // Prit fjalen e fundit te plote para 'limit' karaktere — s'e pret ne mes te
 // nje fjale. Perdoret nga enforceMetaDescriptionLength me poshte.
 function truncateAtWordBoundary(text, limit, minAcceptable) {
@@ -3943,6 +3961,15 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
     parsed.description = stripGenericFillerPhrases(parsed.description);
     if (parsed.meta_description) {
       parsed.meta_description = stripGenericFillerPhrases(parsed.meta_description);
+    }
+
+    // Shtresa e fundit deterministike per pretendime "true to size" te
+    // pakonfirmuara — RASTI REAL (Nike Air Max 270 test): thene si fakt i
+    // sigurt pa asnje konfirmim, rrezik real biznesi (kthim produkti nese
+    // modeli gabon).
+    parsed.description = hedgeUnconfirmedFitClaims(parsed.description, allConfirmedSpecs);
+    if (parsed.meta_description) {
+      parsed.meta_description = hedgeUnconfirmedFitClaims(parsed.meta_description, allConfirmedSpecs);
     }
 
     // Bashkangjit providerin real qe u perdor — fushe shtese e sigurt (nuk
