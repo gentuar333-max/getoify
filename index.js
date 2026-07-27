@@ -1684,6 +1684,22 @@ async function updateShopifyProductBodyIfEmpty(shop, token, pid, descriptionText
 // shih generateProductCopy). Nese thirrja deshton (kyc i gabuar/mungues,
 // API jashte funksionimit), hidhet error — caller (localizeProduct) e kap dhe
 // thjesht e lë ate fushe te paperkthyer per kete xhirim, sic ndodhte edhe me Claude.
+// Çmimet per milion token (verifikuar korrik 2026, per USD) — perdoret per
+// llogaritje kostoje REALE nga vete 'usage' qe kthen çdo API, jo hamendesim.
+const MODEL_PRICING = {
+  'claude-sonnet-4-6': { input: 3.00, output: 15.00 },
+  'gpt-4o-mini': { input: 0.15, output: 0.60 },
+  'gpt-4o': { input: 2.50, output: 10.00 },
+  'gemini-3.1-flash-lite': { input: 0.25, output: 1.50 },
+  'gemini-2.5-flash-lite': { input: 0.10, output: 0.40 },
+};
+
+function calculateCost(modelName, inputTokens, outputTokens) {
+  const pricing = MODEL_PRICING[modelName];
+  if (!pricing || inputTokens == null || outputTokens == null) return null;
+  return (inputTokens / 1e6) * pricing.input + (outputTokens / 1e6) * pricing.output;
+}
+
 async function translateFieldWithGemini(text, fieldKey, targetLang) {
   const prompt = `Translate this product field value into ${targetLang}. Return ONLY the translated text, nothing else. Keep brand names, technical terms, and numbers unchanged. Field: "${fieldKey}". Value: ${text}`;
   const res = await axios.post(
@@ -3543,6 +3559,9 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
   // FSHEHUR gabimin e vertete pas ketij mesazhi te gabuar. Tani eshte KETU,
   // JASHTE try/catch, e dukshme ne te dyja.
   let actualProvider = isTranslation ? 'gemini-2.5-flash-lite' : 'claude-sonnet-4-6';
+  // Kosto REALE (USD) e llogaritur nga 'usage' i vertete i kthyer nga API-ja,
+  // jo hamendesim tokenësh — plotesuar nga secili call funksion me poshte.
+  let lastCallCost = null;
 
   try {
     let rawText = '';
@@ -3591,6 +3610,11 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
         }
       );
       rawText = geminiRes.data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      const translationUsage = geminiRes.data.usageMetadata;
+      if (translationUsage) {
+        lastCallCost = calculateCost('gemini-2.5-flash-lite', translationUsage.promptTokenCount, translationUsage.candidatesTokenCount);
+        console.log(`[cost] gemini-2.5-flash-lite (perkthim ${targetLang}): ${translationUsage.promptTokenCount} in + ${translationUsage.candidatesTokenCount} out = $${lastCallCost?.toFixed(5)}`);
+      }
     } else {
       // FEATURE (kosto, me flag sigurie): route-im opsional drejt Gemini OSE
       // GPT-4o mini per gjenerimin e PARE kur s'ka konfirmim te jashtem specash
@@ -3657,6 +3681,11 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
         for (const block of claudeRes.data.content) {
           if (block.type === 'text') text += block.text;
         }
+        const usage = claudeRes.data.usage;
+        if (usage) {
+          lastCallCost = calculateCost('claude-sonnet-4-6', usage.input_tokens, usage.output_tokens);
+          console.log(`[cost] claude-sonnet-4-6: ${usage.input_tokens} in + ${usage.output_tokens} out = $${lastCallCost?.toFixed(5)}`);
+        }
         return text;
       };
 
@@ -3678,6 +3707,11 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
             timeout: 45000
           }
         );
+        const usage = geminiRes.data.usageMetadata;
+        if (usage) {
+          lastCallCost = calculateCost('gemini-3.1-flash-lite', usage.promptTokenCount, usage.candidatesTokenCount);
+          console.log(`[cost] gemini-3.1-flash-lite (gjenerim): ${usage.promptTokenCount} in + ${usage.candidatesTokenCount} out = $${lastCallCost?.toFixed(5)}`);
+        }
         return geminiRes.data.candidates?.[0]?.content?.parts?.[0]?.text || '';
       };
 
@@ -3723,6 +3757,11 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
             timeout: 45000
           }
         );
+        const openaiUsage = openaiRes.data.usage;
+        if (openaiUsage) {
+          lastCallCost = calculateCost(modelName, openaiUsage.prompt_tokens, openaiUsage.completion_tokens);
+          console.log(`[cost] ${modelName}: ${openaiUsage.prompt_tokens} in + ${openaiUsage.completion_tokens} out = $${lastCallCost?.toFixed(5)}`);
+        }
         return openaiRes.data.choices?.[0]?.message?.content || '';
       };
 
@@ -3838,7 +3877,8 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
       hasExternalConfirmation,
       confirmedSpecsCount: allConfirmedSpecs.length,
       confirmedSpecsKeys: allConfirmedSpecs.map(s => s.key),
-      unconfirmedSpecsHedged
+      unconfirmedSpecsHedged,
+      realCostUSD: lastCallCost != null ? Number(lastCallCost.toFixed(6)) : null
     };
 
     return parsed;
