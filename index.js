@@ -3686,13 +3686,32 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
       // (forceProvider:'gpt-4o'), s'perdoret ende ne prodhim. Kerkon
       // OPENAI_API_KEY ne env. Format Chat Completions standard, i njejte
       // per te dyja modelet — vetem stringu i modelit ndryshon.
+      //
+      // FIX KRITIK (zbuluar ne test real me imazh): blloqet {type:'image',...}
+      // (formati i Anthropic) HIQEshin ne heshtje ketu — b.text ishte
+      // undefined per keto blloqe, dhe .join('\n\n') e shnderronte ne
+      // "undefined" si string, duke e HEQUR imazhin FARE nga kerkesa. Modeli
+      // shkroi nje produkt krejt te shpikur ("Wireless Bluetooth Earbuds")
+      // sepse s'kishte AS titull AS imazh — asnje e dhene reale fare. OpenAI
+      // ka format TE NDRYSHEM per imazhe: {type:'image_url', image_url:{url}},
+      // jo {type:'image', source:{...}} si Anthropic. Tani konvertohet sakte.
       const callOpenAIGeneration = async (content, modelName) => {
-        const promptText = Array.isArray(content) ? content.map(b => b.text).join('\n\n') : content;
+        let messageContent;
+        if (Array.isArray(content)) {
+          messageContent = content.map(b => {
+            if (b.type === 'image') {
+              return { type: 'image_url', image_url: { url: b.source?.url } };
+            }
+            return { type: 'text', text: b.text };
+          });
+        } else {
+          messageContent = content; // string i thjeshte (perkthim, s'ka imazh kurre)
+        }
         const openaiRes = await axios.post(
           'https://api.openai.com/v1/chat/completions',
           {
             model: modelName,
-            messages: [{ role: 'user', content: promptText }],
+            messages: [{ role: 'user', content: messageContent }],
             max_tokens: 2500,
             temperature: 0
           },
