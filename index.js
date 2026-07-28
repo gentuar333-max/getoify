@@ -606,12 +606,12 @@ app.get('/terms', (req, res) => res.sendFile(path.join(__dirname, 'public', 'ter
 
 // ─── SHOPIFY BILLING API ─────────────────────────────────────────────────────
 const PLAN_PRICES = {
-  free:        { monthly: 0,   yearly: 0,   label: 'Free'       },
-  description: { monthly: 9,   yearly: 8,   label: 'Local'      },
-  starter:     { monthly: 19,  yearly: 15,  label: 'Starter'    },
-  growth:      { monthly: 49,  yearly: 39,  label: 'Growth'     },
-  pro:         { monthly: 99,  yearly: 79,  label: 'Pro'        },
-  enterprise:  { monthly: 199, yearly: 159, label: 'Enterprise' },
+  free:        { monthly: 0,   yearly: 0,    label: 'Free'       },
+  description: { monthly: 9,   yearly: 86,   label: 'Local'      },
+  starter:     { monthly: 15,  yearly: 144,  label: 'Starter'    },
+  growth:      { monthly: 30,  yearly: 288,  label: 'Growth'     },
+  pro:         { monthly: 99,  yearly: 948,  label: 'Pro'        },
+  enterprise:  { monthly: 199, yearly: 1908, label: 'Enterprise' },
 };
 
 // Funksion ndihmës per dergimin e email notifikimeve me Resend

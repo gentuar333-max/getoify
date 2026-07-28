@@ -64,10 +64,12 @@
   .plan-period { font-size: 13px; color: var(--text-muted); font-weight: 400; margin-left: 4px; }
   .plan-annual-note { font-size: 12px; color: var(--text-light); margin-bottom: 28px; min-height: 18px; margin-top: 6px; }
 
-  .plan-limits { background: var(--cream-warm); border-radius: 7px; padding: 14px 16px; margin-bottom: 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .plan-limits { background: var(--cream-warm); border-radius: 7px; padding: 14px 16px; margin-bottom: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .plan-limit-item { text-align: center; }
   .plan-limit-val { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--navy); letter-spacing: -0.5px; line-height: 1; }
   .plan-limit-lbl { font-size: 10px; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.8px; font-weight: 500; margin-top: 3px; }
+  .plan-limit-total { text-align: center; font-size: 12px; color: var(--text-muted); font-weight: 400; margin-bottom: 28px; }
+  .plan-limit-total strong { color: var(--navy); font-weight: 600; }
 
   .plan-features { list-style: none; margin-bottom: 32px; flex: 1; }
   .plan-features li { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: var(--text-muted); padding: 7px 0; border-bottom: 1px solid var(--cream-deep); font-weight: 300; line-height: 1.5; }
@@ -141,12 +143,12 @@
     <div class="free-banner-left">
       <div class="free-banner-tag">Free forever</div>
       <div class="free-banner-title">Try before you commit.</div>
-      <div class="free-banner-desc">15 products, 2 languages. No credit card. No time limit.</div>
+      <div class="free-banner-desc">50 products, 1 language. No credit card. No time limit.</div>
     </div>
     <div class="free-banner-limits">
-      <div class="free-lim"><div class="free-lim-val">15</div><div class="free-lim-lbl">Products</div></div>
-      <div class="free-lim"><div class="free-lim-val">2</div><div class="free-lim-lbl">Languages</div></div>
-      <div class="free-lim"><div class="free-lim-val">30</div><div class="free-lim-lbl">Translations</div></div>
+      <div class="free-lim"><div class="free-lim-val">50</div><div class="free-lim-lbl">Products</div></div>
+      <div class="free-lim"><div class="free-lim-val">1</div><div class="free-lim-lbl">Language</div></div>
+      <div class="free-lim"><div class="free-lim-val">50</div><div class="free-lim-lbl">Translations</div></div>
     </div>
     <a href="/auth" class="btn-free">Connect Shopify Store</a>
   </div>
@@ -202,14 +204,15 @@
       <div class="plan-desc">For small stores getting started with multilingual selling.</div>
       <div class="plan-price-row">
         <span class="plan-currency">$</span>
-        <span class="plan-amount" id="starter-price">19</span>
+        <span class="plan-amount" id="starter-price">15</span>
         <span class="plan-period">/mo</span>
       </div>
       <div class="plan-annual-note" id="starter-note">&nbsp;</div>
       <div class="plan-limits">
-        <div class="plan-limit-item"><div class="plan-limit-val">125</div><div class="plan-limit-lbl">Products</div></div>
-        <div class="plan-limit-item"><div class="plan-limit-val">1</div><div class="plan-limit-lbl">Languages</div></div>
+        <div class="plan-limit-item"><div class="plan-limit-val">250</div><div class="plan-limit-lbl">Products</div></div>
+        <div class="plan-limit-item"><div class="plan-limit-val">5</div><div class="plan-limit-lbl">Languages</div></div>
       </div>
+      <div class="plan-limit-total">Up to <strong>1,250</strong> translated descriptions</div>
       <ul class="plan-features">
         <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>AI description generation</li>
         <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Brand voice & glossary</li>
@@ -227,19 +230,19 @@
       <div class="plan-desc">For growing stores expanding into European markets.</div>
       <div class="plan-price-row">
         <span class="plan-currency">$</span>
-        <span class="plan-amount" id="growth-price">49</span>
+        <span class="plan-amount" id="growth-price">30</span>
         <span class="plan-period">/mo</span>
       </div>
       <div class="plan-annual-note" id="growth-note">&nbsp;</div>
       <div class="plan-limits">
-        <div class="plan-limit-item"><div class="plan-limit-val">300</div><div class="plan-limit-lbl">Products</div></div>
-        <div class="plan-limit-item"><div class="plan-limit-val">2</div><div class="plan-limit-lbl">Languages</div></div>
+        <div class="plan-limit-item"><div class="plan-limit-val">500</div><div class="plan-limit-lbl">Products</div></div>
+        <div class="plan-limit-item"><div class="plan-limit-val">10</div><div class="plan-limit-lbl">Languages</div></div>
       </div>
+      <div class="plan-limit-total">Up to <strong>5,000</strong> translated descriptions</div>
       <ul class="plan-features">
         <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Everything in Starter</li>
-        <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>2 languages simultaneously</li>
+        <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>10 languages simultaneously</li>
         <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Priority processing</li>
-        <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Bulk translate 300 products</li>
         <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Email support</li>
       </ul>
       <a href="#" class="btn-plan" onclick="startCheckout('growth')">Get started</a>
@@ -257,13 +260,12 @@
       </div>
       <div class="plan-annual-note" id="pro-note">&nbsp;</div>
       <div class="plan-limits">
-        <div class="plan-limit-item"><div class="plan-limit-val">700</div><div class="plan-limit-lbl">Products</div></div>
-        <div class="plan-limit-item"><div class="plan-limit-val">3</div><div class="plan-limit-lbl">Languages</div></div>
+        <div class="plan-limit-item"><div class="plan-limit-val">1,000</div><div class="plan-limit-lbl">Products</div></div>
+        <div class="plan-limit-item"><div class="plan-limit-val">15</div><div class="plan-limit-lbl">Languages</div></div>
       </div>
+      <div class="plan-limit-total">Up to <strong>15,000</strong> translated descriptions</div>
       <ul class="plan-features">
         <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Everything in Growth</li>
-        <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>700 products × 3 languages</li>
-        <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Up to 2,100 translations</li>
         <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Full translation history</li>
         <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Auto-sync new products</li>
       </ul>
@@ -276,20 +278,19 @@
       <div class="plan-name">Enterprise</div>
       <div class="plan-desc">For large stores selling across all European and global markets.</div>
       <div class="plan-price-row">
-        <span class="plan-currency">€</span>
+        <span class="plan-currency">$</span>
         <span class="plan-amount" id="enterprise-price">199</span>
         <span class="plan-period">/mo</span>
       </div>
       <div class="plan-annual-note" id="enterprise-note">&nbsp;</div>
       <div class="plan-limits">
         <div class="plan-limit-item"><div class="plan-limit-val">1,400</div><div class="plan-limit-lbl">Products</div></div>
-        <div class="plan-limit-item"><div class="plan-limit-val">4</div><div class="plan-limit-lbl">Languages</div></div>
+        <div class="plan-limit-item"><div class="plan-limit-val">20</div><div class="plan-limit-lbl">Languages</div></div>
       </div>
+      <div class="plan-limit-total">Up to <strong>28,000</strong> translated descriptions</div>
       <ul class="plan-features">
         <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Everything in Pro</li>
-        <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>1,400 products × 4 languages</li>
-        <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Up to 5,600 translations</li>
-        <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Choose any 4 of 8 languages</li>
+        <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>All 20 languages included</li>
         <li><span class="feat-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Priority support</li>
       </ul>
       <a href="#" class="btn-plan" onclick="startCheckout('enterprise')">Get started</a>
@@ -327,7 +328,7 @@
     <div class="faq-item"><div class="faq-q">Can I cancel anytime?</div><div class="faq-a">Yes. Cancel from your dashboard at any time. Your translations stay in Shopify — we never delete them on cancellation.</div></div>
     <div class="faq-item"><div class="faq-q">What happens when I hit my limit?</div><div class="faq-a">New products above your limit won't be auto-translated. Existing translations are untouched. Upgrade anytime to continue.</div></div>
     <div class="faq-item"><div class="faq-q">Do you support annual billing?</div><div class="faq-a">Yes — pay annually and save 20%. Billed once per year. Switch between monthly and annual at renewal.</div></div>
-    <div class="faq-item"><div class="faq-q">Which languages are supported?</div><div class="faq-a">French, German, Italian, Spanish, Portuguese, English, Dutch, and Polish — 8 languages total. Pick the ones that matter for your store, up to your plan's limit.</div></div>
+    <div class="faq-item"><div class="faq-q">Which languages are supported?</div><div class="faq-a">20 languages including French, German, Italian, Spanish, Dutch, Portuguese, Polish, Swedish, Danish, Norwegian, Czech, Romanian, Hungarian, Arabic, Japanese, Korean, Turkish, Indonesian, and more. Pick the ones that matter for your store, up to your plan's limit.</div></div>
     <div class="faq-item"><div class="faq-q">Is my store data safe?</div><div class="faq-a">We only access product data — titles, descriptions, metadata. Never orders, customers, or payment information.</div></div>
   </div>
 </div>
@@ -336,7 +337,7 @@
   let isAnnual = false;
   const _urlShop = new URLSearchParams(window.location.search).get('shop');
   if (_urlShop) localStorage.setItem('getoify_shop', _urlShop);
-  const prices = { description: { monthly: 9, annual: 8 }, starter: { monthly: 19, annual: 15 }, growth: { monthly: 49, annual: 39 }, pro: { monthly: 99, annual: 79 }, enterprise: { monthly: 199, annual: 159 } };
+  const prices = { description: { monthly: 9, annual: 8 }, starter: { monthly: 15, annual: 12 }, growth: { monthly: 30, annual: 24 }, pro: { monthly: 99, annual: 79 }, enterprise: { monthly: 199, annual: 159 } };
 
   function toggleBilling() {
     isAnnual = !isAnnual;
