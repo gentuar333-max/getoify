@@ -3341,6 +3341,7 @@ CLOTHING (t-shirts, hoodies, jackets, dresses):
 - Bullet 3: key feature or design (e.g. "Poche kangourou — cordon de serrage ajustable")
 - Bullet 4: care instructions (e.g. "Lavage machine 30°C — ne pas sécher au sèche-linge")
 - ALWAYS mention: material %, fit type, wash care
+- INTRO SENTENCE, if a style/aesthetic is genuinely evident from the title or image (e.g. minimalist, oversized, vintage-inspired, tailored) — name it, and suggest ONE way to wear/style the piece. Only use a style descriptor that fits what is actually shown/stated — never invent a trend label (e.g. "Y2K", "cottagecore") that isn't supported by the product itself.
 
 BAGS & ACCESSORIES — MANDATORY, this is not optional guidance:
 If capacity (liters) or dimensions are known for this product, they MUST appear somewhere in the 4 bullets — a bag description that omits a known capacity number is a failed response, rewrite before responding.
@@ -3417,7 +3418,7 @@ Apply the same moment-based framing inside bullets too — connect the spec to w
 - Bullet 1: capacity + material (e.g. "Bol inox 4,8 L — compatible lave-vaisselle")
 - Bullet 2: motor/mechanism with W and speed (e.g. "Moteur 300W — 10 vitesses, mélange planétaire")
 - Bullet 3: accessories included (e.g. "Fouet, batteur plat et crochet pétrin inclus")
-- Bullet 4: care + warranty confirmed facts only
+- Bullet 4: care + warranty confirmed facts only — if dishwasher-safe status is confirmed (from title, metafields, or brand-known fact), state it explicitly ("compatible lave-vaisselle" or "lavage à la main uniquement"); this is one of the most-checked pieces of information for kitchen items and reduces returns/complaints — never invent this status if unconfirmed, simply omit
 - PROSE: use "plaisir", "savoir-faire", "art", "précision" — NEVER "chaleur" for appliances (chaleur = physical heat, wrong context)
 - Do NOT use "chaleur" for mixers, blenders, or any appliance that does not produce heat
 
@@ -3456,7 +3457,7 @@ BULLET ORDER for Beauty & Health — write ENTIRELY in ${targetLang}. The patter
 - Bullet 1: format + usage duration — pattern: "[container size] — [duration claim]"
 - Bullet 2: key active ingredients + technology — pattern: "[ingredient(s) + %] + [technology name] — [effect + duration]"
 - Bullet 3: skin type + dermatologist claim — pattern: "[clinical claim if confirmed] — [target skin type]"
-- Bullet 4: texture/format + confirmed care — pattern: "[formula claims, e.g. fragrance-free/non-comedogenic] — [usage note]"
+- Bullet 4: texture/format + confirmed care — pattern: "[formula claims, e.g. fragrance-free/non-comedogenic] — [usage note]". If texture or scent is stated in the source title/metafields (e.g. "gel", "cream", "oil", "unscented"), describe it with one concrete sensory word in ${targetLang} (equivalent to "velvety", "lightweight", "silky") — only for the texture TYPE that is actually confirmed, never invent a specific feel/scent that wasn't given.
 
 STRICTLY FORBIDDEN for Beauty & Health:
 - "aucune condition de stockage spéciale" — never mention storage unless required
