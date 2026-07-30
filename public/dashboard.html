@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Getoify — Dashboard</title>
+  <meta name="shopify-api-key" content="c549e6d38a656a012e7fd412adb11460" />
+  <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css" />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
   <style>
@@ -332,14 +334,6 @@
     document.getElementById('sb-av').textContent = shop.substring(0, 2).toUpperCase();
   } else { window.location.href = '/'; }
 
-  // Zevendeson fetch() per cdo thirrje qe kerkon requireShopAuth ne server.
-  // Nese pergjigja eshte 401 (cookie e sesionit mungon ose ka skaduar):
-  // - here e pare (s'kemi ardhur tashme nga nje reauth) -> ridrejto vetvetiu
-  //   te /auth?shop=X. Nese merchant-i eshte i loguar ne Shopify Admin dhe
-  //   scope-t s'kane ndryshuar, Shopify e kthen menjehere pa asnje ekran.
-  // - nese kemi ardhur TASHME nga nje reauth (?reauth=1) dhe prape 401 ->
-  //   diçka tjeter eshte gabim (p.sh. cookies te bllokuara) - mos rifillo
-  //   ciklin, shfaq banner-in ekzistues "Reconnect store" ne vend te tij.
   function authedFetch(url, options) {
     return fetch(url, options).then(function(res) {
       if (res.status === 401) {
@@ -350,7 +344,7 @@
           const banner = document.getElementById('token-banner');
           if (banner) banner.style.display = 'flex';
         }
-        return new Promise(function() {}); // ndalon zinxhirin - faqja po ridrejtohet ose banner-i tashme u shfaq
+        return new Promise(function() {});
       }
       return res;
     });
@@ -367,11 +361,9 @@
 
   async function loadData() {
     try {
-      // Load translations from Supabase
       const statusRes = await authedFetch('/status?shop=' + shop);
       const statusData = await statusRes.json();
 
-      // Count unique product IDs
       const uniqueProducts = new Set(statusData.translations.map(t => String(t.product_id)));
       const uniqueCount = uniqueProducts.size;
 
@@ -379,7 +371,6 @@
       document.getElementById('m-localized').textContent = uniqueCount;
       document.getElementById('m-localized-sub').textContent = uniqueCount + ' unique products';
 
-      // Show limit banner if reached
       const planLimit = statusData.plan_limit || 15;
       const limitBanner = document.getElementById('limit-banner');
       if (limitBanner) {
@@ -392,7 +383,6 @@
         }
       }
 
-      // Load total products from Shopify
       const tok = token || localStorage.getItem('getoify_token');
       if (tok) {
         try {
@@ -451,13 +441,23 @@
       const res = await authedFetch('/bulk-localize-all', { method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ shop, token: tok, tone: 'professional and elegant', glossary: 'checkout, Shopify' }) });
       if (!res.ok) { const err = await res.text(); console.error('Bulk error:', err); alert('Error: ' + err); }
-      else { const text = await res.text(); console.log('Bulk result:', text); }
+      else {
+        const text = await res.text(); console.log('Bulk result:', text);
+        try {
+          if (window.shopify && window.shopify.reviews) {
+            const reviewResult = await window.shopify.reviews.request();
+            console.log('[reviews]', reviewResult);
+          }
+        } catch(reviewErr) {
+          console.warn('[reviews] Modal s\'u shfaq (normale, jo gabim):', reviewErr);
+        }
+      }
       btn.innerHTML = '<i class="ti ti-player-play"></i>Run bulk translate'; btn.disabled = false; loadData();
     } catch(e) { console.error('Fetch error:', e); alert('Connection error: ' + e.message);
       btn.innerHTML = '<i class="ti ti-player-play"></i>Run bulk translate'; btn.disabled = false; }
   }
 
-  const PLAN_LANG_LIMITS = { free: 1, description: 1, starter: 2, growth: 5, pro: 10, enterprise: 20 };
+  const PLAN_LANG_LIMITS = { free: 1, description: 1, starter: 5, growth: 10, pro: 15, enterprise: 20 };
   let userPlan = 'free'; let selectedLangs = [];
 
   async function checkLanguageSetup() {
