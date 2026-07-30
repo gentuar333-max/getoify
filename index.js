@@ -2480,6 +2480,51 @@ function hedgeUnconfirmedFitClaims(text, confirmedSpecs) {
   });
 }
 
+// Rrjete sigurie DETERMINISTIKE — RASTI REAL (HONOR Magic8 Lite, FR): Gemini
+// shtoi "jusqu'à" GJATE VETE PERKTHIMIT per madhesi ekrani (6.79", FIKSE per
+// nje model — s'ndryshon "deri ne") dhe brez rrjeti (5G, KATEGORIKE — ke ose
+// s'ke, jo diapazon), edhe pse burimi anglisht s'i kishte hedge-uar fare, dhe
+// vete prompti i perkthimit thote shprehimisht "do NOT add ANY information
+// not present in source". "Up to"/"jusqu'à" etj. kane kuptim VETEM per sasi
+// qe VERTET ndryshojne (mAh, GB, W) — jo per dimensione fikse apo kategori
+// diskrete. Kjo funksionon PAVARESISHT burimit (mbron edhe nese ndodh gjate
+// vete gjenerimit, jo vetem perkthimit) dhe PAVARESISHT gjuhes (perdor te
+// gjitha frazat e njohura hedge + fallback anglisht).
+function stripIllogicalHedges(text, targetLang) {
+  if (!text) return text;
+
+  const allHedgeWords = [
+    ...Object.values(UP_TO_HEDGES).map(h => h.display),
+    'up to'
+  ];
+  const hedgeAlternation = allHedgeWords
+    .map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .join('|');
+
+  // Madhesi ekrani (fikse per model) — kap "[hedge] [numer]["/inch]" direkt
+  // ngjitur, jo diku larg, per te shmangur false-positive me fjale gjenerike
+  // te shkurtra si "do"/"tot".
+  const screenSizePattern = new RegExp(
+    `\\b(?:${hedgeAlternation})\\s+(\\d+(?:[.,]\\d+)?\\s*(?:"|inch(?:es)?))`,
+    'gi'
+  );
+  // Brez rrjeti (kategorike) — "[hedge] [numer]G", jo GB/GHz.
+  const networkGenPattern = new RegExp(
+    `\\b(?:${hedgeAlternation})\\s+(\\d+G)\\b`,
+    'gi'
+  );
+
+  let result = text.replace(screenSizePattern, (fullMatch, value) => {
+    console.warn(`[illogical-hedge] Hequr hedge i pakuptimte per madhesi ekrani: "${fullMatch}" → "${value}"`);
+    return value;
+  });
+  result = result.replace(networkGenPattern, (fullMatch, value) => {
+    console.warn(`[illogical-hedge] Hequr hedge i pakuptimte per brez rrjeti: "${fullMatch}" → "${value}"`);
+    return value;
+  });
+  return result;
+}
+
 // Prit fjalen e fundit te plote para 'limit' karaktere — s'e pret ne mes te
 // nje fjale. Perdoret nga enforceMetaDescriptionLength me poshte.
 function truncateAtWordBoundary(text, limit, minAcceptable) {
@@ -4017,6 +4062,15 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
     parsed.description = hedgeUnconfirmedFitClaims(parsed.description, allConfirmedSpecs);
     if (parsed.meta_description) {
       parsed.meta_description = hedgeUnconfirmedFitClaims(parsed.meta_description, allConfirmedSpecs);
+    }
+
+    // Shtresa e fundit deterministike per hedge te pakuptimte (madhesi ekrani,
+    // brez rrjeti) — RASTI REAL (HONOR Magic8 Lite, FR): Gemini shtoi "jusqu'à"
+    // GJATE PERKTHIMIT, edhe pse burimi anglisht s'i kishte hedge-uar fare.
+    // Zbatohet PAVARESISHT isTranslation — pikerisht atje ndodhi gabimi.
+    parsed.description = stripIllogicalHedges(parsed.description, targetLang);
+    if (parsed.meta_description) {
+      parsed.meta_description = stripIllogicalHedges(parsed.meta_description, targetLang);
     }
 
     // Bashkangjit providerin real qe u perdor — fushe shtese e sigurt (nuk
