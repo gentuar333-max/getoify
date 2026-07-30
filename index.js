@@ -1073,7 +1073,8 @@ app.get('/auth/callback', async (req, res) => {
     const webhookTopics = [
       { topic: 'products/create', address: `${APP_URL}/webhook/product-create` },
       { topic: 'products/update', address: `${APP_URL}/webhook/product-create` },
-      { topic: 'products/delete', address: `${APP_URL}/webhook/product-delete` }
+      { topic: 'products/delete', address: `${APP_URL}/webhook/product-delete` },
+      { topic: 'app_subscriptions/update', address: `${APP_URL}/webhook/subscription-update` }
     ];
     for (const wh of webhookTopics) {
       try {
@@ -1132,7 +1133,8 @@ app.get('/register-webhooks', requireAdminKey, async (req, res) => {
     const webhookTopics = [
       { topic: 'products/create', address: `${APP_URL}/webhook/product-create` },
       { topic: 'products/update', address: `${APP_URL}/webhook/product-create` },
-      { topic: 'products/delete', address: `${APP_URL}/webhook/product-delete` }
+      { topic: 'products/delete', address: `${APP_URL}/webhook/product-delete` },
+      { topic: 'app_subscriptions/update', address: `${APP_URL}/webhook/subscription-update` }
     ];
 
     const results = [];
@@ -1193,7 +1195,8 @@ app.get('/reset-webhooks', requireAdminKey, async (req, res) => {
       { topic: 'products/update', address: `${APP_URL}/webhook/product-create` },
       { topic: 'products/delete', address: `${APP_URL}/webhook/product-delete` },
       { topic: 'collections/create', address: `${APP_URL}/webhook/collection-create` },
-      { topic: 'collections/update', address: `${APP_URL}/webhook/collection-create` }
+      { topic: 'collections/update', address: `${APP_URL}/webhook/collection-create` },
+      { topic: 'app_subscriptions/update', address: `${APP_URL}/webhook/subscription-update` }
     ];
     const registered = [];
     for (const wh of webhookTopics) {
@@ -5078,6 +5081,43 @@ async function pollNewProducts() {
   }
 }
 
+// Webhook: app_subscriptions/update — GAP I MBYLLUR: pa kete, nese nje merchant
+// e anulon abonimin (ose i dështon karta te Shopify), Getoify VAZHDONTE t'i
+// jepte limitet e planit te paguar PAFUNDESISHT, sepse s'kishte asnje menyre
+// te zbulonte qe abonimi s'ishte me aktiv. Statuset e mundshme nga Shopify:
+// ACTIVE, CANCELLED, EXPIRED, FROZEN, DECLINED, PENDING — vetem ACTIVE lejohet
+// te mbaje planin e paguar; çdo status tjeter e rikthen shprehimisht ne 'free'.
+app.post('/webhook/subscription-update', requireWebhookHmac, async (req, res) => {
+  res.status(200).send('OK');
+  try {
+    const shop = req.headers['x-shopify-shop-domain'];
+    const rawBody = req.body;
+    const body = Buffer.isBuffer(rawBody) ? JSON.parse(rawBody.toString()) : rawBody;
+    const status = body.status;
+    console.log(`[subscription-webhook] ${shop} — status: ${status}`);
+
+    if (!shop || !status) return;
+
+    if (status !== 'ACTIVE') {
+      const { data: current } = await supabase
+        .from('stores').select('plan').eq('shop', shop).single();
+      if (current?.plan && current.plan !== 'free') {
+        await supabase.from('stores').update({
+          plan: 'free',
+          plan_started_at: new Date().toISOString()
+        }).eq('shop', shop);
+        console.log(`[subscription-webhook] ${shop}: '${current.plan}' → 'free' (status: ${status})`);
+        await sendNotification(
+          `Subscription ${status}: ${shop}`,
+          `<h2>Abonim jo aktiv</h2><p><b>Store:</b> ${shop}</p><p><b>Status i ri:</b> ${status}</p><p><b>Plani i meparshem:</b> ${current.plan}</p><p>Plani u rikthye ne 'free' automatikisht.</p>`
+        );
+      }
+    }
+  } catch(e) {
+    console.error('[subscription-webhook] Gabim:', e.message);
+  }
+});
+
 // Collection webhook
 // FIX: shtuar requireWebhookHmac — mungonte, dhe lejonte dikend te forconte
 // gjenerim AI (kosto) + perkthim te panevojshem te nje koleksioni real,
@@ -5186,7 +5226,8 @@ async function autoResetWebhooks() {
       { topic: 'products/update', address: `${APP_URL}/webhook/product-create` },
       { topic: 'products/delete', address: `${APP_URL}/webhook/product-delete` },
       { topic: 'collections/create', address: `${APP_URL}/webhook/collection-create` },
-      { topic: 'collections/update', address: `${APP_URL}/webhook/collection-create` }
+      { topic: 'collections/update', address: `${APP_URL}/webhook/collection-create` },
+      { topic: 'app_subscriptions/update', address: `${APP_URL}/webhook/subscription-update` }
     ];
     for (const store of stores) {
       let accessToken = store.access_token;
