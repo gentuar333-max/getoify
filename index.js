@@ -3963,7 +3963,8 @@ ${titleSection}
 ${confirmedSpecsBlock}
 ${confirmationStatusBlock}
 Look carefully at the image. Identify ONLY what is clearly visible: materials, colors, shape, dimensions, text/branding, use case.
-Do NOT invent specifications that are not visible or stated.`;
+Do NOT invent specifications that are not visible or stated.
+Do NOT invent skill-level claims (e.g. "for intermediate/advanced riders"), care instructions, or a specific product sub-category unless clearly shown in the image or stated in the title — these read as plausible but are guesses, same risk as inventing a spec number.`;
 
     // sharedRules varet vetem nga targetLang/langCfg/kategoria (jo produkti/imazhi) —
     // i pari + cache_control: produkte te tjera te NJEJTES gjuhe+kategori (brenda 5 min) -90%
