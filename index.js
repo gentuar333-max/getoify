@@ -5213,8 +5213,11 @@ async function pollNewProducts() {
         }
       }
 
-      // Skip stores with old/invalid tokens
-      if (!token || token.startsWith('shpua_')) {
+      // Skip stores with old/invalid tokens — kontrollo edhe flamurin
+      // token_invalid nga baza (jo vetem formen e token-it) — pa kete,
+      // shenimi token_invalid=true (me larte, ose ne rastin e 404/401 te
+      // poll-it) s'kishte asnje efekt real ne ciklet e ardhshme.
+      if (!token || token.startsWith('shpua_') || store.token_invalid === true) {
         console.log('Skipping store with invalid token:', shop);
         continue;
       }
@@ -5242,6 +5245,18 @@ async function pollNewProducts() {
           { headers: { 'X-Shopify-Access-Token': token } }
         );
 
+        // FIX (rasti real, log Vercel i sotem: ~60+ thirrje Supabase pothuajse
+        // identike brenda 1 invokim /poll): ne vend te 1 kerkimi PER PRODUKT
+        // ("a e ka ky produkt nje perkthim?"), bejme 1 KERKIM TE VETEM per
+        // dyqan qe merr TE GJITHE product_id-te tashme te perkthyer, dhe
+        // kontrollojme anetaresine ne memorie (Set) per çdo produkt. Deri
+        // 50 kerkime -> 1, per çdo cikel poll, per çdo dyqan.
+        const { data: existingTranslations } = await supabase
+          .from('translations')
+          .select('product_id')
+          .eq('shop', shop);
+        const translatedProductIds = new Set((existingTranslations || []).map(t => String(t.product_id)));
+
         for (const product of res.data.products) {
           // Anashkalo produktet FIKTIVE te vete Shopify-t ("Generate test
           // data" — Snowboard/Ski Wax) — s'duhen perpunuar automatikisht,
@@ -5252,14 +5267,7 @@ async function pollNewProducts() {
           // Only localize if this product_id has never been translated.
           // Never delete existing translations automatically — this caused
           // data corruption where old product descriptions overwrote new ones.
-          const { data } = await supabase
-            .from('translations')
-            .select('id')
-            .eq('shop', shop)
-            .eq('product_id', String(product.id))
-            .limit(1);
-
-          const needsLocalize = !data || data.length === 0;
+          const needsLocalize = !translatedProductIds.has(String(product.id));
 
           if (needsLocalize) {
 
@@ -5287,6 +5295,19 @@ async function pollNewProducts() {
         }
       } catch(e) {
         console.error('Poll store error:', shop, e.message);
+        // FIX (rasti real: getoify-shoffi-check.myshopify.com — 404 i
+        // perseritur ne CDO cikel poll, pa fund): 404/401 nga products.json
+        // do te thote token-i eshte i pavlefshem (dyqan i çinstaluar/token i
+        // revokuar) — shenoje token_invalid, njesoj si mekanizmi ekzistues
+        // qe tashme e anashkalon "getoify-test.myshopify.com". Pa kete,
+        // /poll provon te njejtin dyqan te thyer çdo cikel, pa fund, duke
+        // humbur kohe/burime ne çdo invokim.
+        const status = e.response?.status;
+        if (status === 404 || status === 401) {
+          await supabase.from('stores').update({ token_invalid: true }).eq('shop', shop)
+            .then(() => console.warn(`[poll] ${shop} — token shenuar i pavlefshem (${status}), do te anashkalohet ne ciklet e ardhshme`))
+            .catch(() => {});
+        }
       }
     }
   } catch(e) {
