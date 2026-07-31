@@ -2349,6 +2349,70 @@ async function searchProductSpecs(title) {
   }
 }
 
+// Emrat e ingredienteve aktive me te zakonshem ne beauty/skincare — perdoret
+// nga regex-i i perqindjes ME POSHTE, dhe si liste e pavarur per te kapur
+// permendje pa perqindje (p.sh. "contains retinol" pa numer specifik).
+const BEAUTY_ACTIVE_INGREDIENTS = [
+  'niacinamide', 'retinol', 'retinal', 'salicylic acid', 'glycolic acid',
+  'hyaluronic acid', 'vitamin c', 'ascorbic acid', 'azelaic acid',
+  'lactic acid', 'ceramide', 'peptide', 'squalane', 'bakuchiol',
+  'centella asiatica', 'tea tree', 'benzoyl peroxide', 'collagen'
+];
+
+// Kerkon specs REALE per produkte Beauty & Health nepermjet Tavily — PARALEL
+// me searchProductSpecs (qe eshte i fokusuar tek specs teknike: mAh/GB/MP),
+// qe s'do te gjente ASGJE te dobishme per nje kremë fytyre. Fokusi ketu:
+// perqindje ingredientesh (p.sh. "10% niacinamide"), emra ingredientesh
+// aktive, dhe SPF — gjerat qe VERTET rrezikojne halucinacion ne kete
+// kategori (jo numra bateriesh, por pretendime perberjesh/koncentrimesh).
+async function searchBeautySpecs(title) {
+  if (!process.env.TAVILY_API_KEY) return [];
+  try {
+    const res = await axios.post('https://api.tavily.com/search', {
+      api_key: process.env.TAVILY_API_KEY,
+      query: `${title} ingredients percentage active dermatologist SPF`,
+      search_depth: 'basic',
+      max_results: 3,
+      include_answer: false
+    }, { timeout: 4000 });
+
+    const snippets = (res.data.results || [])
+      .map(r => r.content || r.snippet || '')
+      .join('\n')
+      .slice(0, 3000);
+
+    if (!snippets.trim()) return [];
+
+    const specs = [];
+
+    // Perqindje + ingredient TE BASHKUAR (me e forta — numer + emer konkret)
+    // Kap te dyja renditjet: "10% niacinamide" DHE "niacinamide 10%"
+    for (const ingredient of BEAUTY_ACTIVE_INGREDIENTS) {
+      const escaped = ingredient.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const beforePattern = new RegExp(`(\\d+\\.?\\d*)%\\s*${escaped}`, 'i');
+      const afterPattern = new RegExp(`${escaped}\\s*(\\d+\\.?\\d*)%`, 'i');
+      const match = snippets.match(beforePattern) || snippets.match(afterPattern);
+      if (match) {
+        specs.push({ key: `Active Ingredient (${ingredient})`, value: `${match[1]}%` });
+      } else if (new RegExp(`\\b${escaped}\\b`, 'i').test(snippets)) {
+        // Ingredienti permendet, por pa perqindje specifike — ende e vlefshme
+        // si konfirmim "permban X", thjesht pa numer per hedge.
+        specs.push({ key: 'Contains', value: ingredient });
+      }
+    }
+
+    // SPF — numer i drejtperdrejte, i rendesishem per produkte diell/ditore
+    const spf = snippets.match(/SPF\s?(\d+)/i);
+    if (spf) specs.push({ key: 'SPF', value: `SPF ${spf[1]}` });
+
+    console.log(`[tavily-beauty] "${title}" — gjeta ${specs.length} spec(e) te konfirmuara`);
+    return specs;
+  } catch (e) {
+    console.warn('[tavily-beauty] Kerkimi deshtoi:', e.message);
+    return [];
+  }
+}
+
 // Specifika qe nese gjenden si metafield, konsiderohen "konfirmim i jashtem"
 // per nje produkt tech/electronics — perdoret nga hasExternalConfirmation
 const SPEC_METAFIELD_KEYWORDS = [
@@ -3193,6 +3257,55 @@ async function generateProductCopy(product, targetLang, glossary, cleanBody, ima
           }, { onConflict: 'shop,product_id' });
         } catch(e) {
           console.warn('[tavily-cache] Ruajtja e cache deshtoi (jo kritike):', e.message);
+        }
+      }
+    }
+  } else if (!hasExternalConfirmation && !cleanBody && isBeautyHealthProduct(product)) {
+    // PARALEL me degen tech me larte — perdor TE NJEJTIN cache
+    // (product_specs_cache eshte gjenerik: shop+product_id -> specs_json,
+    // s'i intereson CILI funksion kerkimi e populloi).
+    let usedCache = false;
+    if (product.id && shop) {
+      try {
+        const { data: cacheRow } = await supabase
+          .from('product_specs_cache')
+          .select('specs_json, searched_but_empty')
+          .eq('shop', shop)
+          .eq('product_id', String(product.id))
+          .maybeSingle();
+        if (cacheRow) {
+          tavilySpecs = cacheRow.specs_json || [];
+          tavilySearchedButEmpty = cacheRow.searched_but_empty || false;
+          if (tavilySpecs.length > 0) hasExternalConfirmation = true;
+          usedCache = true;
+          console.log(`[tavily-beauty-cache] Perdorur cache ekzistues per produkt ${product.id} — ${tavilySpecs.length} spec(e)`);
+        }
+      } catch(e) {
+        console.warn('[tavily-beauty-cache] Leximi i cache deshtoi:', e.message);
+      }
+    }
+
+    if (!usedCache) {
+      console.log(`[tavily-beauty] Duke kerkuar ingredientë per "${product.title}"...`);
+      tavilySpecs = await searchBeautySpecs(product.title);
+      if (tavilySpecs.length > 0) {
+        hasExternalConfirmation = true;
+        console.log(`[tavily-beauty] ${tavilySpecs.length} spec(e): ${tavilySpecs.map(s => `${s.key}=${s.value}`).join(', ')}`);
+      }
+      // Shenim: s'ka "NO-SPECS mode" per beauty — s'ka brand-njohje ekuivalente
+      // me titleHasKnownBrand() per skincare; nese Tavily s'gjen asgje, thjesht
+      // s'ka specs te konfirmuara, dhe rregullat ekzistuese te kategorise
+      // (PRIORITY list, hedging i pergjithshem) mbeten mbrojtja parazgjedhur.
+
+      if (product.id && shop) {
+        try {
+          await supabase.from('product_specs_cache').upsert({
+            shop, product_id: String(product.id),
+            specs_json: tavilySpecs,
+            searched_but_empty: tavilySearchedButEmpty
+          }, { onConflict: 'shop,product_id' });
+        } catch(e) {
+          console.warn('[tavily-beauty-cache] Ruajtja deshtoi (jo kritike):', e.message);
         }
       }
     }
