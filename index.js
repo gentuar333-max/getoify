@@ -1574,6 +1574,40 @@ app.post('/settings', requireShopAuth, async (req, res) => {
   }
 });
 
+// AUTOMATIZIM (rasti real i sotem): kur merchant-i zgjedh nje gjuhe te reja
+// te Getoify, kjo VETEM e ruan ne Supabase — s'e bente ende "Published" ne
+// vete Shopify (Settings > Languages), hap i cili mbetej PLOTESISHT manual
+// dhe shpesh harrohej (pikerisht ky ishte shkaku i pare qe dyshuam sot per
+// French qe s'shfaqej). Kjo mutacion GraphQL e automatizon plotesisht ate
+// hap te vetem — KERKON scope te ri "write_locales" (s'e kishim me pare,
+// vetem read_locales) — merchant-et ekzistues do te kene nevoje per
+// re-autorizim (Shopify e kerkon vete kete kur nje app kerkon scope shtese).
+async function enableShopLocale(shop, token, locale) {
+  const mutation = `mutation shopLocaleEnable($locale: String!) {
+    shopLocaleEnable(locale: $locale) {
+      shopLocale { locale published }
+      userErrors { field message }
+    }
+  }`;
+  try {
+    const res = await axios.post(
+      `https://${shop}/admin/api/2026-07/graphql.json`,
+      { query: mutation, variables: { locale } },
+      { headers: { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' } }
+    );
+    const result = res.data?.data?.shopLocaleEnable;
+    if (result?.userErrors?.length > 0) {
+      console.warn(`[shopLocaleEnable] ${shop} — ${locale}: ${result.userErrors.map(e => e.message).join('; ')}`);
+      return false;
+    }
+    console.log(`[shopLocaleEnable] ${shop} — ${locale} aktivizuar/publikuar automatikisht`);
+    return true;
+  } catch(e) {
+    console.warn(`[shopLocaleEnable] ${shop} — ${locale} deshtoi (jo kritike, mbetet hap manual per merchant-in):`, e.message);
+    return false;
+  }
+}
+
 app.post('/save-locales', requireShopAuth, async (req, res) => {
   const shop = req.verifiedShop;
   const { selected_locales } = req.body;
@@ -1610,6 +1644,23 @@ app.post('/save-locales', requireShopAuth, async (req, res) => {
     const removedFromSync = oldLocales.filter(l => !selected_locales.includes(l));
     if (removedFromSync.length > 0) {
       console.log(`[save-locales] ${shop} — gjuhe hequr nga sinkronizimi aktiv (perkthimet EKZISTUESE MBETEN te paprekura): ${removedFromSync.join(', ')}`);
+    }
+
+    // AUTOMATIZIM: gjuhet E REJA (jo ato qe ishin tashme te zgjedhura) —
+    // provo t'i aktivizosh/publikosh automatikisht ne Shopify. Jo-bllokues:
+    // nese deshton (p.sh. scope 'write_locales' mungon ende per kete
+    // merchant te vjeter para re-autorizimit), s'duhet te ndaloje ruajtjen
+    // e selected_locales fare — mbetet thjesht hap manual per te, si me pare.
+    const newlyAdded = selected_locales.filter(l => !oldLocales.includes(l));
+    if (newlyAdded.length > 0 && currentStore?.access_token) {
+      Promise.allSettled(
+        newlyAdded.map(locale => enableShopLocale(shop, currentStore.access_token, locale))
+      ).then(results => {
+        const failed = results.filter(r => r.status === 'rejected' || r.value === false).length;
+        if (failed > 0) {
+          console.log(`[save-locales] ${shop} — ${failed}/${newlyAdded.length} gjuhe s'u aktivizuan automatikisht (mbetet hap manual per merchant-in: Settings > Languages)`);
+        }
+      });
     }
 
     const { error } = await supabase
