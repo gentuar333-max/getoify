@@ -3986,7 +3986,7 @@ the meta description here
     // GJENERIM I PARE me imazh — Claude Sonnet 4.6 (vizion), STEP A/B/C te plota
     const titleSection = product.title
       ? `Product name: "${product.title}"\n${category ? `Category: ${category}\n` : ''}${tags ? `Tags: ${tags}\n` : ''}`
-      : `No product name provided. Identify the product from the image and write an appropriate name in ${targetLang}.`;
+      : `No product name provided. Identify the product from the image and write an appropriate name in ${targetLang}. If you can identify the brand/logo but NOT a specific model name/number from the image alone, use "[Brand] — model unknown" style naming (translated naturally into ${targetLang}) rather than inventing a plausible-sounding model name.`;
 
     const contextBlock = `You are a native ${targetLang} speaker and professional ecommerce copywriter. Analyze the product image carefully.
 
