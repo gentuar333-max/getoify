@@ -3998,7 +3998,8 @@ ${confirmedSpecsBlock}
 ${confirmationStatusBlock}
 Look carefully at the image. Identify ONLY what is clearly visible: materials, colors, shape, dimensions, text/branding, use case.
 Do NOT invent specifications that are not visible or stated.
-Do NOT invent skill-level claims (e.g. "for intermediate/advanced riders"), care instructions, or a specific product sub-category unless clearly shown in the image or stated in the title — these read as plausible but are guesses, same risk as inventing a spec number.`;
+Do NOT invent skill-level claims (e.g. "for intermediate/advanced riders"), care instructions, or a specific product sub-category unless clearly shown in the image or stated in the title — these read as plausible but are guesses, same risk as inventing a spec number.
+CATEGORICAL RULE (not just the examples above): describe ONLY what is physically visible — shape, color, material, printed text/logo. Make ZERO claims about performance, suitability, intended skill level, terrain/use-case fit, or durability/longevity, in ANY wording — not just the specific phrases above. If you cannot see a fact directly, do not state a rephrased version of it either.`;
 
     // sharedRules varet vetem nga targetLang/langCfg/kategoria (jo produkti/imazhi) —
     // i pari + cache_control: produkte te tjera te NJEJTES gjuhe+kategori (brenda 5 min) -90%
