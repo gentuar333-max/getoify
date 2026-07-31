@@ -1016,7 +1016,7 @@ app.get('/auth', (req, res) => {
     httpOnly: true, secure: true, sameSite: 'lax', maxAge: 10 * 60 * 1000
   });
   const redirectUri = `${APP_URL}/auth/callback`;
-  const installUrl = `https://${shop}/admin/oauth/authorize?client_id=${SHOPIFY_API_KEY}&scope=${SHOPIFY_SCOPES}&redirect_uri=${redirectUri}&state=${state}`;
+  const installUrl = `https://${shop}/admin/oauth/authorize?client_id=${encodeURIComponent(SHOPIFY_API_KEY)}&scope=${encodeURIComponent(SHOPIFY_SCOPES)}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${encodeURIComponent(state)}`;
   res.redirect(installUrl);
 });
 
