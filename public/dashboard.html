@@ -182,6 +182,11 @@
         <a href="#" onclick="window.location.href='/pricing?shop='+localStorage.getItem('getoify_shop')" style="background:#D97706;color:white;padding:8px 18px;border-radius:5px;font-size:12px;font-weight:600;text-decoration:none;white-space:nowrap;">Upgrade plan</a>
       </div>
 
+      <div id="markets-banner" style="display:none;background:#FEF3C7;border:1px solid #F59E0B;border-radius:8px;padding:14px 20px;margin-bottom:14px;align-items:center;gap:10px;flex-wrap:wrap;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span id="markets-banner-text" style="font-size:13px;font-weight:500;color:#92400E;"></span>
+      </div>
+
       <div class="row2">
         <div class="card">
           <div class="card-hd"><div class="card-title">Progress by language</div><div class="card-link">Details</div></div>
@@ -521,9 +526,27 @@
     } catch(e) {}
   }
 
+  // VETEM LEXIM — paralajmeron nese ndonje gjuhe e zgjedhur s'eshte caktuar
+  // ne asnje Market aktiv (rasti real: French e perkthyer por Market
+  // "France" kishte English te caktuar — klientet francez s'e shihnin fare).
+  async function checkMarketsAssignment() {
+    try {
+      const res = await authedFetch('/markets-check?shop=' + shop);
+      const data = await res.json();
+      if (data.unassigned_locales && data.unassigned_locales.length > 0) {
+        const banner = document.getElementById('markets-banner');
+        const localesText = data.unassigned_locales.map(l => l.toUpperCase()).join(', ');
+        document.getElementById('markets-banner-text').textContent =
+          `${localesText} — translated, but not assigned to any active market. Customers may still see a different language. Check Settings → Markets.`;
+        banner.style.display = 'flex';
+      }
+    } catch(e) {}
+  }
+
   loadData();
   checkLanguageSetup();
   checkTokenStatus();
+  checkMarketsAssignment();
 </script>
 </body>
 </html>

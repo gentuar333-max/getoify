@@ -1695,6 +1695,41 @@ app.get('/plan-languages', requireShopAuth, async (req, res) => {
   }
 });
 
+// VETEM LEXIM — kontrollon nese gjuhe te zgjedhura te Getoify jane VERTET te
+// caktuara ne ndonje Market aktiv. RASTI REAL i sotem: French ishte
+// "Published" globalisht (Settings>Languages), POR Market-i "France" kishte
+// English te caktuar — vizitoret francez s'e shihnin French fare, pa
+// asnje sinjal per merchant-in qe diçka mungon. Kjo VETEM LEXON (asnje
+// ndryshim Markets), thjesht paralajmeron.
+app.get('/markets-check', requireShopAuth, async (req, res) => {
+  const shop = req.verifiedShop;
+  try {
+    const store = await getStore(shop);
+    if (!store?.access_token) return res.status(404).json({ error: 'Store not found' });
+    const selectedLocales = store.selected_locales || [];
+    if (selectedLocales.length === 0) return res.json({ unassigned_locales: [] });
+
+    const query = `query { shopLocales { locale marketWebPresences { id } } }`;
+    const gqlRes = await axios.post(
+      `https://${shop}/admin/api/2026-07/graphql.json`,
+      { query },
+      { headers: { 'X-Shopify-Access-Token': store.access_token, 'Content-Type': 'application/json' } }
+    );
+    const shopLocales = gqlRes.data?.data?.shopLocales || [];
+
+    // Gjej gjuhe TE ZGJEDHURA te Getoify qe s'kane ASNJE marketWebPresence
+    const unassignedLocales = selectedLocales.filter(locale => {
+      const match = shopLocales.find(sl => sl.locale === locale);
+      return match && (!match.marketWebPresences || match.marketWebPresences.length === 0);
+    });
+
+    res.json({ unassigned_locales: unassignedLocales });
+  } catch(e) {
+    console.warn('[markets-check] Gabim (jo kritik):', e.message);
+    res.json({ unassigned_locales: [] }); // deshtim i heshtur — s'duhet te ndaloje dashboard-in
+  }
+});
+
 
 // Rifreskon access_token duke perdorur refresh_token — kerkohet tani qe
 // Shopify ka kaluar te expiring tokens (60 min jete). Formati i kesaj
