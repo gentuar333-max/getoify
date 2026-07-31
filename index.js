@@ -79,6 +79,25 @@ function signSession(shop) {
   return `${payload}.${sig}`;
 }
 
+// Verifikon nenshkrimin e App Proxy — PERDORET nga rrugë qe thirren nga
+// STOREFRONT (tema e merchant-it), jo nga admini. GRACKE E NJOHUR (Shopify
+// GitHub issue #878 + raporte te shumta komuniteti): App Proxy bashkon çiftet
+// 'key=value' PA delimitues '&' mes tyre — ndryshe nga verifikimi OAuth qe
+// PERDOR '&'. Perdorimi gabimisht i '&' eshte arsyeja #1 e raportuar per
+// deshtim verifikimi ne implementime te tjera.
+function verifyAppProxySignature(query) {
+  const q = { ...query };
+  const signature = q.signature;
+  if (!signature) return false;
+  delete q.signature;
+  const sortedPairs = Object.keys(q).sort().map(key => `${key}=${q[key]}`).join('');
+  const calculated = crypto.createHmac('sha256', SHOPIFY_API_SECRET).update(sortedPairs).digest('hex');
+  const sigBuf = Buffer.from(signature, 'utf8');
+  const calcBuf = Buffer.from(calculated, 'utf8');
+  if (sigBuf.length !== calcBuf.length) return false;
+  return crypto.timingSafeEqual(sigBuf, calcBuf);
+}
+
 function verifySession(cookieValue) {
   if (!cookieValue) return null;
   const dotIdx = cookieValue.lastIndexOf('.');
@@ -1247,6 +1266,94 @@ app.get('/llm.txt', (req, res) => {
 // Perplexity, or Claude about products in their niche.
 // GET /generate-llm-txt?shop=xxx — returns the txt file for download
 // The merchant then uploads it to their store root or Shopify Files.
+// Ndertit blloku Product schema.org JSON-LD ne GJUHEN E PERKTHYER — jo
+// origjinale. Qellimi: Google/UCP te lexojne te dhena qe PERPUTHEN me ate qe
+// klienti VERTET sheh ne faqen e lokalizuar, jo titullin/pershkrimin anglisht
+// nen nje URL ne frengjisht (mospershtatje qe kerkimi e identifikoi si rrezik
+// real per "price mismatches between feed and markup").
+function buildProductJsonLd({ translatedTitle, translatedDescription, imageUrl, price, currency, availability, brand, productUrl, sku }) {
+  const jsonLd = {
+    '@context': 'https://schema.org/',
+    '@type': 'Product',
+    name: translatedTitle,
+    description: translatedDescription,
+  };
+  if (imageUrl) jsonLd.image = imageUrl;
+  if (brand) jsonLd.brand = { '@type': 'Brand', name: brand };
+  if (sku) jsonLd.sku = sku;
+  jsonLd.offers = {
+    '@type': 'Offer',
+    url: productUrl,
+    priceCurrency: currency,
+    price: price,
+    availability: availability === 'in_stock'
+      ? 'https://schema.org/InStock'
+      : 'https://schema.org/OutOfStock'
+  };
+  return jsonLd;
+}
+
+// GET /product-jsonld?shop=X&productId=Y&locale=Z — kthen JSON-LD te gatshem
+// per nje produkt+gjuhe specifike. Perdor perkthimin e ruajtur (Supabase) per
+// tekst, dhe Shopify live per cmim/imazh/disponueshmeri (keto ndryshojne
+// shpesh, s'duhen te dhena te ngrira nga koha e perkthimit).
+// E thirrur NGA STOREFRONT-i (tema e merchant-it, permes App Proxy Shopify) —
+// JO nga admin-i. Prandaj verifikimi eshte nenshkrimi App Proxy, jo sesion.
+app.get('/product-jsonld', async (req, res) => {
+  if (!verifyAppProxySignature(req.query)) {
+    return res.status(401).json({ error: 'Nenshkrim i pavlefshem App Proxy' });
+  }
+  const { shop, productId, locale } = req.query;
+  if (!shop || !productId || !locale) {
+    return res.status(400).json({ error: 'Mungon shop, productId, ose locale' });
+  }
+  try {
+    const store = await getStore(shop);
+    if (!store?.access_token) return res.status(404).json({ error: 'Store not found' });
+    const token = store.access_token;
+
+    const { data: translation } = await supabase
+      .from('translations')
+      .select('translated_title, translated_description, product_handle')
+      .eq('shop', shop).eq('product_id', String(productId)).eq('locale', locale)
+      .eq('status', 'done').maybeSingle();
+
+    if (!translation) {
+      return res.status(404).json({ error: `Asnje perkthim i gatshem per produktin ${productId} ne ${locale}` });
+    }
+
+    const [productRes, shopRes] = await Promise.all([
+      axios.get(`https://${shop}/admin/api/2026-07/products/${productId}.json?fields=variants,images,handle,vendor`,
+        { headers: { 'X-Shopify-Access-Token': token } }),
+      axios.get(`https://${shop}/admin/api/2026-07/shop.json`,
+        { headers: { 'X-Shopify-Access-Token': token } })
+    ]);
+
+    const product = productRes.data.product;
+    const variant = product?.variants?.[0];
+    const currency = shopRes.data?.shop?.currency || 'USD';
+    const handle = translation.product_handle || product?.handle;
+
+    const jsonLd = buildProductJsonLd({
+      translatedTitle: translation.translated_title,
+      translatedDescription: translation.translated_description,
+      imageUrl: product?.images?.[0]?.src || null,
+      price: variant?.price || '0.00',
+      currency,
+      availability: (variant?.inventory_quantity ?? 0) > 0 ? 'in_stock' : 'out_of_stock',
+      brand: product?.vendor || null,
+      productUrl: `https://${shop}/products/${handle}`,
+      sku: variant?.sku || null
+    });
+
+    res.json(jsonLd);
+  } catch(e) {
+    console.error('[product-jsonld] Gabim:', e.message);
+    res.status(500).json({ error: 'Deshtoi gjenerimi i JSON-LD' });
+  }
+});
+
+
 app.get('/generate-llm-txt', requireAdminKey, async (req, res) => {
   const { shop } = req.query;
   if (!shop) return res.status(400).json({ error: 'Missing shop' });
