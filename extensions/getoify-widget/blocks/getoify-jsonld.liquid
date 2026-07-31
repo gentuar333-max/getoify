@@ -1,0 +1,31 @@
+﻿{% comment %}
+  Getoify — JSON-LD Product Schema (app embed block)
+{% endcomment %}
+
+{% if product %}
+<script>
+  (function() {
+    var productId = {{ product.id | json }};
+    var locale = {{ request.locale.iso_code | json }};
+
+    fetch('/apps/getoify?productId=' + productId + '&locale=' + locale)
+      .then(function(res) { return res.ok ? res.json() : null; })
+      .then(function(data) {
+        if (!data || data.error) return;
+        var script = document.createElement('script');
+        script.type = 'application/ld+json';
+        script.textContent = JSON.stringify(data);
+        document.head.appendChild(script);
+      })
+      .catch(function() { /* deshtim i heshtur */ });
+  })();
+</script>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Getoify JSON-LD Schema",
+  "target": "body",
+  "settings": []
+}
+{% endschema %}
