@@ -2782,6 +2782,40 @@ function stripIllogicalHedges(text, targetLang) {
   return result;
 }
 
+// Rrjete sigurie MEKANIKE — RASTI REAL i sotem (Rome Snowboard, gjenerim
+// VETEM-nga-foto, pa titull): modeli shpiku pretendime aftesie ("suitable
+// for intermediate to advanced riders") dhe udhezime kujdesi ("keep away
+// from humidity", "store in a cool, dry place") qe s'jane te verifikueshme
+// nga nje foto e vetme produkti. Prompt-i VETEM u testua dhe KONFIRMUA I
+// PAMJAFTUESHEM (modeli thjesht i riformuloi te njejtat pretendime me fjale
+// tjera ne testin e dyte). Heq RRESHTIN E PLOTE (jo vetem frazen), qe te
+// mos mbetet fragment fjalie i thyer. E kufizuar VETEM te gjenerimi
+// vetem-nga-foto (hasImage && !cleanBody) — pikerisht aty ku u vezhgua
+// rreziku; gjenerimi me titull ka mbrojtje te tjera (Tavily, metafields).
+function stripUnverifiableCareAndSkillClaims(text, isImageOnlyGeneration) {
+  if (!text || !isImageOnlyGeneration) return text;
+
+  const linePatterns = [
+    // Udhezime kujdesi/ruajtje te shpikura ("keep away from humidity",
+    // "store in a cool, dry place", "avoid direct sunlight" etj.)
+    /^[ \t]*[•\-*][ \t]*.*\b(store|keep)\b.*\b(cool,?\s*dry\s*place|away\s+from\s+(humidity|moisture)|direct\s+sunlight)\b.*$/gim,
+    // Pretendime niveli aftesie te shpikura ("suitable for intermediate to
+    // advanced riders", "designed for all-mountain versatility" etj.)
+    /^[ \t]*[•\-*][ \t]*.*\b(suitable|designed|great|ideal)\s+for\s+(beginner|intermediate|advanced|all[\s-]?(mountain|level|skill)|every(?:one|\s+level)).*$/gim
+  ];
+
+  let result = text;
+  for (const pattern of linePatterns) {
+    result = result.replace(pattern, (match) => {
+      console.warn(`[unverifiable-claim] Hequr rresht i pa-verifikueshem (gjenerim vetem-nga-foto): "${match.trim()}"`);
+      return '';
+    });
+  }
+  // Pastro rreshta bosh te shumefishte te mbetur pas heqjes
+  result = result.replace(/\n{3,}/g, '\n\n').replace(/[ \t]+\n/g, '\n').trim();
+  return result;
+}
+
 // Prit fjalen e fundit te plote para 'limit' karaktere — s'e pret ne mes te
 // nje fjale. Perdoret nga enforceMetaDescriptionLength me poshte.
 function truncateAtWordBoundary(text, limit, minAcceptable) {
@@ -4379,6 +4413,14 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
     if (parsed.meta_description) {
       parsed.meta_description = stripIllogicalHedges(parsed.meta_description, targetLang);
     }
+
+    // Rrjete sigurie per pretendime kujdesi/aftesie te pa-verifikueshme —
+    // RASTI REAL (Rome Snowboard, gjenerim vetem-nga-foto): "keep away from
+    // humidity", "suitable for intermediate to advanced riders" — prompt-i
+    // VETEM u testua dhe konfirmua i pamjaftueshem (modeli i riformuloi).
+    // E kufizuar VETEM te hasImage && !cleanBody — pikerisht ku u vezhgua.
+    const isImageOnlyGen = hasImage && !cleanBody;
+    parsed.description = stripUnverifiableCareAndSkillClaims(parsed.description, isImageOnlyGen);
 
     // Bashkangjit providerin real qe u perdor — fushe shtese e sigurt (nuk
     // prish asgje per konsumatoret ekzistues qe lexojne vetem title/description/
