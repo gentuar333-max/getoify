@@ -179,12 +179,23 @@
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           <span id="limit-banner-text" style="font-size:13px;font-weight:500;color:#92400E;"></span>
         </div>
-        <a href="#" onclick="window.location.href='/pricing?shop='+localStorage.getItem('getoify_shop')" style="background:#D97706;color:white;padding:8px 18px;border-radius:5px;font-size:12px;font-weight:600;text-decoration:none;white-space:nowrap;">Upgrade plan</a>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <a href="#" onclick="window.location.href='/addon/buy?shop='+localStorage.getItem('getoify_shop')" style="background:transparent;color:#92400E;border:1.5px solid #D97706;padding:7px 16px;border-radius:5px;font-size:12px;font-weight:600;text-decoration:none;white-space:nowrap;">+250 products ($15)</a>
+          <a href="#" onclick="window.location.href='/pricing?shop='+localStorage.getItem('getoify_shop')" style="background:#D97706;color:white;padding:8px 18px;border-radius:5px;font-size:12px;font-weight:600;text-decoration:none;white-space:nowrap;">Upgrade plan</a>
+        </div>
       </div>
 
       <div id="markets-banner" style="display:none;background:#FEF3C7;border:1px solid #F59E0B;border-radius:8px;padding:14px 20px;margin-bottom:14px;align-items:center;gap:10px;flex-wrap:wrap;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         <span id="markets-banner-text" style="font-size:13px;font-weight:500;color:#92400E;"></span>
+      </div>
+
+      <div id="review-banner" style="display:none;background:var(--cream-mid);border:1px solid var(--border);border-radius:8px;padding:14px 20px;margin-bottom:14px;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+        <span style="font-size:13px;color:var(--ink-mid);">Enjoying Getoify? A quick review helps a lot.</span>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <a href="https://apps.shopify.com/getoify-6#modal-show=WriteReviewModal" target="_blank" rel="noopener" style="background:var(--ink);color:var(--cream);padding:7px 14px;border-radius:5px;font-size:12px;font-weight:500;text-decoration:none;">Leave a review</a>
+          <button onclick="dismissReviewBanner()" style="background:none;border:none;color:var(--ink-faint);font-size:12px;cursor:pointer;padding:7px;">Dismiss</button>
+        </div>
       </div>
 
       <div class="row2">
@@ -446,14 +457,7 @@
       if (!res.ok) { const err = await res.text(); console.error('Bulk error:', err); alert('Error: ' + err); }
       else {
         const text = await res.text(); console.log('Bulk result:', text);
-        try {
-          if (window.shopify && window.shopify.reviews) {
-            const reviewResult = await window.shopify.reviews.request();
-            console.log('[reviews]', reviewResult);
-          }
-        } catch(reviewErr) {
-          console.warn('[reviews] Modal s\'u shfaq (normale, jo gabim):', reviewErr);
-        }
+        maybeShowReviewBanner();
       }
       btn.innerHTML = '<i class="ti ti-player-play"></i>Run bulk translate'; btn.disabled = false; loadData();
     } catch(e) { console.error('Fetch error:', e); alert('Connection error: ' + e.message);
@@ -543,9 +547,39 @@
     } catch(e) {}
   }
 
+  // Banner review I SIGURT — jo App Bridge (embedded=false s'e mban). Vetem
+  // link i thjeshte deep-link te modal-i i vete Shopify-t, hapur ne tab te
+  // re. Shfaqet vetem 1 here çdo 14 dite (localStorage), pas nje bulk te
+  // suksesshem — respekton "vetem pas veprimi te suksesshem", pa perdorur
+  // mekanizem qe kerkon iframe/embedded context.
+  function maybeShowReviewBanner() {
+    const lastShown = localStorage.getItem('getoify_review_banner_shown');
+    const fourteenDaysMs = 14 * 24 * 60 * 60 * 1000;
+    if (lastShown && (Date.now() - parseInt(lastShown, 10)) < fourteenDaysMs) return;
+    document.getElementById('review-banner').style.display = 'flex';
+    localStorage.setItem('getoify_review_banner_shown', String(Date.now()));
+  }
+
+  function dismissReviewBanner() {
+    document.getElementById('review-banner').style.display = 'none';
+  }
+
   loadData();
   checkLanguageSetup();
   checkTokenStatus();
+  // Trajton rezultatin e blerjes add-on, kur merchant-i kthehet nga
+  // /addon/confirm (Shopify) — ?addon=success|declined|already
+  (function handleAddonResult() {
+    const addonResult = new URLSearchParams(window.location.search).get('addon');
+    if (addonResult === 'success') {
+      alert('Success! 250 additional products have been added to your account.');
+    } else if (addonResult === 'declined') {
+      alert('The purchase was declined or cancelled. No charge was made.');
+    } else if (addonResult === 'already') {
+      alert('This purchase was already processed.');
+    }
+  })();
+
   checkMarketsAssignment();
 </script>
 </body>
