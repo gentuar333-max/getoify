@@ -1519,11 +1519,12 @@ app.get('/products', requireShopAuthOrKnownShop, async (req, res) => {
 app.get('/status', requireShopAuthOrKnownShop, async (req, res) => {
   const shop = req.verifiedShop;
   try {
-    const { data: storeRow } = await supabase.from('stores').select('plan, plan_started_at').eq('shop', shop).single();
+    const { data: storeRow } = await supabase.from('stores').select('plan, plan_started_at, addon_products').eq('shop', shop).single();
     const planName = storeRow?.plan || 'free';
     const planStartedAt = storeRow?.plan_started_at || null;
     const PLANS = app.locals.PLANS;
     const plan = PLANS ? (PLANS[planName] || PLANS.free) : { product_limit: 15 };
+    const effectivePlanLimit = plan.product_limit + (storeRow?.addon_products || 0);
 
     const data = await fetchAllRows(supabase, {
       table: 'translations',
@@ -1541,7 +1542,7 @@ app.get('/status', requireShopAuthOrKnownShop, async (req, res) => {
     const uniqueProducts = await getLocalizedProductCount(shop, planStartedAt);
     const allUniqueProducts = await getLocalizedProductCount(shop, null);
 
-    res.json({ total: allUniqueProducts, period_used: uniqueProducts, total_records: translations.length, plan_limit: plan.product_limit, translations });
+    res.json({ total: allUniqueProducts, period_used: uniqueProducts, total_records: translations.length, plan_limit: effectivePlanLimit, translations });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -1676,6 +1677,124 @@ app.post('/save-locales', requireShopAuth, async (req, res) => {
 });
 
 // Endpoint per te marre gjuhet e disponueshme dhe limitin e planit
+// ADD-ON PACK ("Zapier-style") — shton 250 produkte SHTESE mbi limitin baze
+// te planit, PA e prekur/rivendosur bazen. Perdor AppPurchaseOneTime (pagese
+// NJEHERSHME) — DALLIM I QELLIMSHEM nga app_subscriptions (abonimi i
+// perseritur), sepse pagesat njeheshme kane webhook/ridrejtim te qarte dhe te
+// besueshem, ndryshe nga rinovimet e abonimit qe zbuluam sot te jene te
+// pamundura per t'u kapur me siguri (Shopify Support e konfirmoi vete).
+const ADDON_PACK_PRODUCTS = 250;
+const ADDON_PACK_PRICE_USD = 15; // NDRYSHO kete vlere sipas çmimit qe do te vendosesh
+
+app.get('/addon/buy', requireShopAuth, async (req, res) => {
+  const shop = req.verifiedShop;
+  try {
+    const store = await getStore(shop);
+    if (!store?.access_token) return res.status(404).send('Store not found');
+
+    const mutation = `mutation AppPurchaseOneTimeCreate($name: String!, $price: MoneyInput!, $returnUrl: URL!) {
+      appPurchaseOneTimeCreate(name: $name, returnUrl: $returnUrl, price: $price) {
+        userErrors { field message }
+        appPurchaseOneTime { id createdAt }
+        confirmationUrl
+      }
+    }`;
+    const variables = {
+      name: `${ADDON_PACK_PRODUCTS} additional products`,
+      price: { amount: ADDON_PACK_PRICE_USD, currencyCode: 'USD' },
+      returnUrl: `${APP_URL}/addon/confirm?shop=${encodeURIComponent(shop)}`
+    };
+
+    const gqlRes = await axios.post(
+      `https://${shop}/admin/api/2026-07/graphql.json`,
+      { query: mutation, variables },
+      { headers: { 'X-Shopify-Access-Token': store.access_token, 'Content-Type': 'application/json' } }
+    );
+
+    const result = gqlRes.data?.data?.appPurchaseOneTimeCreate;
+    if (result?.userErrors?.length > 0) {
+      console.error(`[addon-buy] ${shop} — gabim:`, result.userErrors);
+      return res.status(400).json({ error: result.userErrors.map(e => e.message).join('; ') });
+    }
+    if (!result?.confirmationUrl) {
+      return res.status(500).json({ error: 'Shopify s\'ktheu confirmationUrl' });
+    }
+
+    console.log(`[addon-buy] ${shop} — pagese njeheshme e krijuar, charge id: ${result.appPurchaseOneTime?.id}`);
+    res.redirect(result.confirmationUrl);
+  } catch(e) {
+    console.error('[addon-buy] Gabim:', e.message);
+    res.status(500).send('Deshtoi krijimi i pageses');
+  }
+});
+
+// E thirrur nga vete Shopify pas aprovimit/refuzimit te merchant-it. KURRE
+// mos i beso query param charge_id vetem — VERIFIKO gjithmone drejt Shopify-t
+// (query node) para se te kreditosh — pikerisht parimi qe e theksoi useri.
+app.get('/addon/confirm', async (req, res) => {
+  const { shop, charge_id } = req.query;
+  if (!shop || !charge_id) {
+    return res.status(400).send('Mungon shop ose charge_id');
+  }
+  try {
+    const store = await getStore(shop);
+    if (!store?.access_token) return res.status(404).send('Store not found');
+
+    // VERIFIKIM I DETYRUESHEM — pyet VETE Shopify-n per statusin real te
+    // ketij charge specifik, mos u mbeshtet fare te vlera e URL-it.
+    const gid = charge_id.startsWith('gid://')
+      ? charge_id
+      : `gid://shopify/AppPurchaseOneTime/${charge_id}`;
+    const query = `query VerifyCharge($id: ID!) {
+      node(id: $id) {
+        ... on AppPurchaseOneTime { id status name test }
+      }
+    }`;
+    const gqlRes = await axios.post(
+      `https://${shop}/admin/api/2026-07/graphql.json`,
+      { query, variables: { id: gid } },
+      { headers: { 'X-Shopify-Access-Token': store.access_token, 'Content-Type': 'application/json' } }
+    );
+
+    const charge = gqlRes.data?.data?.node;
+    console.log(`[addon-confirm] ${shop} — charge ${charge_id} status: ${charge?.status}`);
+
+    if (!charge || charge.status !== 'ACTIVE') {
+      console.warn(`[addon-confirm] ${shop} — charge JO aktiv (${charge?.status}), s'kreditohet asgje`);
+      return res.redirect(`/dashboard?shop=${encodeURIComponent(shop)}&addon=declined`);
+    }
+
+    // INSERT me UNIQUE(shop, charge_id) — nese ky charge tashme eshte
+    // perpunuar (thirrje e dyfishte), dyshtimi i insertit e ndalon vetë
+    // kreditimin e dyfishte, pa pasur nevoje per lock shtese.
+    const { error: insertErr } = await supabase.from('addon_purchases').insert({
+      shop, charge_id: String(charge_id), product_amount: ADDON_PACK_PRODUCTS
+    });
+
+    if (insertErr) {
+      // Kod 23505 = unique violation ne Postgres — kjo eshte SAKTESISHT
+      // mbrojtja e pritur, jo gabim real.
+      if (insertErr.code === '23505') {
+        console.log(`[addon-confirm] ${shop} — charge ${charge_id} tashme i perpunuar, anashkalohet`);
+        return res.redirect(`/dashboard?shop=${encodeURIComponent(shop)}&addon=already`);
+      }
+      throw insertErr;
+    }
+
+    // Rrit addon_products — VETEM pas verifikimit + insert te suksesshem
+    const { data: current } = await supabase.from('stores').select('addon_products').eq('shop', shop).single();
+    const newTotal = (current?.addon_products || 0) + ADDON_PACK_PRODUCTS;
+    await supabase.from('stores').update({ addon_products: newTotal }).eq('shop', shop);
+
+    console.log(`[addon-confirm] ${shop} — kredituar +${ADDON_PACK_PRODUCTS}, total addon: ${newTotal}`);
+    res.redirect(`/dashboard?shop=${encodeURIComponent(shop)}&addon=success`);
+  } catch(e) {
+    console.error('[addon-confirm] Gabim:', e.message);
+    res.status(500).send('Deshtoi verifikimi i pageses');
+  }
+});
+
+
 app.get('/plan-languages', requireShopAuth, async (req, res) => {
   const shop = req.verifiedShop;
   try {
@@ -4470,9 +4589,10 @@ async function localizeProduct(shop, token, productId, targetLang, locale, tone,
         if (planStartedAt) q = q.gte('created_at', planStartedAt);
         const { data: rows } = await q;
         const existingIds = new Set((rows || []).map(r => String(r.product_id)));
-        if (!existingIds.has(String(pid)) && existingIds.size >= plan.product_limit) {
-          console.warn(`[plan-limit] localizeProduct blocked: ${shop} ${planName} limit ${plan.product_limit}, used ${existingIds.size}, product ${pid}`);
-          throw new Error(`PLAN_LIMIT: Your ${plan.label} plan supports ${plan.product_limit} products. Upgrade at ${process.env.APP_URL}/pricing?shop=${shop}`);
+        const effectiveLimit = plan.product_limit + (store.addon_products || 0);
+        if (!existingIds.has(String(pid)) && existingIds.size >= effectiveLimit) {
+          console.warn(`[plan-limit] localizeProduct blocked: ${shop} ${planName} limit ${effectiveLimit} (base ${plan.product_limit} + addon ${store.addon_products || 0}), used ${existingIds.size}, product ${pid}`);
+          throw new Error(`PLAN_LIMIT: Your ${plan.label} plan supports ${effectiveLimit} products. Upgrade at ${process.env.APP_URL}/pricing?shop=${shop}`);
         }
       }
     } catch(limitErr) {
@@ -4885,14 +5005,15 @@ app.post('/localize', requireShopAuth, async (req, res) => {
       if (planStartedAt) q = q.gte('created_at', planStartedAt);
       const { data: rows } = await q;
       const existingIds = new Set((rows || []).map(r => String(r.product_id)));
+      const effectiveLimit = plan.product_limit + (store.addon_products || 0);
       // Nese ky produkt eshte i ri (jo i perkthyer me pare) dhe kemi arritur limitin
-      if (!existingIds.has(String(pid)) && existingIds.size >= plan.product_limit) {
-        console.warn(`[plan-limit] /localize blocked for ${shop} — ${planName} limit (${plan.product_limit}, used ${existingIds.size})`);
+      if (!existingIds.has(String(pid)) && existingIds.size >= effectiveLimit) {
+        console.warn(`[plan-limit] /localize blocked for ${shop} — ${planName} limit (${effectiveLimit}, used ${existingIds.size})`);
         return res.status(403).json({
-          error: `Plan limit reached. Your ${plan.label} plan supports ${plan.product_limit} products. Upgrade to continue.`,
+          error: `Plan limit reached. Your ${plan.label} plan supports ${effectiveLimit} products. Upgrade to continue.`,
           upgrade_url: `${process.env.APP_URL}/pricing?shop=${shop}`,
           plan: planName,
-          limit: plan.product_limit,
+          limit: effectiveLimit,
           used: existingIds.size
         });
       }
@@ -4953,9 +5074,9 @@ app.post('/bulk-localize-all', requireShopAuth, async (req, res) => {
     if (PLANS) {
       const planName = store.plan || 'free';
       const plan = PLANS[planName] || PLANS.free;
-      productLimit = plan.product_limit;
+      productLimit = plan.product_limit + (store.addon_products || 0);
       localeLimit = plan.language_limit;
-      bulkLimit = plan.bulk_limit !== undefined ? plan.bulk_limit : plan.product_limit;
+      bulkLimit = (plan.bulk_limit !== undefined ? plan.bulk_limit : plan.product_limit) + (store.addon_products || 0);
       if (savedLocales.length > localeLimit) {
         console.warn(`[plan-limit] ${shop} has ${savedLocales.length} locales but plan allows ${localeLimit}`);
         savedLocales.splice(localeLimit);
@@ -5114,13 +5235,14 @@ app.post('/webhook/product-create', requireWebhookHmac, async (req, res) => {
       const PLANS = app.locals.PLANS;
       if (PLANS) {
         const { data: storeData } = await supabase
-          .from('stores').select('plan, plan_started_at').eq('shop', shop).single();
+          .from('stores').select('plan, plan_started_at, addon_products').eq('shop', shop).single();
         const planName = storeData?.plan || 'free';
         const planStartedAt = storeData?.plan_started_at || null;
         const plan = PLANS[planName] || PLANS.free;
         const uniqueProducts = await getLocalizedProductCount(shop, planStartedAt);
-        if (uniqueProducts >= plan.product_limit) {
-          console.warn(`[plan-limit] Webhook blocked for ${shop} — ${planName} limit (${plan.product_limit}, used ${uniqueProducts})`);
+        const effectiveLimit = plan.product_limit + (storeData?.addon_products || 0);
+        if (uniqueProducts >= effectiveLimit) {
+          console.warn(`[plan-limit] Webhook blocked for ${shop} — ${planName} limit (${effectiveLimit}, used ${uniqueProducts})`);
           return;
         }
       }
@@ -5300,23 +5422,24 @@ app.post('/process-product', requireShopAuth, async (req, res) => {
       const planStartedAt2 = store.plan_started_at || null;
       const plan = PLANS[planName] || PLANS.free;
       const uniqueProducts = await getLocalizedProductCount(shop, planStartedAt2);
-      console.warn(`[plan-limit] ${shop} ${planName}: ${uniqueProducts}/${plan.product_limit} products used`);
-      if (uniqueProducts >= plan.product_limit) {
-        console.warn(`[plan-limit] ${shop} hit ${planName} limit (${plan.product_limit}, used ${uniqueProducts})`);
+      const effectiveLimit = plan.product_limit + (store.addon_products || 0);
+      console.warn(`[plan-limit] ${shop} ${planName}: ${uniqueProducts}/${effectiveLimit} products used`);
+      if (uniqueProducts >= effectiveLimit) {
+        console.warn(`[plan-limit] ${shop} hit ${planName} limit (${effectiveLimit}, used ${uniqueProducts})`);
       await sendNotification(
         `Limit reached: ${shop} (${planName})`,
         `<h2>Merchant hit plan limit</h2>
          <p><b>Store:</b> ${shop}</p>
-         <p><b>Plan:</b> ${planName} (limit: ${plan.product_limit} products)</p>
+         <p><b>Plan:</b> ${planName} (limit: ${effectiveLimit} products)</p>
          <p><b>Used:</b> ${uniqueProducts} products</p>
          <p><b>Time:</b> ${new Date().toISOString()}</p>
          <p>This merchant may be ready to upgrade.</p>`
       );
         return res.status(403).json({
-          error: `Plan limit reached. Your ${plan.label} plan supports ${plan.product_limit} products.`,
+          error: `Plan limit reached. Your ${plan.label} plan supports ${effectiveLimit} products.`,
           upgrade_url: `${process.env.APP_URL}/pricing`,
           plan: planName,
-          limit: plan.product_limit
+          limit: effectiveLimit
         });
       }
     }
@@ -5422,7 +5545,7 @@ async function pollNewProducts() {
         const planName = store.plan || 'free';
         const planStartedAt = store.plan_started_at || null;
         const plan = PLANS[planName] || PLANS.free;
-        planLimit = plan.product_limit;
+        planLimit = plan.product_limit + (store.addon_products || 0);
         uniqueProducts = await getLocalizedProductCount(shop, planStartedAt);
         console.warn(`[poll] ${shop} ${planName}: ${uniqueProducts}/${planLimit} products used`);
         if (uniqueProducts >= planLimit) {
@@ -5723,10 +5846,11 @@ app.post('/test-prompt', async (req, res) => {
         if (planStartedAt) q = q.gte('created_at', planStartedAt);
         const { data: rows } = await q;
         const uniqueCount = new Set((rows || []).map(r => String(r.product_id))).size;
-        if (uniqueCount >= plan.product_limit) {
+        const effectiveLimit = plan.product_limit + (store.addon_products || 0);
+        if (uniqueCount >= effectiveLimit) {
           return res.status(403).json({
-            error: `Plan limit reached (${uniqueCount}/${plan.product_limit}). Upgrade to continue.`,
-            limit: plan.product_limit,
+            error: `Plan limit reached (${uniqueCount}/${effectiveLimit}). Upgrade to continue.`,
+            limit: effectiveLimit,
             used: uniqueCount
           });
         }
