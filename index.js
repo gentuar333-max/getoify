@@ -901,10 +901,16 @@ app.get('/billing/welcome', requireShopAuth, async (req, res) => {
       normalizedHandle === key || normalizedHandle.includes(key) || key.includes(normalizedHandle)
     );
     if (matchedPlan) {
-      await supabase.from('stores').update({
-        plan: matchedPlan, plan_started_at: new Date().toISOString()
-      }).eq('shop', shop);
-      console.log(`[billing-welcome] Plan azhornuar: ${shop} → ${matchedPlan} (nga handle "${plan_handle}", verifikuar me Partner API: ${!!verifiedHandle})`);
+      // Rivendos plan_started_at VETEM nese plani i ri s'eshte 'free' —
+      // shmang abuzimin (dikush kalon te Free per te marre 50 produkte "te
+      // freskta" falas, edhe pse ka perdorur shume me shume ne plan te
+      // paguar me pare). Per upgrade/downgrade te planeve TE PAGUARA,
+      // rivendosja mbetet normale (merchant-i paguan, meriton kapacitet te ri).
+      const updatePayload = matchedPlan === 'free'
+        ? { plan: matchedPlan }
+        : { plan: matchedPlan, plan_started_at: new Date().toISOString() };
+      await supabase.from('stores').update(updatePayload).eq('shop', shop);
+      console.log(`[billing-welcome] Plan azhornuar: ${shop} → ${matchedPlan}${matchedPlan === 'free' ? ' (plan_started_at PA rivendosur — numerim kumulativ vazhdon)' : ''} (nga handle "${plan_handle}", verifikuar me Partner API: ${!!verifiedHandle})`);
       await sendNotification(
         `New subscription: ${shop} → ${PLAN_PRICES[matchedPlan].label}`,
         `<h2>New Getoify subscription (App Pricing)</h2>
