@@ -3226,8 +3226,44 @@ function stripUnverifiableCareAndSkillClaims(text, isImageOnlyGeneration) {
 
 // Prit fjalen e fundit te plote para 'limit' karaktere — s'e pret ne mes te
 // nje fjale. Perdoret nga enforceMetaDescriptionLength me poshte.
+// Rrjete sigurie per Food & Beverage — RASTI REAL (Organic Coffee Beans):
+// modeli shtoi "sourced from healthier soil" dhe "guilt-free cup" — fraza qe
+// NENKUPTOJNE perfitim shendetesor pa qene fakt i konfirmuar, pikerisht
+// rreziku ligjor qe e identifikuam per kete kategori. Prompt-i VETEM u
+// testua dhe konfirmua i pamjaftueshem. Heq FRAZEN specifike (jo gjithe
+// rreshtin — keto shfaqen NE MES te fjalise, jo si bullet i vetem), duke
+// provuar te mbaje fjalinë gramatikisht te lidhur.
+function stripImpliedHealthClaims(text, isFoodBeverageCategory) {
+  if (!text || !isFoodBeverageCategory) return text;
+
+  const patterns = [
+    // "healthier X" (soil, ingredients, choice, etc.) — pretendim krahasues i pakonfirmuar
+    { re: /,?\s*sourced from healthier\s+\w+,?\s*/gi, replace: ' ' },
+    { re: /,?\s*healthier\s+(soil|ingredients?|choice|option|alternative)\b,?\s*/gi, replace: ' ' },
+    // "guilt-free" — nenkupton perfitim shendetesor/moral pa baze
+    { re: /\bguilt-free\s*/gi, replace: '' },
+    // Fraza te tjera te zakonshme qe nenkuptojne shendet pa konfirmim
+    { re: /\bboosts?\s+(your\s+)?(immune|immunity|energy|metabolism)\b[^.•\n]*/gi, replace: '' },
+    { re: /\bdetox(ify|ifying)?\b[^.•\n]*/gi, replace: '' },
+    { re: /\bsuperfood\b/gi, replace: '' },
+    { re: /\bnourish(es)?\s+your\s+body\b/gi, replace: '' }
+  ];
+
+  let result = text;
+  for (const { re, replace } of patterns) {
+    result = result.replace(re, (match) => {
+      console.warn(`[implied-health-claim] Hequr fraze e pakonfirmuar: "${match.trim()}"`);
+      return replace;
+    });
+  }
+  // Pastro hapesira/pikësim te dyfishuar te mbetur pas heqjes se frazave
+  result = result.replace(/\s{2,}/g, ' ').replace(/\s+([.,!?])/g, '$1').replace(/,\s*,/g, ',').trim();
+  return result;
+}
+
 function truncateAtWordBoundary(text, limit, minAcceptable) {
   if (text.length <= limit) return text;
+
   let cut = text.slice(0, limit);
   const lastSpace = cut.lastIndexOf(' ');
   if (lastSpace >= minAcceptable) cut = cut.slice(0, lastSpace);
@@ -5096,6 +5132,7 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
     // E kufizuar VETEM te hasImage && !cleanBody — pikerisht ku u vezhgua.
     const isImageOnlyGen = hasImage && !cleanBody;
     parsed.description = stripUnverifiableCareAndSkillClaims(parsed.description, isImageOnlyGen);
+    parsed.description = stripImpliedHealthClaims(parsed.description, foodBeverage);
 
     // Bashkangjit providerin real qe u perdor — fushe shtese e sigurt (nuk
     // prish asgje per konsumatoret ekzistues qe lexojne vetem title/description/
