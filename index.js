@@ -2263,9 +2263,9 @@ function isDIYToolsProduct(product) {
 const FOOD_BEVERAGE_TYPES = ['food', 'beverage', 'snack', 'grocery', 'drink'];
 const FOOD_BEVERAGE_TITLE_KEYWORDS = [
   'coffee', 'tea', 'chocolate', 'granola', 'snack', 'cookie', 'candy',
-  'sauce', 'spice', 'seasoning', 'protein powder', 'supplement', 'vitamin',
+  'sauce', 'spice', 'seasoning',
   'olive oil', 'honey', 'jam', 'pasta', 'cereal', 'juice', 'wine', 'beer',
-  'gluten-free', 'organic snack', 'energy bar', 'protein bar'
+  'gluten-free', 'organic snack', 'energy bar'
 ];
 function isFoodBeverageProduct(product) {
   const type = (product.product_type || '').toLowerCase();
@@ -3668,8 +3668,8 @@ const FASHION_APPAREL_TITLE_KEYWORDS = [
   'jeans', 'pants', 'trousers', 'shorts', 'leggings', 'sweater', 'cardigan',
   'blazer', 'suit', 'skirt', 'blouse', 'polo', 'vest', 'parka', 'anorak',
   // Accessories
-  'bag', 'handbag', 'backpack', 'wallet', 'belt', 'scarf', 'hat', 'cap',
-  'watch', 'sunglasses', 'jewelry', 'bracelet', 'necklace', 'ring',
+  'bag', 'handbag', 'wallet', 'belt', 'scarf', 'hat', 'cap',
+  'watch', 'sunglasses',
   // Brands
   'nike', 'adidas', 'puma', 'reebok', 'new balance', 'under armour',
   'levi', 'zara', 'h&m', 'uniqlo', 'ralph lauren', 'tommy hilfiger',
