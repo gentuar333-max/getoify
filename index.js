@@ -5132,6 +5132,7 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
     // E kufizuar VETEM te hasImage && !cleanBody — pikerisht ku u vezhgua.
     const isImageOnlyGen = hasImage && !cleanBody;
     parsed.description = stripUnverifiableCareAndSkillClaims(parsed.description, isImageOnlyGen);
+    console.log(`[DIAGNOSTIC] foodBeverage flag = ${foodBeverage}, product title = "${product.title}"`);
     parsed.description = stripImpliedHealthClaims(parsed.description, foodBeverage);
 
     // Bashkangjit providerin real qe u perdor — fushe shtese e sigurt (nuk
