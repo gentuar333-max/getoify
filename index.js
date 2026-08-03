@@ -2234,7 +2234,9 @@ const BABY_KIDS_TITLE_KEYWORDS = [
   'car seat', 'stroller', 'crib', 'bassinet', 'high chair', 'baby monitor',
   'diaper', 'pacifier', 'bottle warmer', 'baby carrier', 'playpen',
   'chicco', 'graco', 'britax', 'nuna', 'uppababy', 'baby bjorn',
-  'infant', 'newborn', 'toddler', 'baby gate', 'changing table'
+  'infant', 'newborn', 'toddler', 'baby gate', 'changing table',
+  'owlet', 'baby sock', 'dream sock', 'nanit', 'miku', 'cubo ai',
+  'baby breathing monitor', 'infant sleep monitor'
 ];
 function isBabyKidsProduct(product) {
   const type = (product.product_type || '').toLowerCase();
