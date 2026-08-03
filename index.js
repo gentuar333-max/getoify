@@ -2773,8 +2773,19 @@ async function searchTravelLuggageSpecs(title) {
     if (!snippets.trim()) return [];
 
     const specs = [];
-    const dimensions = snippets.match(/(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)\s*(?:in|inches|cm)/i);
-    if (dimensions) specs.push({ key: 'Dimensions', value: `${dimensions[1]}x${dimensions[2]}x${dimensions[3]}"` });
+    const dimensions = snippets.match(/(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)\s*(in|inches|cm)\b/i);
+    if (dimensions) {
+      const [, d1, d2, d3, unitRaw] = dimensions;
+      const unit = /cm/i.test(unitRaw) ? 'cm' : 'in';
+      const maxPlausible = unit === 'cm' ? 100 : 40; // asnje dimension bagazhi (as checked) s'e kalon kete realisht
+      const nums = [parseFloat(d1), parseFloat(d2), parseFloat(d3)];
+      if (nums.every(n => n > 0 && n <= maxPlausible)) {
+        const unitLabel = unit === 'cm' ? 'cm' : '"';
+        specs.push({ key: 'Dimensions', value: `${d1}x${d2}x${d3}${unitLabel}` });
+      } else {
+        console.warn(`[tavily-travel] Dimensione te papranueshme (mbi ${maxPlausible}${unit}), refuzuar: ${d1}x${d2}x${d3}${unit}`);
+      }
+    }
     const capacity = snippets.match(/(\d+(?:\.\d+)?)\s*L(?:iters?)?\b/i);
     if (capacity) specs.push({ key: 'Capacity', value: `${capacity[1]}L` });
     const weight = snippets.match(/(\d+(?:\.\d+)?)\s*(lbs?|kg)\b/i);
@@ -3214,13 +3225,20 @@ function stripIllogicalHedges(text, targetLang) {
 // mos mbetet fragment fjalie i thyer. E kufizuar VETEM te gjenerimi
 // vetem-nga-foto (hasImage && !cleanBody) — pikerisht aty ku u vezhgua
 // rreziku; gjenerimi me titull ka mbrojtje te tjera (Tavily, metafields).
-function stripUnverifiableCareAndSkillClaims(text, isImageOnlyGeneration) {
-  if (!text || !isImageOnlyGeneration) return text;
+function stripUnverifiableCareAndSkillClaims(text, shouldApply) {
+  if (!text || !shouldApply) return text;
 
   const linePatterns = [
-    // Udhezime kujdesi/ruajtje te shpikura ("keep away from humidity",
-    // "store in a cool, dry place", "avoid direct sunlight" etj.)
+    // Udhezime kujdesi/ruajtje te shpikura — KATEGORIKE, jo fraza specifike:
+    // kap çdo bullet qe flet per pastrim/mirembajtje, pavaresisht formulimit
+    // (RASTI REAL: "Easy to clean — simply wipe down", "maintain its shine
+    // with a soft cloth", "store in a cool, dry place" — te treja te
+    // ndryshme ne fjale, e njejta ide e pakonfirmuar).
     /^[ \t]*[•\-*][ \t]*.*\b(store|keep)\b.*\b(cool,?\s*dry\s*place|away\s+from\s+(humidity|moisture)|direct\s+sunlight)\b.*$/gim,
+    /^[ \t]*[•\-*][ \t]*.*\beasy to clean\b.*$/gim,
+    /^[ \t]*[•\-*][ \t]*.*\b(wipe|clean)(s|ing)?\b.*\b(soft|damp|dry)\s+cloth\b.*$/gim,
+    /^[ \t]*[•\-*][ \t]*.*\bmaintain(s)?\b.*\b(shine|luster|lustre|finish|beauty)\b.*$/gim,
+    /^[ \t]*[•\-*][ \t]*.*\bwipe\s+(it\s+)?down\b.*$/gim,
     // Pretendime niveli aftesie te shpikura ("suitable for intermediate to
     // advanced riders", "designed for all-mountain versatility" etj.)
     /^[ \t]*[•\-*][ \t]*.*\b(suitable|designed|great|ideal)\s+for\s+(beginner|intermediate|advanced|all[\s-]?(mountain|level|skill)|every(?:one|\s+level)).*$/gim
@@ -5197,7 +5215,7 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
     // VETEM u testua dhe konfirmua i pamjaftueshem (modeli i riformuloi).
     // E kufizuar VETEM te hasImage && !cleanBody — pikerisht ku u vezhgua.
     const isImageOnlyGen = hasImage && !cleanBody;
-    parsed.description = stripUnverifiableCareAndSkillClaims(parsed.description, isImageOnlyGen || jewelry);
+    parsed.description = stripUnverifiableCareAndSkillClaims(parsed.description, isImageOnlyGen || jewelry || travelLuggage || toysGames || foodBeverage || diyTools);
     parsed.description = stripUnconfirmedCertifications(parsed.description, allConfirmedSpecs);
     parsed.description = stripImpliedHealthClaims(parsed.description, foodBeverage);
 
