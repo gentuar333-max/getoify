@@ -2259,6 +2259,63 @@ function isDIYToolsProduct(product) {
   return DIY_TOOLS_TITLE_KEYWORDS.some(k => title.includes(k));
 }
 
+// Food & Beverage keywords
+const FOOD_BEVERAGE_TYPES = ['food', 'beverage', 'snack', 'grocery', 'drink'];
+const FOOD_BEVERAGE_TITLE_KEYWORDS = [
+  'coffee', 'tea', 'chocolate', 'granola', 'snack', 'cookie', 'candy',
+  'sauce', 'spice', 'seasoning', 'protein powder', 'supplement', 'vitamin',
+  'olive oil', 'honey', 'jam', 'pasta', 'cereal', 'juice', 'wine', 'beer',
+  'gluten-free', 'organic snack', 'energy bar', 'protein bar'
+];
+function isFoodBeverageProduct(product) {
+  const type = (product.product_type || '').toLowerCase();
+  const title = (product.title || '').toLowerCase();
+  if (FOOD_BEVERAGE_TYPES.some(t => type.includes(t))) return true;
+  return FOOD_BEVERAGE_TITLE_KEYWORDS.some(k => title.includes(k));
+}
+
+// Toys & Games keywords
+const TOYS_GAMES_TYPES = ['toy', 'toys', 'game', 'games', 'puzzle'];
+const TOYS_GAMES_TITLE_KEYWORDS = [
+  'action figure', 'board game', 'puzzle', 'building blocks', 'lego',
+  'plush', 'stuffed animal', 'doll', 'rc car', 'remote control car',
+  'card game', 'toy set', 'playset', 'nerf', 'hot wheels', 'building set'
+];
+function isToysGamesProduct(product) {
+  const type = (product.product_type || '').toLowerCase();
+  const title = (product.title || '').toLowerCase();
+  if (TOYS_GAMES_TYPES.some(t => type.includes(t))) return true;
+  return TOYS_GAMES_TITLE_KEYWORDS.some(k => title.includes(k));
+}
+
+// Travel & Luggage keywords
+const TRAVEL_LUGGAGE_TYPES = ['luggage', 'travel', 'suitcase'];
+const TRAVEL_LUGGAGE_TITLE_KEYWORDS = [
+  'suitcase', 'carry-on', 'carry on', 'luggage', 'travel bag', 'duffel',
+  'backpack', 'packing cube', 'travel case', 'samsonite', 'away luggage',
+  'rimowa', 'travel organizer', 'toiletry bag', 'garment bag'
+];
+function isTravelLuggageProduct(product) {
+  const type = (product.product_type || '').toLowerCase();
+  const title = (product.title || '').toLowerCase();
+  if (TRAVEL_LUGGAGE_TYPES.some(t => type.includes(t))) return true;
+  return TRAVEL_LUGGAGE_TITLE_KEYWORDS.some(k => title.includes(k));
+}
+
+// Jewelry & Accessories keywords
+const JEWELRY_TYPES = ['jewelry', 'jewellery', 'accessories'];
+const JEWELRY_TITLE_KEYWORDS = [
+  'necklace', 'bracelet', 'earrings', 'ring', 'pendant', 'anklet',
+  'gold vermeil', 'sterling silver', 'diamond', 'gemstone', 'charm',
+  'cufflinks', 'brooch', 'chain necklace', 'stud earrings', 'hoop earrings'
+];
+function isJewelryProduct(product) {
+  const type = (product.product_type || '').toLowerCase();
+  const title = (product.title || '').toLowerCase();
+  if (JEWELRY_TYPES.some(t => type.includes(t))) return true;
+  return JEWELRY_TITLE_KEYWORDS.some(k => title.includes(k));
+}
+
 // Tech & Electronics keywords — per detektim nga titulli/product_type
 const TECH_ELECTRONICS_TYPES = [
   'electronics', 'phone', 'smartphone', 'tablet', 'laptop', 'computer',
@@ -2631,6 +2688,135 @@ async function searchDIYToolsSpecs(title) {
     return specs;
   } catch (e) {
     console.warn('[tavily-diy] Kerkimi deshtoi:', e.message);
+    return [];
+  }
+}
+
+// Kerkon specs reale per Food & Beverage — VETEM fakte objektive (dietare,
+// origjine, permasa) — KURRE pretendime shendetesore (rrezik ligjor real,
+// FDA/EU rregullon rreptesisht kete — konfirmuar nga kerkimi ynë).
+async function searchFoodBeverageSpecs(title) {
+  if (!process.env.TAVILY_API_KEY) return [];
+  try {
+    const res = await axios.post('https://api.tavily.com/search', {
+      api_key: process.env.TAVILY_API_KEY,
+      query: `${title} ingredients dietary gluten-free organic origin`,
+      search_depth: 'basic', max_results: 3, include_answer: false
+    }, { timeout: 4000 });
+
+    const snippets = (res.data.results || []).map(r => r.content || r.snippet || '').join('\n').slice(0, 3000);
+    if (!snippets.trim()) return [];
+
+    const specs = [];
+    for (const tag of ['gluten-free', 'vegan', 'organic', 'non-GMO', 'keto', 'nut-free', 'dairy-free', 'kosher', 'halal']) {
+      if (new RegExp(`\\b${tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(snippets)) {
+        specs.push({ key: 'Dietary', value: tag });
+      }
+    }
+    const weight = snippets.match(/(\d+(?:\.\d+)?)\s*(oz|g|lb|kg)\b/i);
+    if (weight) specs.push({ key: 'Weight/Size', value: `${weight[1]}${weight[2]}` });
+    const origin = snippets.match(/(?:made in|origin|sourced from|grown in)\s+([A-Z][a-zA-Z\s]{2,20})/i);
+    if (origin) specs.push({ key: 'Origin', value: origin[1].trim() });
+    console.log(`[tavily-food] "${title}" — gjeta ${specs.length} spec(e)`);
+    return specs;
+  } catch (e) {
+    console.warn('[tavily-food] Kerkimi deshtoi:', e.message);
+    return [];
+  }
+}
+
+// Kerkon specs reale per Toys & Games — mosha e rekomanduar + certifikime
+// sigurie (rrezik mbytjeje, materiale) — struktura e ngjashme me Baby&Kids.
+async function searchToysGamesSpecs(title) {
+  if (!process.env.TAVILY_API_KEY) return [];
+  try {
+    const res = await axios.post('https://api.tavily.com/search', {
+      api_key: process.env.TAVILY_API_KEY,
+      query: `${title} age recommendation safety certification material`,
+      search_depth: 'basic', max_results: 3, include_answer: false
+    }, { timeout: 4000 });
+
+    const snippets = (res.data.results || []).map(r => r.content || r.snippet || '').join('\n').slice(0, 3000);
+    if (!snippets.trim()) return [];
+
+    const specs = [];
+    const ageRange = snippets.match(/ages?\s*(\d+)\s*(?:[-–]\s*(\d+)|(\+)|and up)/i);
+    if (ageRange) specs.push({ key: 'Age Range', value: ageRange[2] ? `${ageRange[1]}-${ageRange[2]} years` : `${ageRange[1]}+ years` });
+    for (const cert of ['ASTM F963', 'CPSC', 'CE certified', 'EN71', 'CPSIA']) {
+      if (new RegExp(cert.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i').test(snippets)) {
+        specs.push({ key: 'Certification', value: cert });
+      }
+    }
+    const pieceCount = snippets.match(/(\d+)[\s-]*pieces?\b/i);
+    if (pieceCount) specs.push({ key: 'Piece Count', value: `${pieceCount[1]} pieces` });
+    console.log(`[tavily-toys] "${title}" — gjeta ${specs.length} spec(e)`);
+    return specs;
+  } catch (e) {
+    console.warn('[tavily-toys] Kerkimi deshtoi:', e.message);
+    return [];
+  }
+}
+
+// Kerkon specs reale per Travel & Luggage — dimensionet jane KRITIKE
+// (kufizime bagazhi dore aviacioni — gabim ketu ka pasoje reale, te
+// matshme: refuzim check-in).
+async function searchTravelLuggageSpecs(title) {
+  if (!process.env.TAVILY_API_KEY) return [];
+  try {
+    const res = await axios.post('https://api.tavily.com/search', {
+      api_key: process.env.TAVILY_API_KEY,
+      query: `${title} dimensions size carry-on compliant capacity liters weight`,
+      search_depth: 'basic', max_results: 3, include_answer: false
+    }, { timeout: 4000 });
+
+    const snippets = (res.data.results || []).map(r => r.content || r.snippet || '').join('\n').slice(0, 3000);
+    if (!snippets.trim()) return [];
+
+    const specs = [];
+    const dimensions = snippets.match(/(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)\s*(?:in|inches|cm)/i);
+    if (dimensions) specs.push({ key: 'Dimensions', value: `${dimensions[1]}x${dimensions[2]}x${dimensions[3]}"` });
+    const capacity = snippets.match(/(\d+(?:\.\d+)?)\s*L(?:iters?)?\b/i);
+    if (capacity) specs.push({ key: 'Capacity', value: `${capacity[1]}L` });
+    const weight = snippets.match(/(\d+(?:\.\d+)?)\s*(lbs?|kg)\b/i);
+    if (weight) specs.push({ key: 'Weight', value: `${weight[1]} ${weight[2]}` });
+    if (/carry-on\s*(compliant|approved|sized)/i.test(snippets)) {
+      specs.push({ key: 'Carry-on', value: 'Airline carry-on compliant' });
+    }
+    console.log(`[tavily-travel] "${title}" — gjeta ${specs.length} spec(e)`);
+    return specs;
+  } catch (e) {
+    console.warn('[tavily-travel] Kerkimi deshtoi:', e.message);
+    return [];
+  }
+}
+
+// Kerkon specs reale per Jewelry & Accessories — specificiteti i materialit
+// (karat, metal) mund fitore mbi gjuhe luksi te paqarte, sipas kerkimit tone.
+async function searchJewelrySpecs(title) {
+  if (!process.env.TAVILY_API_KEY) return [];
+  try {
+    const res = await axios.post('https://api.tavily.com/search', {
+      api_key: process.env.TAVILY_API_KEY,
+      query: `${title} material karat gold silver gemstone specifications`,
+      search_depth: 'basic', max_results: 3, include_answer: false
+    }, { timeout: 4000 });
+
+    const snippets = (res.data.results || []).map(r => r.content || r.snippet || '').join('\n').slice(0, 3000);
+    if (!snippets.trim()) return [];
+
+    const specs = [];
+    const karat = snippets.match(/(\d+)K\s*(gold|vermeil)/i);
+    if (karat) specs.push({ key: 'Material', value: `${karat[1]}K ${karat[2]}` });
+    if (/sterling silver/i.test(snippets)) specs.push({ key: 'Material', value: 'Sterling Silver' });
+    const gemstone = snippets.match(/\b(diamond|sapphire|emerald|ruby|pearl|amethyst|topaz|opal)\b/i);
+    if (gemstone) specs.push({ key: 'Gemstone', value: gemstone[1] });
+    if (/hypoallergenic|nickel-free|skin-safe/i.test(snippets)) {
+      specs.push({ key: 'Skin-Safe', value: 'Hypoallergenic/nickel-free' });
+    }
+    console.log(`[tavily-jewelry] "${title}" — gjeta ${specs.length} spec(e)`);
+    return specs;
+  } catch (e) {
+    console.warn('[tavily-jewelry] Kerkimi deshtoi:', e.message);
     return [];
   }
 }
@@ -3429,8 +3615,12 @@ async function generateProductCopy(product, targetLang, glossary, cleanBody, ima
   const fashionApparel = !homeKitchen && !beautyHealth && !sportFitness && isFashionApparelProduct(product);
   const babyKids = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && isBabyKidsProduct(product);
   const diyTools = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && !babyKids && isDIYToolsProduct(product);
-  const techElectronics = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && !babyKids && !diyTools && isTechElectronicsProduct(product);
-  const isGeneric = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && !babyKids && !diyTools && !techElectronics;
+  const foodBeverage = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && !babyKids && !diyTools && isFoodBeverageProduct(product);
+  const toysGames = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && !babyKids && !diyTools && !foodBeverage && isToysGamesProduct(product);
+  const travelLuggage = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && !babyKids && !diyTools && !foodBeverage && !toysGames && isTravelLuggageProduct(product);
+  const jewelry = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && !babyKids && !diyTools && !foodBeverage && !toysGames && !travelLuggage && isJewelryProduct(product);
+  const techElectronics = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && !babyKids && !diyTools && !foodBeverage && !toysGames && !travelLuggage && !jewelry && isTechElectronicsProduct(product);
+  const isGeneric = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && !babyKids && !diyTools && !foodBeverage && !toysGames && !travelLuggage && !jewelry && !techElectronics;
 
   // Konfirmim i jashtem: titulli ka specifika te shitesit (— ose |), OSE
   // titulli ka specifika te nxjerra direkt me regex (GB/TB/mAh/MP/Hz/W/RAM),
@@ -3643,6 +3833,106 @@ async function generateProductCopy(product, targetLang, glossary, cleanBody, ima
         } catch(e) {
           console.warn('[tavily-diy-cache] Ruajtja deshtoi (jo kritike):', e.message);
         }
+      }
+    }
+  } else if (!hasExternalConfirmation && !cleanBody && isFoodBeverageProduct(product)) {
+    let usedCache = false;
+    if (product.id && shop) {
+      try {
+        const { data: cacheRow } = await supabase.from('product_specs_cache')
+          .select('specs_json, searched_but_empty').eq('shop', shop).eq('product_id', String(product.id)).maybeSingle();
+        if (cacheRow) {
+          tavilySpecs = cacheRow.specs_json || [];
+          tavilySearchedButEmpty = cacheRow.searched_but_empty || false;
+          if (tavilySpecs.length > 0) hasExternalConfirmation = true;
+          usedCache = true;
+        }
+      } catch(e) { console.warn('[tavily-food-cache] Leximi deshtoi:', e.message); }
+    }
+    if (!usedCache) {
+      tavilySpecs = await searchFoodBeverageSpecs(product.title);
+      if (tavilySpecs.length > 0) hasExternalConfirmation = true;
+      if (product.id && shop) {
+        try {
+          await supabase.from('product_specs_cache').upsert({
+            shop, product_id: String(product.id), specs_json: tavilySpecs, searched_but_empty: tavilySearchedButEmpty
+          }, { onConflict: 'shop,product_id' });
+        } catch(e) { console.warn('[tavily-food-cache] Ruajtja deshtoi:', e.message); }
+      }
+    }
+  } else if (!hasExternalConfirmation && !cleanBody && isToysGamesProduct(product)) {
+    let usedCache = false;
+    if (product.id && shop) {
+      try {
+        const { data: cacheRow } = await supabase.from('product_specs_cache')
+          .select('specs_json, searched_but_empty').eq('shop', shop).eq('product_id', String(product.id)).maybeSingle();
+        if (cacheRow) {
+          tavilySpecs = cacheRow.specs_json || [];
+          tavilySearchedButEmpty = cacheRow.searched_but_empty || false;
+          if (tavilySpecs.length > 0) hasExternalConfirmation = true;
+          usedCache = true;
+        }
+      } catch(e) { console.warn('[tavily-toys-cache] Leximi deshtoi:', e.message); }
+    }
+    if (!usedCache) {
+      tavilySpecs = await searchToysGamesSpecs(product.title);
+      if (tavilySpecs.length > 0) hasExternalConfirmation = true;
+      if (product.id && shop) {
+        try {
+          await supabase.from('product_specs_cache').upsert({
+            shop, product_id: String(product.id), specs_json: tavilySpecs, searched_but_empty: tavilySearchedButEmpty
+          }, { onConflict: 'shop,product_id' });
+        } catch(e) { console.warn('[tavily-toys-cache] Ruajtja deshtoi:', e.message); }
+      }
+    }
+  } else if (!hasExternalConfirmation && !cleanBody && isTravelLuggageProduct(product)) {
+    let usedCache = false;
+    if (product.id && shop) {
+      try {
+        const { data: cacheRow } = await supabase.from('product_specs_cache')
+          .select('specs_json, searched_but_empty').eq('shop', shop).eq('product_id', String(product.id)).maybeSingle();
+        if (cacheRow) {
+          tavilySpecs = cacheRow.specs_json || [];
+          tavilySearchedButEmpty = cacheRow.searched_but_empty || false;
+          if (tavilySpecs.length > 0) hasExternalConfirmation = true;
+          usedCache = true;
+        }
+      } catch(e) { console.warn('[tavily-travel-cache] Leximi deshtoi:', e.message); }
+    }
+    if (!usedCache) {
+      tavilySpecs = await searchTravelLuggageSpecs(product.title);
+      if (tavilySpecs.length > 0) hasExternalConfirmation = true;
+      if (product.id && shop) {
+        try {
+          await supabase.from('product_specs_cache').upsert({
+            shop, product_id: String(product.id), specs_json: tavilySpecs, searched_but_empty: tavilySearchedButEmpty
+          }, { onConflict: 'shop,product_id' });
+        } catch(e) { console.warn('[tavily-travel-cache] Ruajtja deshtoi:', e.message); }
+      }
+    }
+  } else if (!hasExternalConfirmation && !cleanBody && isJewelryProduct(product)) {
+    let usedCache = false;
+    if (product.id && shop) {
+      try {
+        const { data: cacheRow } = await supabase.from('product_specs_cache')
+          .select('specs_json, searched_but_empty').eq('shop', shop).eq('product_id', String(product.id)).maybeSingle();
+        if (cacheRow) {
+          tavilySpecs = cacheRow.specs_json || [];
+          tavilySearchedButEmpty = cacheRow.searched_but_empty || false;
+          if (tavilySpecs.length > 0) hasExternalConfirmation = true;
+          usedCache = true;
+        }
+      } catch(e) { console.warn('[tavily-jewelry-cache] Leximi deshtoi:', e.message); }
+    }
+    if (!usedCache) {
+      tavilySpecs = await searchJewelrySpecs(product.title);
+      if (tavilySpecs.length > 0) hasExternalConfirmation = true;
+      if (product.id && shop) {
+        try {
+          await supabase.from('product_specs_cache').upsert({
+            shop, product_id: String(product.id), specs_json: tavilySpecs, searched_but_empty: tavilySearchedButEmpty
+          }, { onConflict: 'shop,product_id' });
+        } catch(e) { console.warn('[tavily-jewelry-cache] Ruajtja deshtoi:', e.message); }
       }
     }
   }
@@ -4237,6 +4527,59 @@ PRIORITY — only if confirmed via title/metafields/Tavily:
 4. What's included (battery, charger, case) if confirmed
 
 NEVER invent: professional vs. DIY-grade positioning unless stated, job-site durability claims not confirmed, or battery life estimates not sourced.
+` : ''}
+
+${foodBeverage ? `
+FOOD & BEVERAGE SPECIFIC RULES:
+Use sensory, appetizing language (rich, crisp, indulge) — but this category has REAL legal risk: health/dietary claims are FDA/EU regulated.
+
+CRITICAL SAFETY RULE: NEVER invent or imply health claims ("boosts immunity", "cures", "prevents", "superfood benefits") even if commonly believed — these require regulatory approval we cannot verify. Only state dietary claims (gluten-free, vegan, organic, etc.) if explicitly confirmed via title/metafields/Tavily — never assume.
+
+PRIORITY — only if confirmed:
+1. Dietary tags (gluten-free, vegan, organic, non-GMO, keto, nut-free)
+2. Origin/sourcing if confirmed
+3. Weight/size
+
+Use sensory language for taste/texture ONLY when describing confirmed ingredients, not invented flavor claims.
+` : ''}
+
+${toysGames ? `
+TOYS & GAMES SPECIFIC RULES:
+Similar to Baby & Kids — safety matters, but tone should be warm and fun, not a dry spec sheet. Write like real toy marketing (LEGO, Hasbro) — playful, parent-reassuring.
+
+PRIORITY — only if confirmed:
+1. Age range — frame as "perfect for growing skills at this age", not just raw numbers
+2. Safety certification (ASTM F963, CPSC, CE, EN71) — frame as reassurance
+3. Piece count / materials if confirmed
+
+NEVER invent: developmental/educational claims not confirmed, choking hazard warnings (these are legally mandated text, not marketing copy to improvise).
+` : ''}
+
+${travelLuggage ? `
+TRAVEL & LUGGAGE SPECIFIC RULES:
+Dimensions are CRITICAL here — an inaccurate size claim has real consequences (denied airline check-in). Write with confident, practical, "ready for your next trip" tone.
+
+PRIORITY — only if confirmed via title/metafields/Tavily:
+1. Dimensions — always specify if this is carry-on compliant ONLY if explicitly confirmed
+2. Capacity (liters) 
+3. Weight (empty)
+4. Material/durability features
+
+NEVER invent: "fits all airline size requirements" unless explicitly confirmed (airline rules vary) — say "carry-on sized" only if the specific dimension is confirmed compliant.
+` : ''}
+
+${jewelry ? `
+JEWELRY & ACCESSORIES SPECIFIC RULES:
+Research shows specificity outperforms vague luxury language. AVOID generic phrases like "timeless elegance" or "exquisite craftsmanship" without backing them with a confirmed material fact.
+
+CRITICAL RULE: Translate material specs into wearability benefits, e.g. "lightweight enough for all-day wear" instead of just listing metal composition alone — but ALWAYS state the confirmed material too, don't replace fact with fluff.
+
+PRIORITY — only if confirmed via title/metafields/Tavily:
+1. Material (14K gold, sterling silver, gold vermeil — be precise, these are NOT interchangeable)
+2. Gemstone (if confirmed — never assume "genuine" vs. "simulated" without confirmation)
+3. Hypoallergenic/nickel-free if confirmed
+
+NEVER invent: gemstone authenticity claims not confirmed, carat weight not stated, or "ethically sourced" without confirmation.
 ` : ''}
 
 META TITLE RULES (max 60 chars):
