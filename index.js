@@ -3605,12 +3605,13 @@ const HOME_KITCHEN_TYPES = [
   'kitchen', 'home', 'cooking', 'baking', 'appliance', 'cookware'
 ];
 const HOME_KITCHEN_TITLE_KEYWORDS = [
-  'mixer', 'blender', 'coffee', 'espresso', 'nespresso', 'french press',
+  'mixer', 'blender', 'coffee maker', 'coffee machine', 'coffee grinder',
+  'espresso machine', 'espresso maker', 'nespresso', 'french press',
   'kettle', 'toaster', 'air fryer', 'instant pot', 'knife', 'knives',
   'pan', 'pot', 'wok', 'skillet', 'cookware', 'bakeware', 'stand mixer',
-  'food processor', 'juicer', 'grinder', 'rice cooker', 'slow cooker',
+  'food processor', 'juicer', 'rice cooker', 'slow cooker',
   'waffle', 'crepe', 'vacuum', 'dyson', 'kitchenaid', 'delonghi',
-  'nespresso', 'tefal', 'bosch', 'siemens', 'braun'
+  'tefal', 'bosch', 'siemens', 'braun'
 ];
 
 function isHomeKitchenProduct(product) {
@@ -5132,7 +5133,6 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
     // E kufizuar VETEM te hasImage && !cleanBody — pikerisht ku u vezhgua.
     const isImageOnlyGen = hasImage && !cleanBody;
     parsed.description = stripUnverifiableCareAndSkillClaims(parsed.description, isImageOnlyGen);
-    console.log(`[DIAGNOSTIC] foodBeverage flag = ${foodBeverage}, product title = "${product.title}"`);
     parsed.description = stripImpliedHealthClaims(parsed.description, foodBeverage);
 
     // Bashkangjit providerin real qe u perdor — fushe shtese e sigurt (nuk
