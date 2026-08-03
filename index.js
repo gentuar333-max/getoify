@@ -2228,6 +2228,35 @@ function isBeautyHealthProduct(product) {
   return BEAUTY_HEALTH_TITLE_KEYWORDS.some(k => title.includes(k));
 }
 
+// Baby & Kids keywords
+const BABY_KIDS_TYPES = ['baby', 'infant', 'toddler', 'kids', 'nursery'];
+const BABY_KIDS_TITLE_KEYWORDS = [
+  'car seat', 'stroller', 'crib', 'bassinet', 'high chair', 'baby monitor',
+  'diaper', 'pacifier', 'bottle warmer', 'baby carrier', 'playpen',
+  'chicco', 'graco', 'britax', 'nuna', 'uppababy', 'baby bjorn',
+  'infant', 'newborn', 'toddler', 'baby gate', 'changing table'
+];
+function isBabyKidsProduct(product) {
+  const type = (product.product_type || '').toLowerCase();
+  const title = (product.title || '').toLowerCase();
+  if (BABY_KIDS_TYPES.some(t => type.includes(t))) return true;
+  return BABY_KIDS_TITLE_KEYWORDS.some(k => title.includes(k));
+}
+
+// DIY & Tools keywords
+const DIY_TOOLS_TYPES = ['tools', 'power tools', 'hardware', 'diy'];
+const DIY_TOOLS_TITLE_KEYWORDS = [
+  'drill', 'driver', 'saw', 'sander', 'grinder', 'wrench', 'screwdriver set',
+  'dewalt', 'makita', 'milwaukee', 'ryobi', 'bosch tool', 'craftsman',
+  'cordless', 'power tool', 'toolkit', 'tool kit', 'nail gun', 'impact driver'
+];
+function isDIYToolsProduct(product) {
+  const type = (product.product_type || '').toLowerCase();
+  const title = (product.title || '').toLowerCase();
+  if (DIY_TOOLS_TYPES.some(t => type.includes(t))) return true;
+  return DIY_TOOLS_TITLE_KEYWORDS.some(k => title.includes(k));
+}
+
 // Tech & Electronics keywords — per detektim nga titulli/product_type
 const TECH_ELECTRONICS_TYPES = [
   'electronics', 'phone', 'smartphone', 'tablet', 'laptop', 'computer',
@@ -2534,6 +2563,69 @@ async function searchBeautySpecs(title) {
     return specs;
   } catch (e) {
     console.warn('[tavily-beauty] Kerkimi deshtoi:', e.message);
+    return [];
+  }
+}
+
+// Kerkon specs reale per Baby & Kids — fokusi: certifikime sigurie (rreziku
+// me i larte — prinderit jane ekstrem te kujdesshem), diapazon peshe/lartesie.
+async function searchBabyKidsSpecs(title) {
+  if (!process.env.TAVILY_API_KEY) return [];
+  try {
+    const res = await axios.post('https://api.tavily.com/search', {
+      api_key: process.env.TAVILY_API_KEY,
+      query: `${title} weight limit height certification safety standard`,
+      search_depth: 'basic', max_results: 3, include_answer: false
+    }, { timeout: 4000 });
+
+    const snippets = (res.data.results || []).map(r => r.content || r.snippet || '').join('\n').slice(0, 3000);
+    if (!snippets.trim()) return [];
+
+    const specs = [];
+    const weightRange = snippets.match(/(\d+)\s*[-–]\s*(\d+)\s*(lbs?|pounds?|kg)/i);
+    if (weightRange) specs.push({ key: 'Weight Range', value: `${weightRange[1]}-${weightRange[2]} ${weightRange[3]}` });
+    const heightLimit = snippets.match(/(?:up to|height limit of)\s*(\d+)\s*(?:"|inches|in\.)/i);
+    if (heightLimit) specs.push({ key: 'Height Limit', value: `${heightLimit[1]}"` });
+    for (const cert of ['JPMA', 'ASTM F2050', 'FMVSS 213', 'GREENGUARD Gold', 'CPSC']) {
+      if (new RegExp(cert.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i').test(snippets)) {
+        specs.push({ key: 'Certification', value: cert });
+      }
+    }
+    console.log(`[tavily-baby] "${title}" — gjeta ${specs.length} spec(e)`);
+    return specs;
+  } catch (e) {
+    console.warn('[tavily-baby] Kerkimi deshtoi:', e.message);
+    return [];
+  }
+}
+
+// Kerkon specs reale per DIY & Tools — fokusi: voltazh, chuck, RPM, kapacitet
+// baterie — numra teknike te ngjashem strukturalisht me tech/electronics.
+async function searchDIYToolsSpecs(title) {
+  if (!process.env.TAVILY_API_KEY) return [];
+  try {
+    const res = await axios.post('https://api.tavily.com/search', {
+      api_key: process.env.TAVILY_API_KEY,
+      query: `${title} voltage chuck size RPM specs battery`,
+      search_depth: 'basic', max_results: 3, include_answer: false
+    }, { timeout: 4000 });
+
+    const snippets = (res.data.results || []).map(r => r.content || r.snippet || '').join('\n').slice(0, 3000);
+    if (!snippets.trim()) return [];
+
+    const specs = [];
+    const voltage = snippets.match(/(\d+)\s*V\s*(MAX)?/i);
+    if (voltage) specs.push({ key: 'Voltage', value: `${voltage[1]}V${voltage[2] ? ' MAX' : ''}` });
+    const chuck = snippets.match(/chuck\s*(?:size)?[:\s]*(\d\/\d)["\s]*/i) || snippets.match(/(\d\/\d)["\s]*chuck/i);
+    if (chuck) specs.push({ key: 'Chuck Size', value: `${chuck[1]}"` });
+    const rpm = snippets.match(/(?:rpm|speed)[:\s]*(\d[\d,]*)/i) || snippets.match(/(\d[\d,]*)\s*RPM/i);
+    if (rpm) specs.push({ key: 'Max Speed', value: `${rpm[1]} RPM` });
+    const clutch = snippets.match(/clutch\s*settings?[:\s]*(\d+)/i) || snippets.match(/(\d+)\s*clutch\s*settings/i);
+    if (clutch) specs.push({ key: 'Clutch Settings', value: clutch[1] });
+    console.log(`[tavily-diy] "${title}" — gjeta ${specs.length} spec(e)`);
+    return specs;
+  } catch (e) {
+    console.warn('[tavily-diy] Kerkimi deshtoi:', e.message);
     return [];
   }
 }
@@ -3330,8 +3422,10 @@ async function generateProductCopy(product, targetLang, glossary, cleanBody, ima
     ? (SPORT_FITNESS_SUBTYPE_MAP[detectSportFitnessSubtype(product)] || SPORT_FITNESS_ALL_SUBTYPES_TEXT)
     : '';
   const fashionApparel = !homeKitchen && !beautyHealth && !sportFitness && isFashionApparelProduct(product);
-  const techElectronics = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && isTechElectronicsProduct(product);
-  const isGeneric = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && !techElectronics;
+  const babyKids = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && isBabyKidsProduct(product);
+  const diyTools = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && !babyKids && isDIYToolsProduct(product);
+  const techElectronics = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && !babyKids && !diyTools && isTechElectronicsProduct(product);
+  const isGeneric = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && !babyKids && !diyTools && !techElectronics;
 
   // Konfirmim i jashtem: titulli ka specifika te shitesit (— ose |), OSE
   // titulli ka specifika te nxjerra direkt me regex (GB/TB/mAh/MP/Hz/W/RAM),
@@ -3465,6 +3559,84 @@ async function generateProductCopy(product, targetLang, glossary, cleanBody, ima
           }, { onConflict: 'shop,product_id' });
         } catch(e) {
           console.warn('[tavily-beauty-cache] Ruajtja deshtoi (jo kritike):', e.message);
+        }
+      }
+    }
+  } else if (!hasExternalConfirmation && !cleanBody && isBabyKidsProduct(product)) {
+    let usedCache = false;
+    if (product.id && shop) {
+      try {
+        const { data: cacheRow } = await supabase
+          .from('product_specs_cache')
+          .select('specs_json, searched_but_empty')
+          .eq('shop', shop)
+          .eq('product_id', String(product.id))
+          .maybeSingle();
+        if (cacheRow) {
+          tavilySpecs = cacheRow.specs_json || [];
+          tavilySearchedButEmpty = cacheRow.searched_but_empty || false;
+          if (tavilySpecs.length > 0) hasExternalConfirmation = true;
+          usedCache = true;
+          console.log(`[tavily-baby-cache] Perdorur cache ekzistues per produkt ${product.id} — ${tavilySpecs.length} spec(e)`);
+        }
+      } catch(e) {
+        console.warn('[tavily-baby-cache] Leximi i cache deshtoi:', e.message);
+      }
+    }
+    if (!usedCache) {
+      console.log(`[tavily-baby] Duke kerkuar certifikime per "${product.title}"...`);
+      tavilySpecs = await searchBabyKidsSpecs(product.title);
+      if (tavilySpecs.length > 0) {
+        hasExternalConfirmation = true;
+        console.log(`[tavily-baby] ${tavilySpecs.length} spec(e): ${tavilySpecs.map(s => `${s.key}=${s.value}`).join(', ')}`);
+      }
+      if (product.id && shop) {
+        try {
+          await supabase.from('product_specs_cache').upsert({
+            shop, product_id: String(product.id),
+            specs_json: tavilySpecs, searched_but_empty: tavilySearchedButEmpty
+          }, { onConflict: 'shop,product_id' });
+        } catch(e) {
+          console.warn('[tavily-baby-cache] Ruajtja deshtoi (jo kritike):', e.message);
+        }
+      }
+    }
+  } else if (!hasExternalConfirmation && !cleanBody && isDIYToolsProduct(product)) {
+    let usedCache = false;
+    if (product.id && shop) {
+      try {
+        const { data: cacheRow } = await supabase
+          .from('product_specs_cache')
+          .select('specs_json, searched_but_empty')
+          .eq('shop', shop)
+          .eq('product_id', String(product.id))
+          .maybeSingle();
+        if (cacheRow) {
+          tavilySpecs = cacheRow.specs_json || [];
+          tavilySearchedButEmpty = cacheRow.searched_but_empty || false;
+          if (tavilySpecs.length > 0) hasExternalConfirmation = true;
+          usedCache = true;
+          console.log(`[tavily-diy-cache] Perdorur cache ekzistues per produkt ${product.id} — ${tavilySpecs.length} spec(e)`);
+        }
+      } catch(e) {
+        console.warn('[tavily-diy-cache] Leximi i cache deshtoi:', e.message);
+      }
+    }
+    if (!usedCache) {
+      console.log(`[tavily-diy] Duke kerkuar specifika per "${product.title}"...`);
+      tavilySpecs = await searchDIYToolsSpecs(product.title);
+      if (tavilySpecs.length > 0) {
+        hasExternalConfirmation = true;
+        console.log(`[tavily-diy] ${tavilySpecs.length} spec(e): ${tavilySpecs.map(s => `${s.key}=${s.value}`).join(', ')}`);
+      }
+      if (product.id && shop) {
+        try {
+          await supabase.from('product_specs_cache').upsert({
+            shop, product_id: String(product.id),
+            specs_json: tavilySpecs, searched_but_empty: tavilySearchedButEmpty
+          }, { onConflict: 'shop,product_id' });
+        } catch(e) {
+          console.warn('[tavily-diy-cache] Ruajtja deshtoi (jo kritike):', e.message);
         }
       }
     }
@@ -4031,6 +4203,35 @@ PRIORITY SPECS for micellar water / eau micellaire:
 - "sans rinçage" — mandatory if confirmed
 - Makeup removal scope: "removes waterproof makeup" if confirmed
 - Duration from format: 500ml → "jusqu'à 6 semaines", 250ml → "jusqu'à 3 semaines"
+` : ''}
+
+${babyKids ? `
+BABY & KIDS SPECIFIC RULES:
+This is a baby/children's product — safety is the #1 concern for parents, but the TONE must be warm and reassuring, never a cold spec sheet.
+
+CRITICAL TONE REQUIREMENT: Write like real parent-facing baby product marketing (Chicco, Graco, UPPAbaby) — conversational, warm, reassuring. NEVER list certifications/numbers as a dry checklist. Wrap every confirmed fact in language a tired new parent would find comforting, e.g. "meets top safety standards, giving you real peace of mind" instead of "meets FMVSS 213 standard". Use phrases like "little one", "peace of mind", "growing with them", "one less thing to worry about" — naturally, not forced, and translated appropriately into ${targetLang} (not literal English idioms if they don't translate naturally).
+
+PRIORITY — only if confirmed via title/metafields/Tavily:
+1. Weight/height range — frame as "grows with your baby" not just raw numbers
+2. Safety certification (JPMA, ASTM F2050, FMVSS 213, GREENGUARD) — frame as reassurance, not jargon
+3. Material safety (BPA-free, non-toxic) if confirmed
+
+NEVER invent: recommended age if not explicitly confirmed, developmental claims ("boosts development"), or any safety claim not directly sourced.
+` : ''}
+
+${diyTools ? `
+DIY & TOOLS SPECIFIC RULES:
+This is a power tool / hardware product. Confirmed specs matter (voltage, RPM, chuck size), but write with confident, capable, conversational tone — not a spec sheet read aloud.
+
+CRITICAL TONE REQUIREMENT: Frame every spec around what the USER can DO with it, not just the number. E.g. "16 settings put you in charge" instead of "16 clutch settings prevent overdriving". Use confident, capable language ("keeps up with you", "get the job done", "no more guesswork") — translated naturally into ${targetLang}.
+
+PRIORITY — only if confirmed via title/metafields/Tavily:
+1. Voltage/battery system
+2. Chuck size / max speed (RPM)
+3. Clutch settings / torque control
+4. What's included (battery, charger, case) if confirmed
+
+NEVER invent: professional vs. DIY-grade positioning unless stated, job-site durability claims not confirmed, or battery life estimates not sourced.
 ` : ''}
 
 META TITLE RULES (max 60 chars):
