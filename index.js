@@ -2574,7 +2574,7 @@ async function searchBabyKidsSpecs(title) {
   try {
     const res = await axios.post('https://api.tavily.com/search', {
       api_key: process.env.TAVILY_API_KEY,
-      query: `${title} weight limit height certification safety standard`,
+      query: `${title} weight limit height certification FDA safety standard age range`,
       search_depth: 'basic', max_results: 3, include_answer: false
     }, { timeout: 4000 });
 
@@ -2586,9 +2586,12 @@ async function searchBabyKidsSpecs(title) {
     if (weightRange) specs.push({ key: 'Weight Range', value: `${weightRange[1]}-${weightRange[2]} ${weightRange[3]}` });
     const heightLimit = snippets.match(/(?:up to|height limit of)\s*(\d+)\s*(?:"|inches|in\.)/i);
     if (heightLimit) specs.push({ key: 'Height Limit', value: `${heightLimit[1]}"` });
-    for (const cert of ['JPMA', 'ASTM F2050', 'FMVSS 213', 'GREENGUARD Gold', 'CPSC']) {
-      if (new RegExp(cert.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i').test(snippets)) {
-        specs.push({ key: 'Certification', value: cert });
+    const ageRange = snippets.match(/(\d+)\s*[-–]\s*(\d+)\s*months?/i);
+    if (ageRange) specs.push({ key: 'Age Range', value: `${ageRange[1]}-${ageRange[2]} months` });
+    for (const cert of ['JPMA', 'ASTM F2050', 'FMVSS 213', 'GREENGUARD Gold', 'CPSC', 'FDA[- ]?(cleared|clearance|approved)', 'Class II medical device']) {
+      if (new RegExp(cert, 'i').test(snippets)) {
+        const label = cert.startsWith('FDA') ? 'FDA Cleared' : cert === 'Class II medical device' ? 'FDA Class II' : cert;
+        specs.push({ key: 'Certification', value: label });
       }
     }
     console.log(`[tavily-baby] "${title}" — gjeta ${specs.length} spec(e)`);
