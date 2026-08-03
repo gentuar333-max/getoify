@@ -3187,6 +3187,20 @@ function stripIllogicalHedges(text, targetLang) {
     console.warn(`[illogical-hedge] Hequr hedge i pakuptimte per brez rrjeti: "${fullMatch}" → "${value}"`);
     return value;
   });
+
+  // Dimensione (WxHxD) — RASTI REAL: "55.1x36.6xup to 22.9\"" — hedge i
+  // futur NE MES te nje treshi dimensionesh e prish plotesisht lexueshmerine.
+  // Dimensionet duhen trajtuar si NJE tersi (te gjitha te konfirmuara ose
+  // asnje e hedge-uar individualisht), jo pjeserisht.
+  const dimensionHedgePattern = new RegExp(
+    `(\\d+(?:[.,]\\d+)?\\s*[x×]\\s*\\d+(?:[.,]\\d+)?\\s*[x×])\\s*(?:${hedgeAlternation})\\s*(\\d+(?:[.,]\\d+)?)`,
+    'gi'
+  );
+  result = result.replace(dimensionHedgePattern, (fullMatch, prefix, lastNum) => {
+    console.warn(`[illogical-hedge] Hequr hedge i futur mes dimensioneve: "${fullMatch}" → "${prefix}${lastNum}"`);
+    return `${prefix}${lastNum}`;
+  });
+
   return result;
 }
 
@@ -3260,6 +3274,57 @@ function stripImpliedHealthClaims(text, isFoodBeverageCategory) {
   result = result.replace(/\s{2,}/g, ' ').replace(/\s+([.,!?])/g, '$1').replace(/,\s*,/g, ',').trim();
   return result;
 }
+
+// Rrjete sigurie E PERGJITHSHME (jo specifike per 1 kategori) — kryqezon
+// çdo emer certifikimi te permendur ne output kundrejt allConfirmedSpecs
+// (te verteta e vetme). RASTI REAL, KRITIK: LEGO Star Wars test pati
+// confirmedSpecsCount:0 (Tavily s'gjeti asgje), POR output pretendoi "Meets
+// safety standards (ASTM F963, CPSC, CE)" — modeli i kopjoi emrat e
+// certifikimeve NGA VETE SHEMBUJT e udhezimeve te prompt-it, jo nga te
+// dhena reale. Kjo eshte me e rende se gjuhe e paqarte — jane pretendime
+// KONKRETE konformiteti rregullator.
+const KNOWN_CERTIFICATIONS = [
+  'ASTM F963', 'ASTM F2050', 'CPSC', 'CE certified', 'EN71', 'CPSIA',
+  'JPMA', 'FMVSS 213', 'FDA cleared', 'FDA Class II', 'GREENGUARD Gold'
+];
+function stripUnconfirmedCertifications(text, confirmedSpecs) {
+  if (!text) return text;
+  const confirmedText = (confirmedSpecs || []).map(s => `${s.key} ${s.value}`).join(' ').toLowerCase();
+
+  let result = text;
+  for (const cert of KNOWN_CERTIFICATIONS) {
+    const isConfirmed = confirmedText.includes(cert.toLowerCase());
+    if (!isConfirmed) {
+      const escaped = cert.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const re = new RegExp(`,?[ \\t]*${escaped}[ \\t]*,?`, 'gi');
+      if (re.test(result)) {
+        console.warn(`[unconfirmed-cert] Hequr certifikim i pakonfirmuar: "${cert}"`);
+        result = result.replace(re, ', ');
+      }
+    }
+  }
+  // "CE" e vetme (jo "CE certified") — rrezik false-positive me fjale te
+  // tjera qe fillojne "ce", prandaj kufij fjale STRIKT + veç kur eshte
+  // pjese e nje liste certifikimesh (para/pas presje ose kllape mbyllese)
+  if (!confirmedText.includes(' ce ') && !confirmedText.includes('ce certified')) {
+    const ceListPattern = /,\s*CE\s*(?=[),])/g;
+    if (ceListPattern.test(result)) {
+      console.warn('[unconfirmed-cert] Hequr certifikim i pakonfirmuar: "CE"');
+      result = result.replace(ceListPattern, '');
+    }
+  }
+  result = result
+    .replace(/,\s*,/g, ',')
+    .replace(/\(\s*,?\s*\)/g, '')
+    .replace(/\(\s*,/g, '(')
+    .replace(/,\s*\)/g, ')')
+    .replace(/[ \t]+([.,!?])/g, '$1')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
+  result = result.replace(/^[ \t]*[•\-*][ \t]*\(?\s*\)?\s*$/gim, '').replace(/\n{3,}/g, '\n\n');
+  return result;
+}
+
 
 function truncateAtWordBoundary(text, limit, minAcceptable) {
   if (text.length <= limit) return text;
@@ -5132,7 +5197,8 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
     // VETEM u testua dhe konfirmua i pamjaftueshem (modeli i riformuloi).
     // E kufizuar VETEM te hasImage && !cleanBody — pikerisht ku u vezhgua.
     const isImageOnlyGen = hasImage && !cleanBody;
-    parsed.description = stripUnverifiableCareAndSkillClaims(parsed.description, isImageOnlyGen);
+    parsed.description = stripUnverifiableCareAndSkillClaims(parsed.description, isImageOnlyGen || jewelry);
+    parsed.description = stripUnconfirmedCertifications(parsed.description, allConfirmedSpecs);
     parsed.description = stripImpliedHealthClaims(parsed.description, foodBeverage);
 
     // Bashkangjit providerin real qe u perdor — fushe shtese e sigurt (nuk
