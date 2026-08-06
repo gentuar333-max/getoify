@@ -3356,6 +3356,11 @@ function stripUnverifiableCareAndSkillClaims(text, shouldApply) {
     // washable", "hand wash only") — RASTI REAL: "Dry clean only" per nje
     // pallto leshi, e shpikur plotesisht, mund te jete faktikisht e gabuar.
     /^[ \t]*[•\-*][ \t]*.*\b(dry clean only|machine washable|hand wash only|do not (bleach|iron|tumble dry))\b.*\n?/gim,
+    // Pattern strukturor, jo fraze specifike — kap KONCEPTIN "udhezime
+    // kujdesi qe sigurojne rezultat" (RASTI REAL: "Easy care instructions
+    // ensure lasting beauty and durability" — formulim i ri qe s'e kap asnje
+    // nga pattern-et specifike te mesiperm, whack-a-mole i njohur).
+    /^[ \t]*[•\-*][ \t]*.*\bcare\s+instructions?\b.*\b(ensure|maintain|preserve|guarantee)\b.*\n?/gim,
     // Pretendime niveli aftesie te shpikura ("suitable for intermediate to
     // advanced riders", "designed for all-mountain versatility" etj.)
     /^[ \t]*[•\-*][ \t]*.*\b(suitable|designed|great|ideal)\s+for\s+(beginner|intermediate|advanced|all[\s-]?(mountain|level|skill)|every(?:one|\s+level)).*\n?/gim,
