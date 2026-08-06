@@ -1807,59 +1807,6 @@ app.get('/addon/confirm', async (req, res) => {
 });
 
 
-// UTILITET ADMIN, NJEHERSH — rikrijon 1 webhook specifik per 1 dyqan, thjesht
-// duke e hapur si URL ne browser (pa CMD/PowerShell). I mbrojtur me çelës te
-// thjeshte (query param) qe te mos e thërrasë kushdo per çfarëdo dyqani.
-// RASTI: fitjourneygoods.myshopify.com — webhook products/update i
-// çaktivizuar nga Shopify pas 413 errors, tani te ndrequr (limit 5mb), por
-// duhet rikrijuar manualisht sepse s'rikrijohet vetvetiu.
-app.get('/admin-fix-webhook', async (req, res) => {
-  const { shop, key, topic, address, action } = req.query;
-  const ADMIN_KEY = 'getoify-fix-2026'; // çelës i thjeshte, mjafton per perdorim njehersh te brendshem
-  if (key !== ADMIN_KEY) {
-    return res.status(403).send('Forbidden — missing or wrong key');
-  }
-  if (!shop) {
-    return res.status(400).send('Missing ?shop=... parameter');
-  }
-  try {
-    const store = await getStore(shop);
-    if (!store?.access_token) {
-      return res.status(404).send(`Store not found or no access_token: ${shop}`);
-    }
-
-    if (action === 'list') {
-      const listRes = await axios.get(
-        `https://${shop}/admin/api/2026-07/webhooks.json`,
-        { headers: { 'X-Shopify-Access-Token': store.access_token } }
-      );
-      return res.send(`<pre>WEBHOOKS for ${shop}\n\n${JSON.stringify(listRes.data, null, 2)}</pre>`);
-    }
-
-    if (action === 'shop-email') {
-      const shopRes = await axios.get(
-        `https://${shop}/admin/api/2026-07/shop.json`,
-        { headers: { 'X-Shopify-Access-Token': store.access_token } }
-      );
-      const s = shopRes.data.shop;
-      return res.send(`<pre>SHOP INFO for ${shop}\n\nemail: ${s.email}\ncustomer_email: ${s.customer_email}\nshop_owner: ${s.shop_owner}</pre>`);
-    }
-
-    const webhookTopic = topic || 'products/update';
-    const webhookAddress = address || `${APP_URL}/webhook/product-create`;
-
-    const shopifyRes = await axios.post(
-      `https://${shop}/admin/api/2026-07/webhooks.json`,
-      { webhook: { topic: webhookTopic, address: webhookAddress, format: 'json' } },
-      { headers: { 'X-Shopify-Access-Token': store.access_token, 'Content-Type': 'application/json' } }
-    );
-
-    res.send(`<pre>SUCCESS — webhook created for ${shop}\n\n${JSON.stringify(shopifyRes.data, null, 2)}</pre>`);
-  } catch (e) {
-    res.status(500).send(`<pre>FAILED\n\n${JSON.stringify(e.response?.data || e.message, null, 2)}</pre>`);
-  }
-});
-
 app.get('/plan-languages', requireShopAuth, async (req, res) => {
   const shop = req.verifiedShop;
   try {
@@ -2375,6 +2322,20 @@ function isJewelryProduct(product) {
   return JEWELRY_TITLE_KEYWORDS.some(k => title.includes(k));
 }
 
+// Pets keywords — verifikuar ZERO mbivendosje me te 10 kategorite ekzistuese
+const PETS_TYPES = ['pet', 'pets', 'pet supplies'];
+const PETS_TITLE_KEYWORDS = [
+  'dog', 'cat', 'puppy', 'kitten', 'pet bed', 'pet carrier', 'leash',
+  'collar', 'dog food', 'cat food', 'litter box', 'pet toy', 'chew toy',
+  'aquarium', 'fish tank', 'bird cage', 'pet crate', 'harness'
+];
+function isPetsProduct(product) {
+  const type = (product.product_type || '').toLowerCase();
+  const title = (product.title || '').toLowerCase();
+  if (PETS_TYPES.some(t => type.includes(t))) return true;
+  return PETS_TITLE_KEYWORDS.some(k => title.includes(k));
+}
+
 // Tech & Electronics keywords — per detektim nga titulli/product_type
 const TECH_ELECTRONICS_TYPES = [
   'electronics', 'phone', 'smartphone', 'tablet', 'laptop', 'computer',
@@ -2887,6 +2848,40 @@ async function searchJewelrySpecs(title) {
     return specs;
   } catch (e) {
     console.warn('[tavily-jewelry] Kerkimi deshtoi:', e.message);
+    return [];
+  }
+}
+
+// Kerkon specs reale per Pets — pesha/madhesia (per collar/carrier/bed),
+// materiale te sigurta per kafshë, dhe (nese eshte ushqim) informacion
+// dietar/alergjenë — I NJEJTI kujdes ligjor si Food&Beverage per pretendime
+// shendetesore te pakonfirmuara.
+async function searchPetsSpecs(title) {
+  if (!process.env.TAVILY_API_KEY) return [];
+  try {
+    const res = await axios.post('https://api.tavily.com/search', {
+      api_key: process.env.TAVILY_API_KEY,
+      query: `${title} size weight breed material ingredients`,
+      search_depth: 'basic', max_results: 3, include_answer: false
+    }, { timeout: 4000 });
+
+    const snippets = (res.data.results || []).map(r => r.content || r.snippet || '').join('\n').slice(0, 3000);
+    if (!snippets.trim()) return [];
+
+    const specs = [];
+    const weightRange = snippets.match(/(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)\s*(lbs?|kg)\b/i);
+    if (weightRange) specs.push({ key: 'Weight Range', value: `${weightRange[1]}-${weightRange[2]} ${weightRange[3]}` });
+    const breedSize = snippets.match(/\b(small|medium|large|extra[- ]large)\s+breeds?\b/i);
+    if (breedSize) specs.push({ key: 'Breed Size', value: breedSize[1] });
+    for (const tag of ['grain-free', 'non-toxic', 'BPA-free', 'chew-resistant', 'machine washable']) {
+      if (new RegExp(`\\b${tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(snippets)) {
+        specs.push({ key: 'Feature', value: tag });
+      }
+    }
+    console.log(`[tavily-pets] "${title}" — gjeta ${specs.length} spec(e)`);
+    return specs;
+  } catch (e) {
+    console.warn('[tavily-pets] Kerkimi deshtoi:', e.message);
     return [];
   }
 }
@@ -3798,8 +3793,9 @@ async function generateProductCopy(product, targetLang, glossary, cleanBody, ima
   const toysGames = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && !babyKids && !diyTools && !foodBeverage && isToysGamesProduct(product);
   const travelLuggage = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && !babyKids && !diyTools && !foodBeverage && !toysGames && isTravelLuggageProduct(product);
   const jewelry = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && !babyKids && !diyTools && !foodBeverage && !toysGames && !travelLuggage && isJewelryProduct(product);
-  const techElectronics = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && !babyKids && !diyTools && !foodBeverage && !toysGames && !travelLuggage && !jewelry && isTechElectronicsProduct(product);
-  const isGeneric = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && !babyKids && !diyTools && !foodBeverage && !toysGames && !travelLuggage && !jewelry && !techElectronics;
+  const pets = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && !babyKids && !diyTools && !foodBeverage && !toysGames && !travelLuggage && !jewelry && isPetsProduct(product);
+  const techElectronics = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && !babyKids && !diyTools && !foodBeverage && !toysGames && !travelLuggage && !jewelry && !pets && isTechElectronicsProduct(product);
+  const isGeneric = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && !babyKids && !diyTools && !foodBeverage && !toysGames && !travelLuggage && !jewelry && !pets && !techElectronics;
 
   // Konfirmim i jashtem: titulli ka specifika te shitesit (— ose |), OSE
   // titulli ka specifika te nxjerra direkt me regex (GB/TB/mAh/MP/Hz/W/RAM),
@@ -4112,6 +4108,31 @@ async function generateProductCopy(product, targetLang, glossary, cleanBody, ima
             shop, product_id: String(product.id), specs_json: tavilySpecs, searched_but_empty: tavilySearchedButEmpty
           }, { onConflict: 'shop,product_id' });
         } catch(e) { console.warn('[tavily-jewelry-cache] Ruajtja deshtoi:', e.message); }
+      }
+    }
+  } else if (!hasExternalConfirmation && !cleanBody && isPetsProduct(product)) {
+    let usedCache = false;
+    if (product.id && shop) {
+      try {
+        const { data: cacheRow } = await supabase.from('product_specs_cache')
+          .select('specs_json, searched_but_empty').eq('shop', shop).eq('product_id', String(product.id)).maybeSingle();
+        if (cacheRow) {
+          tavilySpecs = cacheRow.specs_json || [];
+          tavilySearchedButEmpty = cacheRow.searched_but_empty || false;
+          if (tavilySpecs.length > 0) hasExternalConfirmation = true;
+          usedCache = true;
+        }
+      } catch(e) { console.warn('[tavily-pets-cache] Leximi deshtoi:', e.message); }
+    }
+    if (!usedCache) {
+      tavilySpecs = await searchPetsSpecs(product.title);
+      if (tavilySpecs.length > 0) hasExternalConfirmation = true;
+      if (product.id && shop) {
+        try {
+          await supabase.from('product_specs_cache').upsert({
+            shop, product_id: String(product.id), specs_json: tavilySpecs, searched_but_empty: tavilySearchedButEmpty
+          }, { onConflict: 'shop,product_id' });
+        } catch(e) { console.warn('[tavily-pets-cache] Ruajtja deshtoi:', e.message); }
       }
     }
   }
@@ -4761,6 +4782,20 @@ PRIORITY — only if confirmed via title/metafields/Tavily:
 NEVER invent: gemstone authenticity claims not confirmed, carat weight not stated, or "ethically sourced" without confirmation.
 ` : ''}
 
+${pets ? `
+PETS SPECIFIC RULES:
+Write like real pet-brand marketing (Chewy, Kong, PetSmart) — warm, conversational, like talking to a fellow pet owner. NOT a spec sheet. Think "your dog will love this" energy, backed by real facts.
+
+CRITICAL TONE REQUIREMENT: Wrap confirmed facts in natural, caring language — e.g. "sized right for medium breeds, so it fits comfortably" instead of "breed size: medium". Avoid clinical listing of weight ranges and materials as bare facts.
+
+PRIORITY — only if confirmed via title/metafields/Tavily:
+1. Weight/breed size range — frame as fit/comfort, not raw numbers
+2. Material safety (non-toxic, BPA-free) — frame as peace of mind for pet parents
+3. Dietary/ingredient info (if food) — same caution as Food & Beverage: state confirmed dietary tags only, NEVER imply health benefits not confirmed
+
+NEVER invent: health/wellness claims for pet food not confirmed, "vet recommended" unless explicitly sourced, or age-appropriateness not confirmed.
+` : ''}
+
 META TITLE RULES (max 60 chars):
 - Format: "[Product Name] [key spec]" — ALWAYS include one key spec, never just the product name alone
 - Key spec examples: "with 5000mAh Battery", "48MP Camera", "A18 Pro Chip", "120Hz Display", "IP68"
@@ -5274,9 +5309,9 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
     // VETEM u testua dhe konfirmua i pamjaftueshem (modeli i riformuloi).
     // E kufizuar VETEM te hasImage && !cleanBody — pikerisht ku u vezhgua.
     const isImageOnlyGen = hasImage && !cleanBody;
-    parsed.description = stripUnverifiableCareAndSkillClaims(parsed.description, isImageOnlyGen || jewelry || travelLuggage || toysGames || foodBeverage || diyTools);
+    parsed.description = stripUnverifiableCareAndSkillClaims(parsed.description, isImageOnlyGen || jewelry || travelLuggage || toysGames || foodBeverage || diyTools || pets);
     parsed.description = stripUnconfirmedCertifications(parsed.description, allConfirmedSpecs);
-    parsed.description = stripImpliedHealthClaims(parsed.description, foodBeverage);
+    parsed.description = stripImpliedHealthClaims(parsed.description, foodBeverage || pets);
 
     // Bashkangjit providerin real qe u perdor — fushe shtese e sigurt (nuk
     // prish asgje per konsumatoret ekzistues qe lexojne vetem title/description/
