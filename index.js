@@ -3355,7 +3355,7 @@ function stripUnverifiableCareAndSkillClaims(text, shouldApply) {
     // Udhezime pastrimi rrobash te shpikura ("dry clean only", "machine
     // washable", "hand wash only") — RASTI REAL: "Dry clean only" per nje
     // pallto leshi, e shpikur plotesisht, mund te jete faktikisht e gabuar.
-    /^[ \t]*[•\-*][ \t]*.*\b(dry clean only|machine washable|hand wash only|do not (bleach|iron|tumble dry))\b.*\n?/gim,
+    /^[ \t]*[•\-*][ \t]*.*\b(dry clean only|machine washable|hand wash (only|recommended)|dishwasher[- ]safe|do not (bleach|iron|tumble dry))\b.*\n?/gim,
     // Pattern strukturor, jo fraze specifike — kap KONCEPTIN "udhezime
     // kujdesi qe sigurojne rezultat" (RASTI REAL: "Easy care instructions
     // ensure lasting beauty and durability" — formulim i ri qe s'e kap asnje
@@ -4774,6 +4774,8 @@ MANDATORY for closed ecosystem products — treat all 4 as equally required, not
 4. USE correct technical terms:
    - Nespresso crema → "crema" (Italian technical term) NOT "crème riche"
    - Centrifusion → always mention the RPM if known (7 000 tr/min)
+
+NEVER invent specific material grades or alloy types not stated in title/metafields — e.g. if the title says "Stainless Steel" only, do NOT upgrade this to "high-carbon stainless steel" or "18/10 stainless steel" without confirmation. State the material exactly as given, nothing more specific.
 ` : ''}
 
 ${beautyHealth ? `
@@ -5482,7 +5484,7 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
     // VETEM u testua dhe konfirmua i pamjaftueshem (modeli i riformuloi).
     // E kufizuar VETEM te hasImage && !cleanBody — pikerisht ku u vezhgua.
     const isImageOnlyGen = hasImage && !cleanBody;
-    parsed.description = stripUnverifiableCareAndSkillClaims(parsed.description, isImageOnlyGen || jewelry || travelLuggage || toysGames || foodBeverage || diyTools || pets || automotive || fashionApparel);
+    parsed.description = stripUnverifiableCareAndSkillClaims(parsed.description, isImageOnlyGen || jewelry || travelLuggage || toysGames || foodBeverage || diyTools || pets || automotive || fashionApparel || homeKitchen);
     parsed.description = stripUnconfirmedCertifications(parsed.description, allConfirmedSpecs);
     parsed.description = stripUnconfirmedWarrantyClaims(parsed.description, allConfirmedSpecs);
     parsed.description = stripUnconfirmedSuitabilityClaims(parsed.description, allConfirmedSpecs);
