@@ -14,7 +14,13 @@ const app = express();
 // ne paralel shkaktojne konflikt: nje prej tyre merr streamin, tjetri merr
 // objekt JSON. JSON.stringify(object) nuk prodhon bytes identike me payload-in
 // origjinal (whitespace, key order) → HMAC deshton gjithmone.
+// KRITIKE (rasti real, prodhim): Express limit i paracaktuar eshte VETEM
+// 100kb — produktet me shume variante/imazhe/metafields e kalojne lehte
+// kete (konfirmuar: 110KB payload → 413 "Payload Too Large" per
+// fitjourneygoods.myshopify.com, Shopify e CAKTIVIZOI VETE webhook-un
+// products/update pas deshtimeve te perseritura, 77% failure rate).
 app.use(express.json({
+  limit: '5mb',
   verify: (req, res, buf) => { req.rawBody = buf; }
 }));
 // KRITIKE: ky route duhet te jete PARA express.static (poshte) — Express i
