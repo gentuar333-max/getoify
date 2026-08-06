@@ -1807,6 +1807,41 @@ app.get('/addon/confirm', async (req, res) => {
 });
 
 
+// UTILITET ADMIN, NJEHERSH — rikrijon 1 webhook specifik per 1 dyqan, thjesht
+// duke e hapur si URL ne browser (pa CMD/PowerShell). I mbrojtur me çelës te
+// thjeshte (query param) qe te mos e thërrasë kushdo per çfarëdo dyqani.
+// RASTI: fitjourneygoods.myshopify.com — webhook products/update i
+// çaktivizuar nga Shopify pas 413 errors, tani te ndrequr (limit 5mb), por
+// duhet rikrijuar manualisht sepse s'rikrijohet vetvetiu.
+app.get('/admin-fix-webhook', async (req, res) => {
+  const { shop, key, topic, address } = req.query;
+  const ADMIN_KEY = 'getoify-fix-2026'; // çelës i thjeshte, mjafton per perdorim njehersh te brendshem
+  if (key !== ADMIN_KEY) {
+    return res.status(403).send('Forbidden — missing or wrong key');
+  }
+  if (!shop) {
+    return res.status(400).send('Missing ?shop=... parameter');
+  }
+  try {
+    const store = await getStore(shop);
+    if (!store?.access_token) {
+      return res.status(404).send(`Store not found or no access_token: ${shop}`);
+    }
+    const webhookTopic = topic || 'products/update';
+    const webhookAddress = address || `${APP_URL}/webhook/product-create`;
+
+    const shopifyRes = await axios.post(
+      `https://${shop}/admin/api/2026-07/webhooks.json`,
+      { webhook: { topic: webhookTopic, address: webhookAddress, format: 'json' } },
+      { headers: { 'X-Shopify-Access-Token': store.access_token, 'Content-Type': 'application/json' } }
+    );
+
+    res.send(`<pre>SUCCESS — webhook created for ${shop}\n\n${JSON.stringify(shopifyRes.data, null, 2)}</pre>`);
+  } catch (e) {
+    res.status(500).send(`<pre>FAILED\n\n${JSON.stringify(e.response?.data || e.message, null, 2)}</pre>`);
+  }
+});
+
 app.get('/plan-languages', requireShopAuth, async (req, res) => {
   const shop = req.verifiedShop;
   try {
