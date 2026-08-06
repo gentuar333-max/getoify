@@ -3463,6 +3463,34 @@ function stripUnconfirmedCertifications(text, confirmedSpecs) {
   return result;
 }
 
+// Rrjete sigurie E PERGJITHSHME (te gjitha kategorite, jo vetem 1) — heq
+// pretendime specifike garancie/kohezgjatje qe s'jane te konfirmuara.
+// RASTI REAL, KRITIK: Bluetooth FM Transmitter Car Charger test pretendoi
+// "Backed by a one-year warranty" me confirmedSpecsKeys VETEM ["Color",
+// "Bluetooth"] — ZERO e dhene garancie e konfirmuar. Garancia eshte
+// premtim i verifikueshem ndaj klientit — gabim ketu krijon rrezik real
+// (mosmarreveshje, pergjegjesi ligjore per merchant-in).
+function stripUnconfirmedWarrantyClaims(text, confirmedSpecs) {
+  if (!text) return text;
+  const confirmedText = (confirmedSpecs || []).map(s => `${s.key} ${s.value}`).join(' ').toLowerCase();
+  const hasConfirmedWarranty = /warrant|guarantee/i.test(confirmedText);
+  if (hasConfirmedWarranty) return text; // ka te dhene reale, mos e prek fare
+
+  const warrantyBulletPattern = /^[ \t]*[•\-*][ \t]*.*\b(warrant(y|ies)|guarantee[ds]?)\b.*$/gim;
+  let result = text;
+  result = result.replace(warrantyBulletPattern, (match) => {
+    console.warn(`[unconfirmed-warranty] Hequr rresht garancie i pakonfirmuar: "${match.trim()}"`);
+    return '';
+  });
+  // Kap gjithashtu nese eshte pjese e nje fjalie brenda paragrafit (jo bullet)
+  result = result.replace(/,?\s*(backed by|comes with|includes)\s+a\s+[\w-]+\s+(warranty|guarantee)\b[^.•\n]*/gi, (match) => {
+    console.warn(`[unconfirmed-warranty] Hequr fraze garancie e pakonfirmuar: "${match.trim()}"`);
+    return '';
+  });
+  result = result.replace(/\n{3,}/g, '\n\n').replace(/[ \t]+([.,!?])/g, '$1').trim();
+  return result;
+}
+
 
 function truncateAtWordBoundary(text, limit, minAcceptable) {
   if (text.length <= limit) return text;
@@ -5418,6 +5446,7 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
     const isImageOnlyGen = hasImage && !cleanBody;
     parsed.description = stripUnverifiableCareAndSkillClaims(parsed.description, isImageOnlyGen || jewelry || travelLuggage || toysGames || foodBeverage || diyTools || pets || automotive);
     parsed.description = stripUnconfirmedCertifications(parsed.description, allConfirmedSpecs);
+    parsed.description = stripUnconfirmedWarrantyClaims(parsed.description, allConfirmedSpecs);
     parsed.description = stripImpliedHealthClaims(parsed.description, foodBeverage || pets);
 
     // Bashkangjit providerin real qe u perdor — fushe shtese e sigurt (nuk
