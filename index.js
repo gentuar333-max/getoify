@@ -3491,6 +3491,32 @@ function stripUnconfirmedWarrantyClaims(text, confirmedSpecs) {
   return result;
 }
 
+// Rrjete sigurie E PERGJITHSHME (te gjitha kategorite) — heq pretendime
+// pershtatshmerie/sigurie te pakonfirmuara ("suitable for all skin types",
+// "gentle", "safe for X"). RASTI REAL: Vitamin C Serum pretendoi "Suitable
+// for all skin types — gentle and effective" me VETEM perberesit e
+// konfirmuar (Contains), ZERO te dhene pershtatshmerie/sigurie reale.
+// Rrezik real: perdorues me lekure te ndjeshme i beson pretendimit.
+function stripUnconfirmedSuitabilityClaims(text, confirmedSpecs) {
+  if (!text) return text;
+  const confirmedText = (confirmedSpecs || []).map(s => `${s.key} ${s.value}`).join(' ').toLowerCase();
+  const hasConfirmedSuitability = /suitable|hypoallergenic|dermatologist|all skin types|all ages/i.test(confirmedText);
+  if (hasConfirmedSuitability) return text; // ka te dhene reale, mos e prek fare
+
+  const suitabilityBulletPattern = /^[ \t]*[•\-*][ \t]*.*\bsuitable for (all|every|most)\b.*$/gim;
+  let result = text;
+  result = result.replace(suitabilityBulletPattern, (match) => {
+    console.warn(`[unconfirmed-suitability] Hequr rresht pershtatshmerie i pakonfirmuar: "${match.trim()}"`);
+    return '';
+  });
+  result = result.replace(/,?\s*(gentle|safe)\s+(on|for)\s+(all|every|sensitive)\b[^.•\n]*/gi, (match) => {
+    console.warn(`[unconfirmed-suitability] Hequr fraze pershtatshmerie e pakonfirmuar: "${match.trim()}"`);
+    return '';
+  });
+  result = result.replace(/\n{3,}/g, '\n\n').replace(/[ \t]+([.,!?])/g, '$1').trim();
+  return result;
+}
+
 
 function truncateAtWordBoundary(text, limit, minAcceptable) {
   if (text.length <= limit) return text;
@@ -5447,6 +5473,7 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
     parsed.description = stripUnverifiableCareAndSkillClaims(parsed.description, isImageOnlyGen || jewelry || travelLuggage || toysGames || foodBeverage || diyTools || pets || automotive);
     parsed.description = stripUnconfirmedCertifications(parsed.description, allConfirmedSpecs);
     parsed.description = stripUnconfirmedWarrantyClaims(parsed.description, allConfirmedSpecs);
+    parsed.description = stripUnconfirmedSuitabilityClaims(parsed.description, allConfirmedSpecs);
     parsed.description = stripImpliedHealthClaims(parsed.description, foodBeverage || pets);
 
     // Bashkangjit providerin real qe u perdor — fushe shtese e sigurt (nuk
