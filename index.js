@@ -2861,7 +2861,7 @@ async function searchPetsSpecs(title) {
   try {
     const res = await axios.post('https://api.tavily.com/search', {
       api_key: process.env.TAVILY_API_KEY,
-      query: `${title} size weight breed material ingredients`,
+      query: `${title} material made of dimensions size weight`,
       search_depth: 'basic', max_results: 3, include_answer: false
     }, { timeout: 4000 });
 
@@ -2873,7 +2873,15 @@ async function searchPetsSpecs(title) {
     if (weightRange) specs.push({ key: 'Weight Range', value: `${weightRange[1]}-${weightRange[2]} ${weightRange[3]}` });
     const breedSize = snippets.match(/\b(small|medium|large|extra[- ]large)\s+breeds?\b/i);
     if (breedSize) specs.push({ key: 'Breed Size', value: breedSize[1] });
-    for (const tag of ['grain-free', 'non-toxic', 'BPA-free', 'chew-resistant', 'machine washable']) {
+    const heightDim = snippets.match(/(\d+(?:\.\d+)?)\s*(?:in|inches|cm)\s*(?:tall|height|high)\b/i);
+    if (heightDim) specs.push({ key: 'Height', value: heightDim[0] });
+    // Materiale te ndryshme, jo vetem shtroje — kap edhe posts/toys/carriers
+    for (const material of ['sisal', 'rope', 'jute', 'carpet', 'plush', 'plastic', 'stainless steel', 'ceramic', 'natural wood', 'faux fur']) {
+      if (new RegExp(`\\b${material.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(snippets)) {
+        specs.push({ key: 'Material', value: material });
+      }
+    }
+    for (const tag of ['grain-free', 'non-toxic', 'BPA-free', 'chew-resistant', 'machine washable', 'scratch-resistant']) {
       if (new RegExp(`\\b${tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(snippets)) {
         specs.push({ key: 'Feature', value: tag });
       }
@@ -4803,7 +4811,7 @@ PRIORITY — only if confirmed via title/metafields/Tavily:
 2. Material safety (non-toxic, BPA-free) — frame as peace of mind for pet parents
 3. Dietary/ingredient info (if food) — same caution as Food & Beverage: state confirmed dietary tags only, NEVER imply health benefits not confirmed
 
-NEVER invent: health/wellness claims for pet food not confirmed, "vet recommended" unless explicitly sourced, or age-appropriateness not confirmed.
+NEVER invent: health/wellness claims for pet food not confirmed, "vet recommended" unless explicitly sourced, age-appropriateness not confirmed, or SPECIFIC material/texture (soft, plush, rope, sisal, etc.) when not confirmed — different pet product types use very different materials (a scratching post is typically rough sisal, NOT soft fabric) and guessing wrong actively misleads. If material isn't confirmed, describe function/purpose instead, not texture.
 ` : ''}
 
 META TITLE RULES (max 60 chars):
