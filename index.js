@@ -3332,7 +3332,11 @@ function stripImpliedHealthClaims(text, isFoodBeverageCategory) {
     { re: /\bboosts?\s+(your\s+)?(immune|immunity|energy|metabolism)\b[^.•\n]*/gi, replace: '' },
     { re: /\bdetox(ify|ifying)?\b[^.•\n]*/gi, replace: '' },
     { re: /\bsuperfood\b/gi, replace: '' },
-    { re: /\bnourish(es)?\s+your\s+body\b/gi, replace: '' }
+    { re: /\bnourish(es)?\s+your\s+body\b/gi, replace: '' },
+    // Pretendime terapeutike/mjekesore te pakonfirmuara — RASTI REAL:
+    // "helps alleviate joint pain and discomfort" u shpik nga vete fjala
+    // "Orthopedic" ne titull, pa asnje konfirmim real Tavily.
+    { re: /,?\s*(helps?\s+)?(alleviate|reliev(es?|ing)|reduc(es?|ing))\s+(joint\s+)?(pain|discomfort|inflammation|soreness)\b[^.•\n]*/gi, replace: '' }
   ];
 
   let result = text;
