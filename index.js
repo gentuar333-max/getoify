@@ -2387,13 +2387,13 @@ const COMPLEX_TECH_KEYWORDS = [
   // Telefona
   'iphone', 'galaxy', 'pixel', 'oneplus', 'xiaomi', 'redmi', 'oppo',
   'realme', 'vivo', 'huawei', 'nokia', 'sony xperia', 'motorola', 'honor',
-  'smartphone', 'phone',
+  'smartphone',
   // Laptop
   'macbook', 'thinkpad', 'xps', 'surface laptop', 'spectre', 'envy',
   'pavilion', 'inspiron', 'omen', 'zenbook', 'vivobook', 'aspire',
   'swift', 'spin', 'gram', 'laptop', 'notebook',
-  'legion', 'yoga', 'ideapad', 'loq',
-  'rog', 'tuf gaming', 'zephyrus', 'strix',
+  'legion', 'lenovo yoga', 'ideapad', 'loq',
+  'tuf gaming', 'zephyrus', 'strix', 'asus rog',
   'razer blade', 'alienware', 'msi stealth', 'msi raider',
   'msi katana', 'msi titan', 'msi vector', 'aorus',
   // PC/Desktop
@@ -2404,15 +2404,15 @@ const COMPLEX_TECH_KEYWORDS = [
   'galaxy buds', 'pixel buds', 'freebuds', 'soundsport', 'quietcomfort',
   // Smartwatch / Wearables
   'apple watch', 'galaxy watch', 'pixel watch', 'smartwatch', 'watch ultra',
-  'fitbit', 'garmin', 'amazfit', 'band', 'smart band',
+  'fitbit', 'garmin', 'amazfit', 'smart band',
   // Tablet
   'ipad', 'galaxy tab', 'surface pro', 'tab ', 'tablet', 'matebook',
   'lenovo tab', 'kindle fire',
   // TV / Monitor
   'smart tv', 'oled tv', 'qled', 'nanocell', 'frameless tv',
-  'monitor', 'display', '4k tv', '8k tv', 'gaming monitor',
+  'display', '4k tv', '8k tv', 'gaming monitor', 'computer monitor',
   // Charger / Power
-  'charger', 'power bank', 'magsafe', 'gan charger', 'wireless charger',
+  'power bank', 'magsafe', 'gan charger', 'wireless charger',
   // Console / Gaming
   'playstation', 'xbox', 'nintendo switch', 'steam deck', 'gaming console',
   // Camera
@@ -5484,7 +5484,7 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
     // VETEM u testua dhe konfirmua i pamjaftueshem (modeli i riformuloi).
     // E kufizuar VETEM te hasImage && !cleanBody — pikerisht ku u vezhgua.
     const isImageOnlyGen = hasImage && !cleanBody;
-    parsed.description = stripUnverifiableCareAndSkillClaims(parsed.description, isImageOnlyGen || jewelry || travelLuggage || toysGames || foodBeverage || diyTools || pets || automotive || fashionApparel || homeKitchen);
+    parsed.description = stripUnverifiableCareAndSkillClaims(parsed.description, isImageOnlyGen || jewelry || travelLuggage || toysGames || foodBeverage || diyTools || pets || automotive || fashionApparel || homeKitchen || sportFitness);
     parsed.description = stripUnconfirmedCertifications(parsed.description, allConfirmedSpecs);
     parsed.description = stripUnconfirmedWarrantyClaims(parsed.description, allConfirmedSpecs);
     parsed.description = stripUnconfirmedSuitabilityClaims(parsed.description, allConfirmedSpecs);
