@@ -3352,6 +3352,10 @@ function stripUnverifiableCareAndSkillClaims(text, shouldApply) {
     /^[ \t]*[•\-*][ \t]*.*\b(wipe|clean)(s|ing)?\b.*\b(soft|damp|dry)\s+cloth\b.*\n?/gim,
     /^[ \t]*[•\-*][ \t]*.*\bmaintain(s)?\b.*\b(shine|luster|lustre|finish|beauty)\b.*\n?/gim,
     /^[ \t]*[•\-*][ \t]*.*\bwipe\s+(it\s+)?down\b.*\n?/gim,
+    // Udhezime pastrimi rrobash te shpikura ("dry clean only", "machine
+    // washable", "hand wash only") — RASTI REAL: "Dry clean only" per nje
+    // pallto leshi, e shpikur plotesisht, mund te jete faktikisht e gabuar.
+    /^[ \t]*[•\-*][ \t]*.*\b(dry clean only|machine washable|hand wash only|do not (bleach|iron|tumble dry))\b.*\n?/gim,
     // Pretendime niveli aftesie te shpikura ("suitable for intermediate to
     // advanced riders", "designed for all-mountain versatility" etj.)
     /^[ \t]*[•\-*][ \t]*.*\b(suitable|designed|great|ideal)\s+for\s+(beginner|intermediate|advanced|all[\s-]?(mountain|level|skill)|every(?:one|\s+level)).*\n?/gim,
@@ -5473,7 +5477,7 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
     // VETEM u testua dhe konfirmua i pamjaftueshem (modeli i riformuloi).
     // E kufizuar VETEM te hasImage && !cleanBody — pikerisht ku u vezhgua.
     const isImageOnlyGen = hasImage && !cleanBody;
-    parsed.description = stripUnverifiableCareAndSkillClaims(parsed.description, isImageOnlyGen || jewelry || travelLuggage || toysGames || foodBeverage || diyTools || pets || automotive);
+    parsed.description = stripUnverifiableCareAndSkillClaims(parsed.description, isImageOnlyGen || jewelry || travelLuggage || toysGames || foodBeverage || diyTools || pets || automotive || fashionApparel);
     parsed.description = stripUnconfirmedCertifications(parsed.description, allConfirmedSpecs);
     parsed.description = stripUnconfirmedWarrantyClaims(parsed.description, allConfirmedSpecs);
     parsed.description = stripUnconfirmedSuitabilityClaims(parsed.description, allConfirmedSpecs);
