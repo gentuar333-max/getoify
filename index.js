@@ -2336,6 +2336,22 @@ function isPetsProduct(product) {
   return PETS_TITLE_KEYWORDS.some(k => title.includes(k));
 }
 
+// Automotive keywords — KUFIZUAR te aksesorë universalë (jo pjesë me
+// kompatibilitet te sakte modeli — ai do te kerkonte logjike krejt tjeter,
+// shume me komplekse). Verifikuar ZERO mbivendosje me 11 kategorite ekzistuese.
+const AUTOMOTIVE_TYPES = ['automotive', 'car accessories', 'auto parts'];
+const AUTOMOTIVE_TITLE_KEYWORDS = [
+  'car seat cover', 'floor mat', 'dash cam', 'phone mount', 'car charger',
+  'steering wheel cover', 'car vacuum', 'tire', 'windshield', 'car freshener',
+  'roof rack', 'trunk organizer', 'car cover', 'seat cushion', 'car mirror'
+];
+function isAutomotiveProduct(product) {
+  const type = (product.product_type || '').toLowerCase();
+  const title = (product.title || '').toLowerCase();
+  if (AUTOMOTIVE_TYPES.some(t => type.includes(t))) return true;
+  return AUTOMOTIVE_TITLE_KEYWORDS.some(k => title.includes(k));
+}
+
 // Tech & Electronics keywords — per detektim nga titulli/product_type
 const TECH_ELECTRONICS_TYPES = [
   'electronics', 'phone', 'smartphone', 'tablet', 'laptop', 'computer',
@@ -2890,6 +2906,38 @@ async function searchPetsSpecs(title) {
     return specs;
   } catch (e) {
     console.warn('[tavily-pets] Kerkimi deshtoi:', e.message);
+    return [];
+  }
+}
+
+// Kerkon specs reale per Automotive (aksesore, jo pjese fitment-specifike) —
+// kompatibilitet universal, material, dhe volazh/fuqi per aksesore elektronike.
+async function searchAutomotiveSpecs(title) {
+  if (!process.env.TAVILY_API_KEY) return [];
+  try {
+    const res = await axios.post('https://api.tavily.com/search', {
+      api_key: process.env.TAVILY_API_KEY,
+      query: `${title} material compatibility universal fit specifications`,
+      search_depth: 'basic', max_results: 3, include_answer: false
+    }, { timeout: 4000 });
+
+    const snippets = (res.data.results || []).map(r => r.content || r.snippet || '').join('\n').slice(0, 3000);
+    if (!snippets.trim()) return [];
+
+    const specs = [];
+    if (/universal\s+fit/i.test(snippets)) specs.push({ key: 'Compatibility', value: 'Universal fit' });
+    const voltage = snippets.match(/(\d+)\s*V\b/i);
+    if (voltage) specs.push({ key: 'Voltage', value: `${voltage[1]}V` });
+    for (const material of ['neoprene', 'rubber', 'leather', 'polyester', 'PVC', 'silicone', 'carbon fiber']) {
+      if (new RegExp(`\\b${material.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(snippets)) {
+        specs.push({ key: 'Material', value: material });
+      }
+    }
+    if (/waterproof/i.test(snippets)) specs.push({ key: 'Feature', value: 'Waterproof' });
+    console.log(`[tavily-automotive] "${title}" — gjeta ${specs.length} spec(e)`);
+    return specs;
+  } catch (e) {
+    console.warn('[tavily-automotive] Kerkimi deshtoi:', e.message);
     return [];
   }
 }
@@ -3812,8 +3860,9 @@ async function generateProductCopy(product, targetLang, glossary, cleanBody, ima
   const travelLuggage = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && !babyKids && !diyTools && !foodBeverage && !toysGames && isTravelLuggageProduct(product);
   const jewelry = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && !babyKids && !diyTools && !foodBeverage && !toysGames && !travelLuggage && isJewelryProduct(product);
   const pets = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && !babyKids && !diyTools && !foodBeverage && !toysGames && !travelLuggage && !jewelry && isPetsProduct(product);
-  const techElectronics = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && !babyKids && !diyTools && !foodBeverage && !toysGames && !travelLuggage && !jewelry && !pets && isTechElectronicsProduct(product);
-  const isGeneric = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && !babyKids && !diyTools && !foodBeverage && !toysGames && !travelLuggage && !jewelry && !pets && !techElectronics;
+  const automotive = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && !babyKids && !diyTools && !foodBeverage && !toysGames && !travelLuggage && !jewelry && !pets && isAutomotiveProduct(product);
+  const techElectronics = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && !babyKids && !diyTools && !foodBeverage && !toysGames && !travelLuggage && !jewelry && !pets && !automotive && isTechElectronicsProduct(product);
+  const isGeneric = !homeKitchen && !beautyHealth && !sportFitness && !fashionApparel && !babyKids && !diyTools && !foodBeverage && !toysGames && !travelLuggage && !jewelry && !pets && !automotive && !techElectronics;
 
   // Konfirmim i jashtem: titulli ka specifika te shitesit (— ose |), OSE
   // titulli ka specifika te nxjerra direkt me regex (GB/TB/mAh/MP/Hz/W/RAM),
@@ -4151,6 +4200,31 @@ async function generateProductCopy(product, targetLang, glossary, cleanBody, ima
             shop, product_id: String(product.id), specs_json: tavilySpecs, searched_but_empty: tavilySearchedButEmpty
           }, { onConflict: 'shop,product_id' });
         } catch(e) { console.warn('[tavily-pets-cache] Ruajtja deshtoi:', e.message); }
+      }
+    }
+  } else if (!hasExternalConfirmation && !cleanBody && isAutomotiveProduct(product)) {
+    let usedCache = false;
+    if (product.id && shop) {
+      try {
+        const { data: cacheRow } = await supabase.from('product_specs_cache')
+          .select('specs_json, searched_but_empty').eq('shop', shop).eq('product_id', String(product.id)).maybeSingle();
+        if (cacheRow) {
+          tavilySpecs = cacheRow.specs_json || [];
+          tavilySearchedButEmpty = cacheRow.searched_but_empty || false;
+          if (tavilySpecs.length > 0) hasExternalConfirmation = true;
+          usedCache = true;
+        }
+      } catch(e) { console.warn('[tavily-automotive-cache] Leximi deshtoi:', e.message); }
+    }
+    if (!usedCache) {
+      tavilySpecs = await searchAutomotiveSpecs(product.title);
+      if (tavilySpecs.length > 0) hasExternalConfirmation = true;
+      if (product.id && shop) {
+        try {
+          await supabase.from('product_specs_cache').upsert({
+            shop, product_id: String(product.id), specs_json: tavilySpecs, searched_but_empty: tavilySearchedButEmpty
+          }, { onConflict: 'shop,product_id' });
+        } catch(e) { console.warn('[tavily-automotive-cache] Ruajtja deshtoi:', e.message); }
       }
     }
   }
@@ -4812,6 +4886,21 @@ PRIORITY — only if confirmed via title/metafields/Tavily:
 3. Dietary/ingredient info (if food) — same caution as Food & Beverage: state confirmed dietary tags only, NEVER imply health benefits not confirmed
 
 NEVER invent: health/wellness claims for pet food not confirmed, "vet recommended" unless explicitly sourced, age-appropriateness not confirmed, or SPECIFIC material/texture (soft, plush, rope, sisal, etc.) when not confirmed — different pet product types use very different materials (a scratching post is typically rough sisal, NOT soft fabric) and guessing wrong actively misleads. If material isn't confirmed, describe function/purpose instead, not texture.
+` : ''}
+
+${automotive ? `
+AUTOMOTIVE SPECIFIC RULES:
+Write like real auto-accessory marketing (WeatherTech, Thule) — confident, practical, "built for the road" energy — not a spec sheet.
+
+CRITICAL SAFETY RULE: NEVER claim compatibility with a SPECIFIC vehicle make/model/year unless explicitly confirmed — this product is being described generically, not matched to any one vehicle. Only claim "universal fit" if that's explicitly confirmed. If fitment isn't confirmed at all, don't make ANY fitment claim — describe the product's general purpose instead.
+
+PRIORITY — only if confirmed via title/metafields/Tavily:
+1. Compatibility (universal fit only if confirmed)
+2. Material (neoprene, rubber, leather, etc.)
+3. Voltage (for electronic accessories like chargers/dash cams)
+4. Waterproof/weather resistance if confirmed
+
+NEVER invent: specific vehicle compatibility, waterproof rating claims not confirmed, or "easy installation" claims without basis.
 ` : ''}
 
 META TITLE RULES (max 60 chars):
