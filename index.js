@@ -1814,7 +1814,7 @@ app.get('/addon/confirm', async (req, res) => {
 // çaktivizuar nga Shopify pas 413 errors, tani te ndrequr (limit 5mb), por
 // duhet rikrijuar manualisht sepse s'rikrijohet vetvetiu.
 app.get('/admin-fix-webhook', async (req, res) => {
-  const { shop, key, topic, address } = req.query;
+  const { shop, key, topic, address, action } = req.query;
   const ADMIN_KEY = 'getoify-fix-2026'; // çelës i thjeshte, mjafton per perdorim njehersh te brendshem
   if (key !== ADMIN_KEY) {
     return res.status(403).send('Forbidden — missing or wrong key');
@@ -1827,6 +1827,24 @@ app.get('/admin-fix-webhook', async (req, res) => {
     if (!store?.access_token) {
       return res.status(404).send(`Store not found or no access_token: ${shop}`);
     }
+
+    if (action === 'list') {
+      const listRes = await axios.get(
+        `https://${shop}/admin/api/2026-07/webhooks.json`,
+        { headers: { 'X-Shopify-Access-Token': store.access_token } }
+      );
+      return res.send(`<pre>WEBHOOKS for ${shop}\n\n${JSON.stringify(listRes.data, null, 2)}</pre>`);
+    }
+
+    if (action === 'shop-email') {
+      const shopRes = await axios.get(
+        `https://${shop}/admin/api/2026-07/shop.json`,
+        { headers: { 'X-Shopify-Access-Token': store.access_token } }
+      );
+      const s = shopRes.data.shop;
+      return res.send(`<pre>SHOP INFO for ${shop}\n\nemail: ${s.email}\ncustomer_email: ${s.customer_email}\nshop_owner: ${s.shop_owner}</pre>`);
+    }
+
     const webhookTopic = topic || 'products/update';
     const webhookAddress = address || `${APP_URL}/webhook/product-create`;
 
