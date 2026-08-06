@@ -3295,7 +3295,13 @@ function stripUnverifiableCareAndSkillClaims(text, shouldApply) {
     /^[ \t]*[•\-*][ \t]*.*\bwipe\s+(it\s+)?down\b.*$/gim,
     // Pretendime niveli aftesie te shpikura ("suitable for intermediate to
     // advanced riders", "designed for all-mountain versatility" etj.)
-    /^[ \t]*[•\-*][ \t]*.*\b(suitable|designed|great|ideal)\s+for\s+(beginner|intermediate|advanced|all[\s-]?(mountain|level|skill)|every(?:one|\s+level)).*$/gim
+    /^[ \t]*[•\-*][ \t]*.*\b(suitable|designed|great|ideal)\s+for\s+(beginner|intermediate|advanced|all[\s-]?(mountain|level|skill)|every(?:one|\s+level)).*$/gim,
+    // Pretendime terapeutike/mjekesore te pakonfirmuara si bullet i vetem —
+    // RASTI REAL: "Soft, supportive design helps alleviate joint pain and
+    // discomfort" — heqja e VETEM frazes linte fragment te "gjymtuar"
+    // ("Soft, supportive design" pa asgje pas). Heqja e TERE bullet-it
+    // eshte me e paster kur pretendimi terapeutik eshte VETE thelbi i tij.
+    /^[ \t]*[•\-*][ \t]*.*\b(helps?\s+)?(alleviate|reliev(es?|ing)|reduc(es?|ing))\s+(joint\s+)?(pain|discomfort|inflammation|soreness)\b.*$/gim
   ];
 
   let result = text;
