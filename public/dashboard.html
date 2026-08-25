@@ -167,6 +167,15 @@
         <div class="banner-warn-txt">Your store connection has expired. Reconnect to continue translating.</div>
         <button class="banner-warn-btn" onclick="reconnectStore()">Reconnect store</button>
       </div>
+      <div id="empty-state-banner" style="display:none;background:#F0F9FF;border:1px solid #7DD3FC;border-radius:8px;padding:16px 20px;margin-bottom:14px;">
+        <div style="font-size:14px;font-weight:600;color:#0369A1;margin-bottom:8px;">Getting started:</div>
+        <ol style="margin:0;padding-left:18px;font-size:13px;color:#0C4A6E;line-height:1.7;">
+          <li>Go to Shopify → add a title to any product → Save</li>
+          <li>Getoify detects it automatically and generates a verified description</li>
+          <li>Check back here in a few minutes</li>
+        </ol>
+      </div>
+
       <div class="metrics">
         <div class="mc"><div class="mc-lbl">Total products</div><div class="mc-val" id="m-total">—</div><div class="mc-sub c-gray" id="m-total-sub">In your store</div></div>
         <div class="mc"><div class="mc-lbl">Localized</div><div class="mc-val" id="m-localized">—</div><div class="mc-sub c-green" id="m-localized-sub">Unique products</div></div>
@@ -405,6 +414,8 @@
           if (prodData.total !== undefined) {
             document.getElementById('m-total').textContent = prodData.total;
             document.getElementById('m-total-sub').textContent = 'In your store';
+            const emptyState = document.getElementById('empty-state-banner');
+            if (emptyState) emptyState.style.display = (prodData.total === 0) ? 'block' : 'none';
           }
         } catch(e) {
           document.getElementById('m-total').textContent = '—';
