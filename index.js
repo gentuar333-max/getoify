@@ -6782,14 +6782,21 @@ app.get('/admin-check-all-installs', async (req, res) => {
             { headers: { 'X-Shopify-Access-Token': store.access_token, 'Content-Type': 'application/json' } });
           results.push({ shop: store.shop, status: 'INSTALLED — webhook registered' });
         } catch (whErr) {
-          results.push({ shop: store.shop, status: 'INSTALLED — webhook already existed or failed: ' + (whErr.response?.data?.errors || whErr.message) });
+          results.push({ shop: store.shop, status: 'INSTALLED — webhook already existed: ' + JSON.stringify(whErr.response?.data?.errors || whErr.message) });
         }
       } catch (apiErr) {
-        if (apiErr.response?.status === 401 || apiErr.response?.status === 403) {
+        const code = apiErr.response?.status;
+        // 401/403 = token i pavlefshem (app-i u çinstalua). 402 = vete
+        // dyqani i pezulluar nga Shopify per pagese (jo çinstalim i
+        // Getoify-t, POR PRAKTIKISHT s'e arrijme me dyqanin njesoj). 404 =
+        // vete dyqani s'ekziston me (mbyllur/fshire). Te tria pertkojne
+        // "s'mund ta arrijme me kete dyqan", pavaresisht shkakut te sakte.
+        if (code === 401 || code === 403 || code === 402 || code === 404) {
           await supabase.from('stores').update({ uninstalled_at: new Date().toISOString() }).eq('shop', store.shop);
-          results.push({ shop: store.shop, status: 'UNINSTALLED (401/403) — marked in DB' });
+          const reason = code === 402 ? 'shop suspended (payment issue)' : code === 404 ? 'shop no longer exists' : 'app uninstalled (token invalid)';
+          results.push({ shop: store.shop, status: `INACTIVE (${code} — ${reason}) — marked in DB` });
         } else {
-          results.push({ shop: store.shop, status: 'UNKNOWN ERROR: ' + apiErr.message });
+          results.push({ shop: store.shop, status: 'UNKNOWN ERROR: ' + JSON.stringify(apiErr.response?.data || apiErr.message) });
         }
       }
     }
