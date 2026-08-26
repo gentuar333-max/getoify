@@ -6755,6 +6755,50 @@ app.post('/webhook/app-uninstalled', requireWebhookHmac, async (req, res) => {
   }
 });
 
+// UTILITET ADMIN, NJEHERSH — kontrollon STATUSIN AKTUAL te GJITHA dyqaneve
+// (jo pritje webhook-esh te ardhshme). Thirr shop.json me token-in e
+// ruajtur — nese kthen 401/403, token-i eshte i pavlefshem (ka gjasa te
+// forta çinstalim). Nese funksionon, RIREGJISTRON edhe webhook-un e ri
+// app/uninstalled, duke mbyllur boshllekun per 9 dyqanet ekzistuese.
+app.get('/admin-check-all-installs', async (req, res) => {
+  const { key } = req.query;
+  if (key !== 'getoify-fix-2026') return res.status(403).send('Forbidden');
+  try {
+    const { data: stores } = await supabase.from('stores').select('shop, access_token, uninstalled_at');
+    const results = [];
+    for (const store of stores || []) {
+      if (!store.access_token) {
+        results.push({ shop: store.shop, status: 'NO_TOKEN' });
+        continue;
+      }
+      try {
+        await axios.get(`https://${store.shop}/admin/api/2026-07/shop.json`, {
+          headers: { 'X-Shopify-Access-Token': store.access_token }, timeout: 5000
+        });
+        // Token funksionon — VERTET i instaluar. Riregjistro webhook-un e ri.
+        try {
+          await axios.post(`https://${store.shop}/admin/api/2026-07/webhooks.json`,
+            { webhook: { topic: 'app/uninstalled', address: `${APP_URL}/webhook/app-uninstalled`, format: 'json' } },
+            { headers: { 'X-Shopify-Access-Token': store.access_token, 'Content-Type': 'application/json' } });
+          results.push({ shop: store.shop, status: 'INSTALLED — webhook registered' });
+        } catch (whErr) {
+          results.push({ shop: store.shop, status: 'INSTALLED — webhook already existed or failed: ' + (whErr.response?.data?.errors || whErr.message) });
+        }
+      } catch (apiErr) {
+        if (apiErr.response?.status === 401 || apiErr.response?.status === 403) {
+          await supabase.from('stores').update({ uninstalled_at: new Date().toISOString() }).eq('shop', store.shop);
+          results.push({ shop: store.shop, status: 'UNINSTALLED (401/403) — marked in DB' });
+        } else {
+          results.push({ shop: store.shop, status: 'UNKNOWN ERROR: ' + apiErr.message });
+        }
+      }
+    }
+    res.send(`<pre>${JSON.stringify(results, null, 2)}</pre>`);
+  } catch (e) {
+    res.status(500).send(`<pre>FAILED: ${e.message}</pre>`);
+  }
+});
+
 // Collection webhook
 // FIX: shtuar requireWebhookHmac — mungonte, dhe lejonte dikend te forconte
 // gjenerim AI (kosto) + perkthim te panevojshem te nje koleksioni real,
