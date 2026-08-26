@@ -3375,29 +3375,29 @@ function stripUnverifiableCareAndSkillClaims(text, shouldApply) {
     // SHENIM: \n? ne fund te çdo pattern-i konsumon rreshtin e ri qe vjen
     // pas bullet-it, per te shmangur hapesire boshe te dyfishuar (RASTI
     // REAL: gjetur sot te suitability/warranty — $ s'e konsumon \n vete).
-    /^[ \t]*[•\-*][ \t]*.*\b(store|keep)\b.*\b(cool,?\s*dry\s*place|away\s+from\s+(humidity|moisture)|direct\s+sunlight)\b.*\n?/gim,
-    /^[ \t]*[•\-*][ \t]*.*\beasy to clean\b.*\n?/gim,
-    /^[ \t]*[•\-*][ \t]*.*\b(wipe|clean)(s|ing)?\b.*\b(soft|damp|dry)\s+cloth\b.*\n?/gim,
-    /^[ \t]*[•\-*][ \t]*.*\bmaintain(s)?\b.*\b(shine|luster|lustre|finish|beauty)\b.*\n?/gim,
-    /^[ \t]*[•\-*][ \t]*.*\bwipe\s+(it\s+)?down\b.*\n?/gim,
+    /^[ \t]*(?:[•\-*][ \t]*)?.*\b(store|keep)\b.*\b(cool,?\s*dry\s*place|away\s+from\s+(humidity|moisture)|direct\s+sunlight)\b.*\n?/gim,
+    /^[ \t]*(?:[•\-*][ \t]*)?.*\beasy to clean\b.*\n?/gim,
+    /^[ \t]*(?:[•\-*][ \t]*)?.*\b(wipe|clean)(s|ing)?\b.*\b(soft|damp|dry)\s+cloth\b.*\n?/gim,
+    /^[ \t]*(?:[•\-*][ \t]*)?.*\bmaintain(s)?\b.*\b(shine|luster|lustre|finish|beauty)\b.*\n?/gim,
+    /^[ \t]*(?:[•\-*][ \t]*)?.*\bwipe\s+(it\s+)?down\b.*\n?/gim,
     // Udhezime pastrimi rrobash te shpikura ("dry clean only", "machine
     // washable", "hand wash only") — RASTI REAL: "Dry clean only" per nje
     // pallto leshi, e shpikur plotesisht, mund te jete faktikisht e gabuar.
-    /^[ \t]*[•\-*][ \t]*.*\b(dry clean only|machine washable|hand wash (only|recommended)|dishwasher[- ]safe|do not (bleach|iron|tumble dry))\b.*\n?/gim,
+    /^[ \t]*(?:[•\-*][ \t]*)?.*\b(dry clean only|machine washable|hand wash (only|recommended)|dishwasher[- ]safe|do not (bleach|iron|tumble dry))\b.*\n?/gim,
     // Pattern strukturor, jo fraze specifike — kap KONCEPTIN "udhezime
     // kujdesi qe sigurojne rezultat" (RASTI REAL: "Easy care instructions
     // ensure lasting beauty and durability" — formulim i ri qe s'e kap asnje
     // nga pattern-et specifike te mesiperm, whack-a-mole i njohur).
-    /^[ \t]*[•\-*][ \t]*.*\bcare\s+instructions?\b.*\b(ensure|maintain|preserve|guarantee)\b.*\n?/gim,
+    /^[ \t]*(?:[•\-*][ \t]*)?.*\bcare\s+instructions?\b.*\b(ensure|maintain|preserve|guarantee)\b.*\n?/gim,
     // Pretendime niveli aftesie te shpikura ("suitable for intermediate to
     // advanced riders", "designed for all-mountain versatility" etj.)
-    /^[ \t]*[•\-*][ \t]*.*\b(suitable|designed|great|ideal)\s+for\s+(beginner|intermediate|advanced|all[\s-]?(mountain|level|skill)|every(?:one|\s+level)).*\n?/gim,
+    /^[ \t]*(?:[•\-*][ \t]*)?.*\b(suitable|designed|great|ideal)\s+for\s+(beginner|intermediate|advanced|all[\s-]?(mountain|level|skill)|every(?:one|\s+level)).*\n?/gim,
     // Pretendime terapeutike/mjekesore te pakonfirmuara si bullet i vetem —
     // RASTI REAL: "Soft, supportive design helps alleviate joint pain and
     // discomfort" — heqja e VETEM frazes linte fragment te "gjymtuar"
     // ("Soft, supportive design" pa asgje pas). Heqja e TERE bullet-it
     // eshte me e paster kur pretendimi terapeutik eshte VETE thelbi i tij.
-    /^[ \t]*[•\-*][ \t]*.*\b(helps?\s+)?(alleviate|reliev(es?|ing)|reduc(es?|ing))\s+(joint\s+)?(pain|discomfort|inflammation|soreness)\b.*\n?/gim
+    /^[ \t]*(?:[•\-*][ \t]*)?.*\b(helps?\s+)?(alleviate|reliev(es?|ing)|reduc(es?|ing))\s+(joint\s+)?(pain|discomfort|inflammation|soreness)\b.*\n?/gim
   ];
 
   let result = text;
@@ -3499,7 +3499,7 @@ function stripUnconfirmedCertifications(text, confirmedSpecs) {
     .replace(/[ \t]+([.,!?])/g, '$1')
     .replace(/[ \t]{2,}/g, ' ')
     .trim();
-  result = result.replace(/^[ \t]*[•\-*][ \t]*\(?\s*\)?\s*$/gim, '').replace(/\n{3,}/g, '\n\n');
+  result = result.replace(/^[ \t]*(?:[•\-*][ \t]*)?\(?\s*\)?\s*$/gim, '').replace(/\n{3,}/g, '\n\n');
   return result;
 }
 
@@ -3516,7 +3516,7 @@ function stripUnconfirmedWarrantyClaims(text, confirmedSpecs) {
   const hasConfirmedWarranty = /warrant|guarantee/i.test(confirmedText);
   if (hasConfirmedWarranty) return text; // ka te dhene reale, mos e prek fare
 
-  const warrantyBulletPattern = /^[ \t]*[•\-*][ \t]*.*\b(warrant(y|ies)|guarantee[ds]?)\b.*\n?/gim;
+  const warrantyBulletPattern = /^[ \t]*(?:[•\-*][ \t]*)?.*\b(warrant(y|ies)|guarantee[ds]?)\b.*\n?/gim;
   let result = text;
   result = result.replace(warrantyBulletPattern, (match) => {
     console.warn(`[unconfirmed-warranty] Hequr rresht garancie i pakonfirmuar: "${match.trim()}"`);
@@ -3543,7 +3543,7 @@ function stripUnconfirmedSuitabilityClaims(text, confirmedSpecs) {
   const hasConfirmedSuitability = /suitable|hypoallergenic|dermatologist|all skin types|all ages/i.test(confirmedText);
   if (hasConfirmedSuitability) return text; // ka te dhene reale, mos e prek fare
 
-  const suitabilityBulletPattern = /^[ \t]*[•\-*][ \t]*.*\bsuitable for (all|every|most)\b.*\n?/gim;
+  const suitabilityBulletPattern = /^[ \t]*(?:[•\-*][ \t]*)?.*\bsuitable for (all|every|most)\b.*\n?/gim;
   let result = text;
   result = result.replace(suitabilityBulletPattern, (match) => {
     console.warn(`[unconfirmed-suitability] Hequr rresht pershtatshmerie i pakonfirmuar: "${match.trim()}"`);
