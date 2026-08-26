@@ -5006,13 +5006,24 @@ PRIORITY — only if confirmed via title/metafields/Tavily:
 NEVER invent: specific vehicle compatibility, waterproof rating claims not confirmed, or "easy installation" claims without basis.
 ` : ''}
 
+NARRATIVE STYLE — FORMAT OVERRIDE (applies to every product, replaces the bullet-point structure above):
+
+Do NOT format the description as an intro sentence plus 4 separate bullet points. Instead, write the ENTIRE description as connected, flowing prose — confident brand voice, like a company proud of what they built, not a spec sheet.
+
+Example of the target style: "We built this with one goal: all-day performance without the trade-offs. The Snapdragon 6 chipset handles everything you throw at it, while the 7500mAh battery means you're not thinking about charging until you choose to."
+
+WHAT STAYS THE SAME (do not relax these):
+- Every fact used must still be a real confirmed spec — same accuracy rules, same "NEVER invent" rules, same UNCERTAINTY RULE from CATEGORY KNOWLEDGE RULE below.
+- Apply the same SPEC-TO-BENEFIT connection to every fact you include (spec tied to a concrete outcome, not just named) — same GENERIC FILLER BAN, same self-test (could this exact phrase be copy-pasted onto a competitor's different number and still sound true?).
+- Total description max 120 words, same as before.
+
+WHAT CHANGES — structure only:
+- No • bullet markers anywhere in the description.
+- Weave 2-4 confirmed facts into 2-4 connected sentences instead of isolating them as bullets — facts can share a sentence when they relate (e.g. chipset + battery both supporting "all-day performance").
+- If a category-specific block below still references "bullets", apply its PRIORITY/NEVER-invent guidance to what facts to include, but express them in this same flowing-prose format, not as bullets.
+
 ${likelyPrivateLabel ? `
-PRIVATE-LABEL / UNIQUE PRODUCT — WRITING STYLE OVERRIDE:
-This product has no matching results anywhere online — it's likely a private-label or unique item, not a mass-market product sold by many stores. Write with brand pride and ownership, NOT a spec-sheet tone.
-
-CRITICAL FORMAT CHANGE: Do NOT default to a bullet-heavy list. Write primarily in FLOWING PROSE (2-4 sentences) that reads like a confident brand describing something they made — "We built this with one goal...", "Designed for...", "Made for people who...". Use AT MOST 1-2 short bullets only if there are genuinely distinct confirmed facts worth isolating — otherwise, zero bullets is fine.
-
-Still follow every other rule in this prompt exactly: NEVER invent specs, materials, certifications, or claims not confirmed via title/metafields. The tone changes; the accuracy rules do not.
+This specific product has no matching results anywhere online — likely private-label or unique. If there are few or no confirmed facts, lean even more on purpose/feeling ("designed for...", "made for people who...") rather than inventing specifics — never invent a number, size, or ingredient just to fill space.
 ` : ''}
 
 META TITLE RULES (max 60 chars):
