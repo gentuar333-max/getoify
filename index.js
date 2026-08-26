@@ -1105,7 +1105,8 @@ app.get('/auth/callback', async (req, res) => {
       { topic: 'products/create', address: `${APP_URL}/webhook/product-create` },
       { topic: 'products/update', address: `${APP_URL}/webhook/product-create` },
       { topic: 'products/delete', address: `${APP_URL}/webhook/product-delete` },
-      { topic: 'app_subscriptions/update', address: `${APP_URL}/webhook/subscription-update` }
+      { topic: 'app_subscriptions/update', address: `${APP_URL}/webhook/subscription-update` },
+      { topic: 'app/uninstalled', address: `${APP_URL}/webhook/app-uninstalled` }
     ];
     for (const wh of webhookTopics) {
       try {
@@ -1165,7 +1166,8 @@ app.get('/register-webhooks', requireAdminKey, async (req, res) => {
       { topic: 'products/create', address: `${APP_URL}/webhook/product-create` },
       { topic: 'products/update', address: `${APP_URL}/webhook/product-create` },
       { topic: 'products/delete', address: `${APP_URL}/webhook/product-delete` },
-      { topic: 'app_subscriptions/update', address: `${APP_URL}/webhook/subscription-update` }
+      { topic: 'app_subscriptions/update', address: `${APP_URL}/webhook/subscription-update` },
+      { topic: 'app/uninstalled', address: `${APP_URL}/webhook/app-uninstalled` }
     ];
 
     const results = [];
@@ -1227,7 +1229,8 @@ app.get('/reset-webhooks', requireAdminKey, async (req, res) => {
       { topic: 'products/delete', address: `${APP_URL}/webhook/product-delete` },
       { topic: 'collections/create', address: `${APP_URL}/webhook/collection-create` },
       { topic: 'collections/update', address: `${APP_URL}/webhook/collection-create` },
-      { topic: 'app_subscriptions/update', address: `${APP_URL}/webhook/subscription-update` }
+      { topic: 'app_subscriptions/update', address: `${APP_URL}/webhook/subscription-update` },
+      { topic: 'app/uninstalled', address: `${APP_URL}/webhook/app-uninstalled` }
     ];
     const registered = [];
     for (const wh of webhookTopics) {
@@ -6728,6 +6731,30 @@ app.post('/webhook/subscription-update', requireWebhookHmac, async (req, res) =>
   }
 });
 
+// I RI — gjurmon çinstalimet ne kohe reale. BOSHLLEK I GJETUR: s'kishim
+// ASNJE menyre te menjehershme per ta ditur kur dikush çinstalon, vetem
+// indirekt (kur nje thirrje API deshton me vone). Shopify e dergon kete
+// webhook AUTOMATIKISHT ne çastin e çinstalimit.
+app.post('/webhook/app-uninstalled', requireWebhookHmac, async (req, res) => {
+  res.status(200).send('OK');
+  try {
+    const shop = req.headers['x-shopify-shop-domain'];
+    console.log(`[uninstall-webhook] ${shop} — u çinstalua`);
+    if (!shop) return;
+
+    await supabase.from('stores').update({
+      uninstalled_at: new Date().toISOString()
+    }).eq('shop', shop);
+
+    await sendNotification(
+      `App uninstalled: ${shop}`,
+      `<h2>Dyqan çinstaloi Getoify-n</h2><p><b>Store:</b> ${shop}</p><p><b>Koha:</b> ${new Date().toISOString()}</p>`
+    );
+  } catch(e) {
+    console.error('[uninstall-webhook] Gabim:', e.message);
+  }
+});
+
 // Collection webhook
 // FIX: shtuar requireWebhookHmac — mungonte, dhe lejonte dikend te forconte
 // gjenerim AI (kosto) + perkthim te panevojshem te nje koleksioni real,
@@ -6837,7 +6864,8 @@ async function autoResetWebhooks() {
       { topic: 'products/delete', address: `${APP_URL}/webhook/product-delete` },
       { topic: 'collections/create', address: `${APP_URL}/webhook/collection-create` },
       { topic: 'collections/update', address: `${APP_URL}/webhook/collection-create` },
-      { topic: 'app_subscriptions/update', address: `${APP_URL}/webhook/subscription-update` }
+      { topic: 'app_subscriptions/update', address: `${APP_URL}/webhook/subscription-update` },
+      { topic: 'app/uninstalled', address: `${APP_URL}/webhook/app-uninstalled` }
     ];
     for (const store of stores) {
       let accessToken = store.access_token;
