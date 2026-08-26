@@ -3368,36 +3368,38 @@ function stripUnverifiableCareAndSkillClaims(text, shouldApply) {
 
   const linePatterns = [
     // Udhezime kujdesi/ruajtje te shpikura — KATEGORIKE, jo fraza specifike:
-    // kap çdo bullet qe flet per pastrim/mirembajtje, pavaresisht formulimit
-    // (RASTI REAL: "Easy to clean — simply wipe down", "maintain its shine
-    // with a soft cloth", "store in a cool, dry place" — te treja te
-    // ndryshme ne fjale, e njejta ide e pakonfirmuar).
-    // SHENIM: \n? ne fund te çdo pattern-i konsumon rreshtin e ri qe vjen
-    // pas bullet-it, per te shmangur hapesire boshe te dyfishuar (RASTI
-    // REAL: gjetur sot te suitability/warranty — $ s'e konsumon \n vete).
-    /^[ \t]*(?:[•\-*][ \t]*)?.*\b(store|keep)\b.*\b(cool,?\s*dry\s*place|away\s+from\s+(humidity|moisture)|direct\s+sunlight)\b.*\n?/gim,
-    /^[ \t]*(?:[•\-*][ \t]*)?.*\beasy to clean\b.*\n?/gim,
-    /^[ \t]*(?:[•\-*][ \t]*)?.*\b(wipe|clean)(s|ing)?\b.*\b(soft|damp|dry)\s+cloth\b.*\n?/gim,
-    /^[ \t]*(?:[•\-*][ \t]*)?.*\bmaintain(s)?\b.*\b(shine|luster|lustre|finish|beauty)\b.*\n?/gim,
-    /^[ \t]*(?:[•\-*][ \t]*)?.*\bwipe\s+(it\s+)?down\b.*\n?/gim,
+    // kap çdo bullet/fjali qe flet per pastrim/mirembajtje, pavaresisht
+    // formulimit (RASTI REAL: "Easy to clean — simply wipe down", "maintain
+    // its shine with a soft cloth", "store in a cool, dry place" — te treja
+    // te ndryshme ne fjale, e njejta ide e pakonfirmuar).
+    // RINDERTIM I PLOTE: kufij FJALIE ([^.!?\n]*...[.!?]?), jo kufij rreshti
+    // (^...$/\n). RASTI REAL KRITIK: me format narrative (proze, shpesh PA
+    // \n fare), pattern-et e vjetra "whole-line" fshinin TERE PERSHKRIMIN
+    // (jo vetem fjaline problematike) kur s'kishte \n afer — testuar dhe
+    // konfirmuar me "Orthopedic Dog Bed": fshiu 3 fjali ne vend te 1.
+    // Kufij fjalie funksionojne NE TE DYJA rastet (me ose pa \n).
+    /[^.!?\n]*\b(store|keep)\b[^.!?\n]*\b(cool,?\s*dry\s*place|away\s+from\s+(humidity|moisture)|direct\s+sunlight)\b[^.!?\n]*[.!?]?\s*/gi,
+    /[^.!?\n]*\beasy to clean\b[^.!?\n]*[.!?]?\s*/gi,
+    /[^.!?\n]*\b(wipe|clean)(s|ing)?\b[^.!?\n]*\b(soft|damp|dry)\s+cloth\b[^.!?\n]*[.!?]?\s*/gi,
+    /[^.!?\n]*\bmaintain(s)?\b[^.!?\n]*\b(shine|luster|lustre|finish|beauty)\b[^.!?\n]*[.!?]?\s*/gi,
+    /[^.!?\n]*\bwipe\s+(it\s+)?down\b[^.!?\n]*[.!?]?\s*/gi,
     // Udhezime pastrimi rrobash te shpikura ("dry clean only", "machine
     // washable", "hand wash only") — RASTI REAL: "Dry clean only" per nje
     // pallto leshi, e shpikur plotesisht, mund te jete faktikisht e gabuar.
-    /^[ \t]*(?:[•\-*][ \t]*)?.*\b(dry clean only|machine washable|hand wash (only|recommended)|dishwasher[- ]safe|do not (bleach|iron|tumble dry))\b.*\n?/gim,
+    /[^.!?\n]*\b(dry clean only|machine washable|hand wash (only|recommended)|dishwasher[- ]safe|do not (bleach|iron|tumble dry))\b[^.!?\n]*[.!?]?\s*/gi,
     // Pattern strukturor, jo fraze specifike — kap KONCEPTIN "udhezime
     // kujdesi qe sigurojne rezultat" (RASTI REAL: "Easy care instructions
     // ensure lasting beauty and durability" — formulim i ri qe s'e kap asnje
     // nga pattern-et specifike te mesiperm, whack-a-mole i njohur).
-    /^[ \t]*(?:[•\-*][ \t]*)?.*\bcare\s+instructions?\b.*\b(ensure|maintain|preserve|guarantee)\b.*\n?/gim,
+    /[^.!?\n]*\bcare\s+instructions?\b[^.!?\n]*\b(ensure|maintain|preserve|guarantee)\b[^.!?\n]*[.!?]?\s*/gi,
     // Pretendime niveli aftesie te shpikura ("suitable for intermediate to
     // advanced riders", "designed for all-mountain versatility" etj.)
-    /^[ \t]*(?:[•\-*][ \t]*)?.*\b(suitable|designed|great|ideal)\s+for\s+(beginner|intermediate|advanced|all[\s-]?(mountain|level|skill)|every(?:one|\s+level)).*\n?/gim,
-    // Pretendime terapeutike/mjekesore te pakonfirmuara si bullet i vetem —
-    // RASTI REAL: "Soft, supportive design helps alleviate joint pain and
-    // discomfort" — heqja e VETEM frazes linte fragment te "gjymtuar"
-    // ("Soft, supportive design" pa asgje pas). Heqja e TERE bullet-it
-    // eshte me e paster kur pretendimi terapeutik eshte VETE thelbi i tij.
-    /^[ \t]*(?:[•\-*][ \t]*)?.*\b(helps?\s+)?(alleviate|reliev(es?|ing)|reduc(es?|ing))\s+(joint\s+)?(pain|discomfort|inflammation|soreness)\b.*\n?/gim
+    /[^.!?\n]*\b(suitable|designed|great|ideal)\s+for\s+(beginner|intermediate|advanced|all[\s-]?(mountain|level|skill)|every(?:one|\s+level))[^.!?\n]*[.!?]?\s*/gi,
+    // Pretendime terapeutike/mjekesore te pakonfirmuara — RASTI REAL:
+    // "Soft, supportive design helps alleviate joint pain and discomfort"
+    // DHE "help alleviate pressure on joints" (formulim i ri, i njejti
+    // problem). Kufij fjalie tani, jo bullet i vetem.
+    /[^.!?\n]*\b(helps?\s+)?(alleviate|reliev(es?|ing)|reduc(es?|ing))\s+(joint\s+)?(pain|discomfort|inflammation|soreness|pressure|stress|strain|tension)\b(\s+(on|in|around)\s+(the\s+)?joints?)?[^.!?\n]*[.!?]?\s*/gi
   ];
 
   let result = text;
@@ -3407,8 +3409,10 @@ function stripUnverifiableCareAndSkillClaims(text, shouldApply) {
       return '';
     });
   }
-  // Pastro rreshta bosh te shumefishte te mbetur pas heqjes
-  result = result.replace(/\n{3,}/g, '\n\n').replace(/[ \t]+\n/g, '\n').trim();
+  // Pastro rreshta bosh te shumefishte te mbetur pas heqjes, DHE siguro
+  // hapesire 1 pas pikes (RASTI REAL: "fit.You" pa hapesire, kur fjalia e
+  // mesme u hoq mes dy te tjerave).
+  result = result.replace(/\n{3,}/g, '\n\n').replace(/[ \t]+\n/g, '\n').replace(/\.([A-Z])/g, '. $1').trim();
   return result;
 }
 
@@ -3438,7 +3442,7 @@ function stripImpliedHealthClaims(text, isFoodBeverageCategory) {
     // Pretendime terapeutike/mjekesore te pakonfirmuara — RASTI REAL:
     // "helps alleviate joint pain and discomfort" u shpik nga vete fjala
     // "Orthopedic" ne titull, pa asnje konfirmim real Tavily.
-    { re: /,?\s*(helps?\s+)?(alleviate|reliev(es?|ing)|reduc(es?|ing))\s+(joint\s+)?(pain|discomfort|inflammation|soreness)\b[^.•\n]*/gi, replace: '' }
+    { re: /,?\s*(helps?\s+)?(alleviate|reliev(es?|ing)|reduc(es?|ing))\s+(joint\s+)?(pain|discomfort|inflammation|soreness|pressure|stress|strain|tension)\b(\s+(on|in|around)\s+(the\s+)?joints?)?[^.•\n]*/gi, replace: '' }
   ];
 
   let result = text;
@@ -3516,7 +3520,7 @@ function stripUnconfirmedWarrantyClaims(text, confirmedSpecs) {
   const hasConfirmedWarranty = /warrant|guarantee/i.test(confirmedText);
   if (hasConfirmedWarranty) return text; // ka te dhene reale, mos e prek fare
 
-  const warrantyBulletPattern = /^[ \t]*(?:[•\-*][ \t]*)?.*\b(warrant(y|ies)|guarantee[ds]?)\b.*\n?/gim;
+  const warrantyBulletPattern = /[^.!?\n]*\b(warrant(y|ies)|guarantee[ds]?)\b[^.!?\n]*[.!?]?\s*/gi;
   let result = text;
   result = result.replace(warrantyBulletPattern, (match) => {
     console.warn(`[unconfirmed-warranty] Hequr rresht garancie i pakonfirmuar: "${match.trim()}"`);
@@ -3527,7 +3531,7 @@ function stripUnconfirmedWarrantyClaims(text, confirmedSpecs) {
     console.warn(`[unconfirmed-warranty] Hequr fraze garancie e pakonfirmuar: "${match.trim()}"`);
     return '';
   });
-  result = result.replace(/\n{3,}/g, '\n\n').replace(/[ \t]+([.,!?])/g, '$1').trim();
+  result = result.replace(/\n{3,}/g, '\n\n').replace(/[ \t]+([.,!?])/g, '$1').replace(/\.([A-Z])/g, '. $1').trim();
   return result;
 }
 
@@ -3543,7 +3547,7 @@ function stripUnconfirmedSuitabilityClaims(text, confirmedSpecs) {
   const hasConfirmedSuitability = /suitable|hypoallergenic|dermatologist|all skin types|all ages/i.test(confirmedText);
   if (hasConfirmedSuitability) return text; // ka te dhene reale, mos e prek fare
 
-  const suitabilityBulletPattern = /^[ \t]*(?:[•\-*][ \t]*)?.*\bsuitable for (all|every|most)\b.*\n?/gim;
+  const suitabilityBulletPattern = /[^.!?\n]*\bsuitable for (all|every|most)\b[^.!?\n]*[.!?]?\s*/gi;
   let result = text;
   result = result.replace(suitabilityBulletPattern, (match) => {
     console.warn(`[unconfirmed-suitability] Hequr rresht pershtatshmerie i pakonfirmuar: "${match.trim()}"`);
@@ -3553,7 +3557,7 @@ function stripUnconfirmedSuitabilityClaims(text, confirmedSpecs) {
     console.warn(`[unconfirmed-suitability] Hequr fraze pershtatshmerie e pakonfirmuar: "${match.trim()}"`);
     return '';
   });
-  result = result.replace(/\n{3,}/g, '\n\n').replace(/[ \t]+([.,!?])/g, '$1').trim();
+  result = result.replace(/\n{3,}/g, '\n\n').replace(/[ \t]+([.,!?])/g, '$1').replace(/\.([A-Z])/g, '. $1').trim();
   return result;
 }
 
