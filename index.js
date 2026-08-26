@@ -4305,7 +4305,14 @@ async function generateProductCopy(product, targetLang, glossary, cleanBody, ima
     ? `\nPRODUCT SPECS (verified data — use these values directly without hedging):\n${allConfirmedSpecs.map(s => `- ${s.key}: ${s.value}`).join('\n')}\n`
     : '';
 
-  console.log(`[category] homeKitchen:${homeKitchen} beautyHealth:${beautyHealth} sportFitness:${sportFitness} fashionApparel:${fashionApparel} techElectronics:${techElectronics} externalConfirmation:${hasExternalConfirmation} product:"${product.title}"`);
+  // Sinjal per produkte private-label/unike: nese Tavily s'gjeti ASGJE online
+  // (hasExternalConfirmation=false), ka gjasa reale produkti eshte unik/
+  // private-label — dyqanet dropshipping normalisht kane produkte qe Tavily
+  // i gjen lehte (shume dyqane te tjera i shesin te njejtat). Perdor stil
+  // proze/krenari marke ne vend te bullet-listave teknike.
+  const likelyPrivateLabel = !hasExternalConfirmation && allConfirmedSpecs.length === 0;
+
+  console.log(`[category] homeKitchen:${homeKitchen} beautyHealth:${beautyHealth} sportFitness:${sportFitness} fashionApparel:${fashionApparel} techElectronics:${techElectronics} externalConfirmation:${hasExternalConfirmation} likelyPrivateLabel:${likelyPrivateLabel} product:"${product.title}"`);
 
   // ─── LANGUAGE CONFIG ───────────────────────────────────────────────────────
   // Rregulla specifike per cdo gjuhe: tone, CTA, sensory words, forbidden words
@@ -4969,6 +4976,15 @@ PRIORITY — only if confirmed via title/metafields/Tavily:
 4. Waterproof/weather resistance if confirmed
 
 NEVER invent: specific vehicle compatibility, waterproof rating claims not confirmed, or "easy installation" claims without basis.
+` : ''}
+
+${likelyPrivateLabel ? `
+PRIVATE-LABEL / UNIQUE PRODUCT — WRITING STYLE OVERRIDE:
+This product has no matching results anywhere online — it's likely a private-label or unique item, not a mass-market product sold by many stores. Write with brand pride and ownership, NOT a spec-sheet tone.
+
+CRITICAL FORMAT CHANGE: Do NOT default to a bullet-heavy list. Write primarily in FLOWING PROSE (2-4 sentences) that reads like a confident brand describing something they made — "We built this with one goal...", "Designed for...", "Made for people who...". Use AT MOST 1-2 short bullets only if there are genuinely distinct confirmed facts worth isolating — otherwise, zero bullets is fine.
+
+Still follow every other rule in this prompt exactly: NEVER invent specs, materials, certifications, or claims not confirmed via title/metafields. The tone changes; the accuracy rules do not.
 ` : ''}
 
 META TITLE RULES (max 60 chars):
