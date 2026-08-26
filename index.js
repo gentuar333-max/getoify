@@ -5006,9 +5006,11 @@ PRIORITY — only if confirmed via title/metafields/Tavily:
 NEVER invent: specific vehicle compatibility, waterproof rating claims not confirmed, or "easy installation" claims without basis.
 ` : ''}
 
-NARRATIVE STYLE — FORMAT OVERRIDE (applies to every product, replaces the bullet-point structure above):
+NARRATIVE STYLE — FORMAT OVERRIDE (applies to every product, MANDATORY, replaces the bullet-point structure above regardless of how many confirmed specs exist):
 
-Do NOT format the description as an intro sentence plus 4 separate bullet points. Instead, write the ENTIRE description as connected, flowing prose — confident brand voice, like a company proud of what they built, not a spec sheet.
+This overrides "Then write exactly 4 bullet points" and every bullet-formatting instruction above. Do NOT format the description as an intro sentence plus separate bullet points, even when you have 3-4+ confirmed specs available to fill them. This applies EQUALLY whether you have 1 confirmed spec or 5 — more specs means more facts woven into prose, never a reason to switch to bullets.
+
+Instead, write the ENTIRE description as connected, flowing prose — confident brand voice, like a company proud of what they built, not a spec sheet.
 
 Example of the target style: "We built this with one goal: all-day performance without the trade-offs. The Snapdragon 6 chipset handles everything you throw at it, while the 7500mAh battery means you're not thinking about charging until you choose to."
 
