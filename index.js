@@ -3395,11 +3395,14 @@ function stripUnverifiableCareAndSkillClaims(text, shouldApply) {
     // Pretendime niveli aftesie te shpikura ("suitable for intermediate to
     // advanced riders", "designed for all-mountain versatility" etj.)
     /[^.!?\n]*\b(suitable|designed|great|ideal)\s+for\s+(beginner|intermediate|advanced|all[\s-]?(mountain|level|skill)|every(?:one|\s+level))[^.!?\n]*[.!?]?\s*/gi,
-    // Pretendime terapeutike/mjekesore te pakonfirmuara — RASTI REAL:
-    // "Soft, supportive design helps alleviate joint pain and discomfort"
-    // DHE "help alleviate pressure on joints" (formulim i ri, i njejti
-    // problem). Kufij fjalie tani, jo bullet i vetem.
-    /[^.!?\n]*\b(helps?\s+)?(alleviate|reliev(es?|ing)|reduc(es?|ing))\s+(joint\s+)?(pain|discomfort|inflammation|soreness|pressure|stress|strain|tension)\b(\s+(on|in|around)\s+(the\s+)?joints?)?[^.!?\n]*[.!?]?\s*/gi
+    // Pretendime terapeutike/mjekesore te pakonfirmuara — RASTI REAL, 3
+    // variante te ndryshme, e njejta ide themelore: "helps alleviate joint
+    // pain and discomfort" → "help alleviate pressure on joints" → "supports
+    // their joints and promotes better sleep". Foljet ndryshojne çdo here
+    // (whack-a-mole i njohur) — kjo ANKORON te vete fjala "joints", jo te
+    // nje folje specifike, duke perdorur lookahead per te kapur foljen NE
+    // ÇFAREDO RENDITJE brenda te njejtes fjali.
+    /(?=[^.!?\n]*\bjoints?\b)(?=[^.!?\n]*\b(support|help|aid|promot|improv|eas|comfort|allevia|reliev|reduc)[a-z]*\b)[^.!?\n]*[.!?]?\s*/gi
   ];
 
   let result = text;
@@ -3555,6 +3558,28 @@ function stripUnconfirmedSuitabilityClaims(text, confirmedSpecs) {
   });
   result = result.replace(/,?\s*(gentle|safe)\s+(on|for)\s+(all|every|sensitive)\b[^.•\n]*/gi, (match) => {
     console.warn(`[unconfirmed-suitability] Hequr fraze pershtatshmerie e pakonfirmuar: "${match.trim()}"`);
+    return '';
+  });
+  result = result.replace(/\n{3,}/g, '\n\n').replace(/[ \t]+([.,!?])/g, '$1').replace(/\.([A-Z])/g, '. $1').trim();
+  return result;
+}
+
+// Rrjete sigurie E PERGJITHSHME — heq pretendime sigurie materiali te
+// pakonfirmuara ("non-toxic", "BPA-free", "chemical-free", "toxin-free").
+// RASTI REAL: Orthopedic Dog Bed pretendoi "made with non-toxic materials,
+// ensuring a safe environment" me ZERO te dhene sigurie te konfirmuar
+// (confirmedSpecsKeys: vetem Breed Size, Material). Ky eshte pretendim
+// SIGURIE — rrezik real nese eshte i pasakte (ndryshe nga marketing i but).
+function stripUnconfirmedSafetyMaterialClaims(text, confirmedSpecs) {
+  if (!text) return text;
+  const confirmedText = (confirmedSpecs || []).map(s => `${s.key} ${s.value}`).join(' ').toLowerCase();
+  const hasConfirmedSafety = /non-toxic|bpa-free|chemical-free|toxin-free|food-grade|lead-free/i.test(confirmedText);
+  if (hasConfirmedSafety) return text; // ka te dhene reale, mos e prek fare
+
+  const safetyPattern = /[^.!?\n]*\b(non-toxic|bpa-free|chemical-free|toxin-free|lead-free)\b[^.!?\n]*[.!?]?\s*/gi;
+  let result = text;
+  result = result.replace(safetyPattern, (match) => {
+    console.warn(`[unconfirmed-safety-material] Hequr pretendim sigurie i pakonfirmuar: "${match.trim()}"`);
     return '';
   });
   result = result.replace(/\n{3,}/g, '\n\n').replace(/[ \t]+([.,!?])/g, '$1').replace(/\.([A-Z])/g, '. $1').trim();
@@ -5015,7 +5040,7 @@ NARRATIVE STYLE — FORMAT OVERRIDE (applies to every product, MANDATORY, replac
 This overrides "Then write exactly 4 bullet points" and every bullet-formatting instruction above, INCLUDING the bullet requirements inside CATEGORY KNOWLEDGE RULE / STEP A-B-C below. This applies EQUALLY whether you have 1 confirmed spec or 5.
 
 STRUCTURE — same line-per-fact layout as before, only the punctuation changes:
-- Line 1: intro sentence (same as before).
+- Line 1: intro sentence. Where it fits naturally, open with a touch of ownership/pride ("Built for...", "Designed to...", "We built this so...") instead of a purely neutral description — light touch, not overdone, and never at the expense of a real confirmed fact.
 - Line 2: no • marker, no — dash. Write ONE full sentence that names the fact AND its outcome, connected with a natural verb or conjunction ("handles", "means", "keeps", "so", "which", "while") instead of a dash.
 - Line 3, Line 4, etc.: same pattern, one confirmed fact per line, each its own full sentence, no • marker, no — dash.
 - Each line separated by a SINGLE \n, exactly like the bullet lines were — you are keeping the line-per-fact structure, only removing • and — and writing full connected sentences instead of fragments.
@@ -5552,6 +5577,7 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
     parsed.description = stripUnconfirmedCertifications(parsed.description, allConfirmedSpecs);
     parsed.description = stripUnconfirmedWarrantyClaims(parsed.description, allConfirmedSpecs);
     parsed.description = stripUnconfirmedSuitabilityClaims(parsed.description, allConfirmedSpecs);
+    parsed.description = stripUnconfirmedSafetyMaterialClaims(parsed.description, allConfirmedSpecs);
     parsed.description = stripImpliedHealthClaims(parsed.description, foodBeverage || pets);
 
     // Bashkangjit providerin real qe u perdor — fushe shtese e sigurt (nuk
