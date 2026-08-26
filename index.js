@@ -2614,6 +2614,23 @@ const BEAUTY_ACTIVE_INGREDIENTS = [
 // perqindje ingredientesh (p.sh. "10% niacinamide"), emra ingredientesh
 // aktive, dhe SPF — gjerat qe VERTET rrezikojne halucinacion ne kete
 // kategori (jo numra bateriesh, por pretendime perberjesh/koncentrimesh).
+// Verifikon nese snippets nga Tavily VERTET flasin per KETE produkt, jo
+// thjesht per kategorine e ngjashme. Kontrollon nese te pakten 1 fjale
+// dalluese (jo gjenerike) e titullit shfaqet ne snippets — nese jo, ka
+// gjasa reale Tavily ktheu rezultate per produkt TJETER te ngjashem.
+const GENERIC_PRODUCT_WORDS = new Set([
+  'glow','serum','cream','lotion','wash','cleanser','moisturizer','oil',
+  'gel','spray','mask','the','and','for','with','your','skin','face',
+  'daily','natural','premium','professional','advanced'
+]);
+function snippetsContainDistinctiveTitleWord(snippets, title) {
+  const titleWords = title.toLowerCase().split(/\s+/)
+    .filter(w => w.length >= 4 && !GENERIC_PRODUCT_WORDS.has(w));
+  if (titleWords.length === 0) return true; // s'ka fjale dalluese per te testuar, mos e bllokoje
+  const snippetsLower = snippets.toLowerCase();
+  return titleWords.some(w => snippetsLower.includes(w));
+}
+
 async function searchBeautySpecs(title) {
   if (!process.env.TAVILY_API_KEY) return [];
   try {
@@ -2631,6 +2648,17 @@ async function searchBeautySpecs(title) {
       .slice(0, 3000);
 
     if (!snippets.trim()) return [];
+
+    // Verifikim relevance: nese asnje fjale dalluese e titullit (jo fjale
+    // gjenerike kategorie si "serum"/"cream") s'shfaqet ne snippets, ka
+    // gjasa Tavily ktheu rezultate PER PRODUKT TJETER (te ngjashem, jo TE
+    // KETE). RASTI REAL: "Aurelune Glow Serum" (marke e shpikur) mori "10%
+    // vitamin C, 5% niacinamide" nga snippets qe s'e permendnin fare
+    // "Aurelune" — vlera "tipike industrie", jo fakt real i ketij produkti.
+    if (!snippetsContainDistinctiveTitleWord(snippets, title)) {
+      console.warn(`[tavily-beauty] "${title}" — snippets s'permendin fjale dalluese te titullit, refuzuar si jo-relevante`);
+      return [];
+    }
 
     const specs = [];
 
