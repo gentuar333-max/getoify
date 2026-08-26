@@ -5580,6 +5580,20 @@ No description exists. Write product copy in ${targetLang} based ONLY on the pro
     parsed.description = stripUnconfirmedSafetyMaterialClaims(parsed.description, allConfirmedSpecs);
     parsed.description = stripImpliedHealthClaims(parsed.description, foodBeverage || pets);
 
+    // KRITIKE: te NJEJTAT 6 mbrojtje, TANI edhe per meta_description —
+    // RASTI REAL: meta_description mbajti "alleviates pressure on joints"
+    // edhe pasi description u pastrua plotesisht, sepse asnjeri prej ketyre
+    // 6 funksioneve s'ishte lidhur kurre me meta_description gjate gjithe
+    // dites, ne asnje nga 12 kategorite.
+    if (parsed.meta_description) {
+      parsed.meta_description = stripUnverifiableCareAndSkillClaims(parsed.meta_description, isImageOnlyGen || jewelry || travelLuggage || toysGames || foodBeverage || diyTools || pets || automotive || fashionApparel || homeKitchen || sportFitness);
+      parsed.meta_description = stripUnconfirmedCertifications(parsed.meta_description, allConfirmedSpecs);
+      parsed.meta_description = stripUnconfirmedWarrantyClaims(parsed.meta_description, allConfirmedSpecs);
+      parsed.meta_description = stripUnconfirmedSuitabilityClaims(parsed.meta_description, allConfirmedSpecs);
+      parsed.meta_description = stripUnconfirmedSafetyMaterialClaims(parsed.meta_description, allConfirmedSpecs);
+      parsed.meta_description = stripImpliedHealthClaims(parsed.meta_description, foodBeverage || pets);
+    }
+
     // Bashkangjit providerin real qe u perdor — fushe shtese e sigurt (nuk
     // prish asgje per konsumatoret ekzistues qe lexojne vetem title/description/
     // meta_*), lejon /test-prompt te tregoje konfirmim te prere pa pasur nevoje
