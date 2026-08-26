@@ -3273,6 +3273,15 @@ function stripGenericFillerPhrases(text) {
       return '';
     });
   }
+  // Pretendime GJENERIKE qendrueshmerie, te tere fjalise — RASTI REAL:
+  // "You can trust its durable construction for long-lasting use" —
+  // s'lidhet me asnje spec te konfirmuar, mund te vendoset te ÇDO produkt.
+  const durabilityPattern = /[^.!?\n]*\b(durable construction|built to last|trust its (durability|quality)|long-lasting (use|durability))\b[^.!?\n]*[.!?]?\s*/gi;
+  result = result.replace(durabilityPattern, (match) => {
+    console.warn(`[generic-filler] Hequr fjali qendrueshmerie gjenerike: "${match.trim()}"`);
+    return '';
+  });
+  result = result.replace(/\n{3,}/g, '\n\n').replace(/[ \t]+([.,!?])/g, '$1').replace(/\.([A-Z])/g, '. $1').trim();
   return result;
 }
 
