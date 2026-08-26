@@ -5008,21 +5008,24 @@ NEVER invent: specific vehicle compatibility, waterproof rating claims not confi
 
 NARRATIVE STYLE — FORMAT OVERRIDE (applies to every product, MANDATORY, replaces the bullet-point structure above regardless of how many confirmed specs exist):
 
-This overrides "Then write exactly 4 bullet points" and every bullet-formatting instruction above. Do NOT format the description as an intro sentence plus separate bullet points, even when you have 3-4+ confirmed specs available to fill them. This applies EQUALLY whether you have 1 confirmed spec or 5 — more specs means more facts woven into prose, never a reason to switch to bullets.
+This overrides "Then write exactly 4 bullet points" and every bullet-formatting instruction above, INCLUDING the bullet requirements inside CATEGORY KNOWLEDGE RULE / STEP A-B-C below. This applies EQUALLY whether you have 1 confirmed spec or 5.
 
-Instead, write the ENTIRE description as connected, flowing prose — confident brand voice, like a company proud of what they built, not a spec sheet.
+STRUCTURE — same line-per-fact layout as before, only the punctuation changes:
+- Line 1: intro sentence (same as before).
+- Line 2: no • marker, no — dash. Write ONE full sentence that names the fact AND its outcome, connected with a natural verb or conjunction ("handles", "means", "keeps", "so", "which", "while") instead of a dash.
+- Line 3, Line 4, etc.: same pattern, one confirmed fact per line, each its own full sentence, no • marker, no — dash.
+- Each line separated by a SINGLE \n, exactly like the bullet lines were — you are keeping the line-per-fact structure, only removing • and — and writing full connected sentences instead of fragments.
 
-Example of the target style: "We built this with one goal: all-day performance without the trade-offs. The Snapdragon 6 chipset handles everything you throw at it, while the 7500mAh battery means you're not thinking about charging until you choose to."
+Example of the target style (this is the exact line pattern to follow):
+"We built this with one goal: all-day performance without the trade-offs.
+The Snapdragon 6 chipset handles everything you throw at it.
+The 7500mAh battery means you're not thinking about charging until you choose to."
 
 WHAT STAYS THE SAME (do not relax these):
 - Every fact used must still be a real confirmed spec — same accuracy rules, same "NEVER invent" rules, same UNCERTAINTY RULE from CATEGORY KNOWLEDGE RULE below.
 - Apply the same SPEC-TO-BENEFIT connection to every fact you include (spec tied to a concrete outcome, not just named) — same GENERIC FILLER BAN, same self-test (could this exact phrase be copy-pasted onto a competitor's different number and still sound true?).
+- ONE fact per line still applies — never combine multiple specs into one line.
 - Total description max 120 words, same as before.
-
-WHAT CHANGES — structure only:
-- No • bullet markers anywhere in the description.
-- Weave 2-4 confirmed facts into 2-4 connected sentences instead of isolating them as bullets — facts can share a sentence when they relate (e.g. chipset + battery both supporting "all-day performance").
-- If a category-specific block below still references "bullets", apply its PRIORITY/NEVER-invent guidance to what facts to include, but express them in this same flowing-prose format, not as bullets.
 
 ${likelyPrivateLabel ? `
 This specific product has no matching results anywhere online — likely private-label or unique. If there are few or no confirmed facts, lean even more on purpose/feeling ("designed for...", "made for people who...") rather than inventing specifics — never invent a number, size, or ingredient just to fill space.
