@@ -169,11 +169,12 @@
       </div>
       <div id="empty-state-banner" style="display:none;background:#F0F9FF;border:1px solid #7DD3FC;border-radius:8px;padding:16px 20px;margin-bottom:14px;">
         <div style="font-size:14px;font-weight:600;color:#0369A1;margin-bottom:8px;">Getting started:</div>
-        <ol style="margin:0;padding-left:18px;font-size:13px;color:#0C4A6E;line-height:1.7;">
-          <li>Go to Shopify → add a title to any product → Save</li>
+        <ol style="margin:0 0 12px 0;padding-left:18px;font-size:13px;color:#0C4A6E;line-height:1.7;">
+          <li>Create a new product in Shopify, click Save — that's it</li>
           <li>Getoify detects it automatically and generates a verified description</li>
           <li>Check back here in a few minutes</li>
         </ol>
+        <a id="empty-state-cta" href="#" target="_blank" style="display:inline-block;background:#0369A1;color:#fff;text-decoration:none;font-size:13px;font-weight:600;padding:8px 16px;border-radius:6px;">Open Shopify — Add Product →</a>
       </div>
 
       <div class="metrics">
@@ -415,7 +416,11 @@
             document.getElementById('m-total').textContent = prodData.total;
             document.getElementById('m-total-sub').textContent = 'In your store';
             const emptyState = document.getElementById('empty-state-banner');
-            if (emptyState) emptyState.style.display = (prodData.total === 0) ? 'block' : 'none';
+            if (emptyState) {
+              emptyState.style.display = (prodData.total === 0) ? 'block' : 'none';
+              const cta = document.getElementById('empty-state-cta');
+              if (cta) cta.href = 'https://' + shop + '/admin/products/new';
+            }
           }
         } catch(e) {
           document.getElementById('m-total').textContent = '—';
