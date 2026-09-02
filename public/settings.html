@@ -140,8 +140,8 @@
           <div class="usage-bar"><div class="usage-fill" id="usage-fill" style="width:0%"></div></div>
           <div class="usage-row"><span class="usage-lbl" id="usage-used">0 used</span><span class="usage-val" id="plan-limit">50 limit</span></div>
           <div id="limit-banner" style="display:none;margin-top:10px;padding:10px 12px;background:#fdecea;border:1px solid #f5b5ae;border-radius:8px;color:#8a2c20;font-size:13px;">
-            You\'ve reached your plan limit for this period. New products won\'t be translated until you upgrade or your period renews.
-            <a href="#" onclick="window.location.href=\'/pricing?shop=\'+shop" style="color:#8a2c20;text-decoration:underline;font-weight:600;">Upgrade now</a>
+            You've reached your plan limit for this period. New products won't be translated until you upgrade or your period renews.
+            <a href="#" onclick="window.location.href='/pricing?shop='+shop" style="color:#8a2c20;text-decoration:underline;font-weight:600;">Upgrade now</a>
           </div>
           <div class="field-row" style="margin-top:10px;">
             <div><div class="field-lbl">Total translations</div></div>
@@ -157,6 +157,9 @@
         <div class="section">
           <div class="section-title">Target languages</div>
           <div class="section-desc">Choose which languages your products will be translated into. 20 languages available — select up to your plan's limit.</div>
+          <div style="font-size:12px;color:var(--ink-muted);background:var(--cream-mid);border-radius:6px;padding:8px 10px;margin-bottom:14px;">
+            <strong>Note:</strong> also publish each language in Shopify → <em>Settings → Languages</em>, so it appears on your storefront.
+          </div>
 
           <div class="lang-grid" id="lang-grid">
             <div class="lc" data-locale="de" onclick="toggleLang(this)">
