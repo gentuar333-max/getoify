@@ -155,6 +155,17 @@
         </div>
 
         <div class="section">
+          <div class="section-title">Widget setup</div>
+          <div class="section-desc">Getoify's language switcher and structured data widgets need to be turned on in your theme. This only takes a moment.</div>
+          <ol style="font-size:12px;color:var(--ink-mid);line-height:2;padding-left:18px;margin-bottom:14px;">
+            <li>Click the button below to open your theme editor</li>
+            <li>Find "Getoify Language Switcher" and "Getoify JSON-LD Schema" in the list</li>
+            <li>Toggle both ON, then click <strong>Save</strong></li>
+          </ol>
+          <a id="widget-setup-cta" href="#" target="_blank" style="display:inline-block;background:var(--ink);color:var(--cream);text-decoration:none;font-size:13px;font-weight:500;padding:8px 16px;border-radius:5px;">Open Theme Editor →</a>
+        </div>
+
+        <div class="section">
           <div class="section-title">Target languages</div>
           <div class="section-desc">Choose which languages your products will be translated into. 20 languages available — select up to your plan's limit.</div>
           <div style="font-size:12px;font-weight:600;color:var(--ink);background:var(--cream-mid);border-radius:6px;padding:8px 10px;margin-bottom:14px;">
@@ -325,6 +336,13 @@
     document.getElementById('sb-shop2').textContent = shop;
     document.getElementById('sb-av').textContent = shop.substring(0, 2).toUpperCase();
     document.getElementById('store-name').textContent = shop;
+    // Deep link real, konfirmuar sot (formati exact qe e krijoi vete Shopify
+    // kur aktivizuam widget-in manualisht) — çon direkt te Theme Editor,
+    // seksioni App Embeds, gati per te aktivizuar Getoify.
+    const widgetCta = document.getElementById('widget-setup-cta');
+    if (widgetCta) {
+      widgetCta.href = 'https://' + shop + '/admin/themes/current/editor?context=apps&appEmbed=c549e6d38a656a012e7fd412adb11460/language-switcher';
+    }
   }
 
   // Zevendeson fetch() per cdo thirrje qe kerkon requireShopAuth ne server.
