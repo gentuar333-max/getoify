@@ -9,6 +9,17 @@ dotenv.config({ override: false });
 
 const app = express();
 
+// KRITIKE, GJETUR SOT: 'trust proxy' mungonte PLOTESISHT nga gjithe kodi.
+// Render (si çdo host modern) terminon HTTPS te vetë edge-i i tij, pastaj
+// e perçon kerkesen nga jashte drejt aplikacionit tone. Pa 'trust proxy',
+// Express s'e njeh saktesisht protokollin origjinal (req.secure/req.protocol),
+// çka mund te ndikoje sjelljen e cookie-ve "secure". Praktike STANDARDE,
+// e KERKUAR per çdo app Express pas load balancer-i — shtuar ne kontekstin
+// e bug-ut te perseritur "please reconnect", raportuar 2 here nga Shopify,
+// VETEM ne teste instalimi te freskët (fresh install), asnjehere ne teste
+// tona me sesion EKZISTUES.
+app.set('trust proxy', 1);
+
 // Ruaj raw bytes te req.rawBody para parsing — i vetmi menyrim i besueshëm
 // per HMAC verification te Shopify webhooks. express.raw() dhe express.json()
 // ne paralel shkaktojne konflikt: nje prej tyre merr streamin, tjetri merr
@@ -1100,30 +1111,6 @@ app.get('/auth/callback', async (req, res) => {
         .catch(err => console.warn('[shoffi] Njoftimi deshtoi (jo kritike):', err.response?.data || err.message));
     }
 
-    // Regjistro webhooks automatikisht pas OAuth
-    const webhookTopics = [
-      { topic: 'products/create', address: `${APP_URL}/webhook/product-create` },
-      { topic: 'products/update', address: `${APP_URL}/webhook/product-create` },
-      { topic: 'products/delete', address: `${APP_URL}/webhook/product-delete` },
-      { topic: 'app_subscriptions/update', address: `${APP_URL}/webhook/subscription-update` },
-      { topic: 'app/uninstalled', address: `${APP_URL}/webhook/app-uninstalled` }
-    ];
-    for (const wh of webhookTopics) {
-      try {
-        await axios.post(
-          `https://${shop}/admin/api/2026-07/webhooks.json`,
-          { webhook: { topic: wh.topic, address: wh.address, format: 'json' } },
-          { headers: { 'X-Shopify-Access-Token': accessToken, 'Content-Type': 'application/json' } }
-        );
-        console.log(`Webhook registered: ${wh.topic}`);
-      } catch (whErr) {
-        // 422 = webhook already exists — i sigurt, vazhdo
-        if (whErr.response?.status !== 422) {
-          console.warn(`Webhook register failed (${wh.topic}):`, whErr.response?.data || whErr.message);
-        }
-      }
-    }
-
     // Widget-i tani ngarkohet permes Theme App Extension (app embed block),
     // jo me ScriptTag — Shopify e ka shenuar ScriptTag te papranueshme per
     // review te App Store per storefront te pergjithshem, dhe punon vetem
@@ -1131,17 +1118,48 @@ app.get('/auth/callback', async (req, res) => {
     // kod (mund te thirret manualisht per shops te vjeter nese nevojitet),
     // por s'thirret me automatikisht ketu.
 
-// Sesioni i merchant-it — cookie e nenshkruar, e VETMja dëshmi qe dashboard-i
-// pranohet ta perdore per te thirrur route-t e mbrojtura (requireShopAuth).
-// access_token NUK kalon me ne URL — mbetet vetem server-side ne Supabase.
-res.cookie(SESSION_COOKIE_NAME, signSession(shop), {
-  httpOnly: true,
-  secure: true,
-  sameSite: 'lax',
-  maxAge: SESSION_MAX_AGE_MS
-});
+    // KRITIKE, RIRENDITUR SOT: cookie-ja dhe redirect-i tani ndodhin MENJEHERE
+    // pas upsert-it, PARA regjistrimit te webhook-ve — jo mbrapa tij. RASTI
+    // REAL: 5 thirrje axios.post SEKUENCIALE (webhook-et) me pare ndodhnin
+    // PARA cookie-s, duke shtuar vonese te panevojshme pikerisht ne rrugen
+    // kritike qe çdo instalim i freskët (si testet e Shopify) e kalon
+    // GJITHMONE — ndersa testet tona (sesion ekzistues) s'e kalonin fare kete
+    // rruge, prandaj s'e kapem me teste manuale.
+    // Sesioni i merchant-it — cookie e nenshkruar, e VETMja dëshmi qe dashboard-i
+    // pranohet ta perdore per te thirrur route-t e mbrojtura (requireShopAuth).
+    // access_token NUK kalon me ne URL — mbetet vetem server-side ne Supabase.
+    res.cookie(SESSION_COOKIE_NAME, signSession(shop), {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax',
+      maxAge: SESSION_MAX_AGE_MS
+    });
 
-res.redirect('/dashboard?shop=' + shop + '&reauth=1');
+    res.redirect('/dashboard?shop=' + shop + '&reauth=1');
+
+    // Regjistro webhooks TANI, PAS redirect-it — jo-bllokues (fire-and-forget).
+    // Merchant-i TASHME e ka cookie-n e vet dhe eshte duke shikuar dashboard-in;
+    // webhook-et regjistrohen ne background, pa e vonuar rrugen kritike te auth.
+    const webhookTopics = [
+      { topic: 'products/create', address: `${APP_URL}/webhook/product-create` },
+      { topic: 'products/update', address: `${APP_URL}/webhook/product-create` },
+      { topic: 'products/delete', address: `${APP_URL}/webhook/product-delete` },
+      { topic: 'app_subscriptions/update', address: `${APP_URL}/webhook/subscription-update` },
+      { topic: 'app/uninstalled', address: `${APP_URL}/webhook/app-uninstalled` }
+    ];
+    Promise.all(webhookTopics.map(wh =>
+      axios.post(
+        `https://${shop}/admin/api/2026-07/webhooks.json`,
+        { webhook: { topic: wh.topic, address: wh.address, format: 'json' } },
+        { headers: { 'X-Shopify-Access-Token': accessToken, 'Content-Type': 'application/json' } }
+      )
+        .then(() => console.log(`Webhook registered: ${wh.topic}`))
+        .catch(whErr => {
+          if (whErr.response?.status !== 422) {
+            console.warn(`Webhook register failed (${wh.topic}):`, whErr.response?.data || whErr.message);
+          }
+        })
+    )).catch(() => {});
   } catch (error) {
     console.error('OAuth callback error:', error.message);
     res.redirect('/?error=oauth_failed&shop=' + (req.query.shop || ''));
