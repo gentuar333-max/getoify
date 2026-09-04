@@ -1036,7 +1036,7 @@ app.get('/auth', (req, res) => {
   // qe u mashtrua te klikoje nje link OAuth te pergatitur nga sulmuesi.
   const state = crypto.randomBytes(16).toString('hex');
   res.cookie('getoify_oauth_state', state, {
-    httpOnly: true, secure: true, sameSite: 'lax', maxAge: 10 * 60 * 1000
+    httpOnly: true, secure: true, sameSite: 'lax', domain: '.getoify.com', maxAge: 10 * 60 * 1000
   });
   const redirectUri = `${APP_URL}/auth/callback`;
   const installUrl = `https://${shop}/admin/oauth/authorize?client_id=${encodeURIComponent(SHOPIFY_API_KEY)}&scope=${encodeURIComponent(SHOPIFY_SCOPES)}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${encodeURIComponent(state)}`;
@@ -1128,10 +1128,16 @@ app.get('/auth/callback', async (req, res) => {
     // Sesioni i merchant-it — cookie e nenshkruar, e VETMja dëshmi qe dashboard-i
     // pranohet ta perdore per te thirrur route-t e mbrojtura (requireShopAuth).
     // access_token NUK kalon me ne URL — mbetet vetem server-side ne Supabase.
+    // Domain eksplicit (me pike ne fillim) — mbulon TE DYJA www.getoify.com
+    // DHE getoify.com (pa www), duke eliminuar nje shkak tjeter te mundshem
+    // te bug-ut "reconnect": pa kete, cookie mbetet e "mbyllur" VETEM te
+    // domain-i EKZAKT qe shërbeu OAuth callback-un — nese ndonje hap i
+    // flow-it perdor variantin tjeter (me/pa www), browser-i s'e dergon fare.
     res.cookie(SESSION_COOKIE_NAME, signSession(shop), {
       httpOnly: true,
       secure: true,
       sameSite: 'lax',
+      domain: '.getoify.com',
       maxAge: SESSION_MAX_AGE_MS
     });
 
