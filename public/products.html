@@ -460,7 +460,6 @@
   }
 
   async function runTranslate() {
-    if (!token) { alert('Please reconnect your store first.'); return; }
     const pending = allProducts.filter(p => getStatus(p) === 'none').length;
     if (pending === 0) { alert('All products are already translated.'); return; }
     if (!confirm(`Translate ${pending} untranslated product${pending > 1 ? 's' : ''}?`)) return;
@@ -471,7 +470,7 @@
       await authedFetch('/bulk-localize-all', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shop, token, tone: 'professional and elegant', glossary: 'checkout, Shopify' })
+        body: JSON.stringify({ shop, tone: 'professional and elegant', glossary: 'checkout, Shopify' })
       });
       await loadData();
     } catch(e) { alert('Error. Please try again.'); }
@@ -497,17 +496,6 @@
     const productId = btn.dataset.id;
     if (!productId) return;
 
-    // Try to get token from store-settings if not in localStorage
-    let activeToken = token;
-    if (!activeToken) {
-      try {
-        const s = await authedFetch('/store-settings?shop=' + shop);
-        const sd = await s.json();
-        activeToken = sd.access_token || null;
-        if (activeToken) localStorage.setItem('getoify_token', activeToken);
-      } catch(e) {}
-    }
-    if (!activeToken) { alert('Please reconnect your store first.'); return; }
     const productTitle = decodeURIComponent(btn.dataset.title || '');
     btn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border:2px solid #E0DDD6;border-top-color:#8B7355;border-radius:50%;animation:spin 0.7s linear infinite;display:inline-block"></span>Translating</span>';
     btn.disabled = true;
@@ -515,7 +503,7 @@
       const res = await authedFetch('/process-product', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shop, token: activeToken, productId: String(productId), productTitle })
+        body: JSON.stringify({ shop, productId: String(productId), productTitle })
       });
       if (!res.ok) throw new Error('Server error');
       // Poll every 3s up to 30s for translation to complete
