@@ -407,26 +407,23 @@
         }
       }
 
-      const tok = token || localStorage.getItem('getoify_token');
-      if (tok) {
-        try {
-          const prodRes = await authedFetch('/products?shop=' + shop + '&token=' + tok);
-          const prodData = await prodRes.json();
-          if (prodData.total !== undefined) {
-            document.getElementById('m-total').textContent = prodData.total;
-            document.getElementById('m-total-sub').textContent = 'In your store';
-            const emptyState = document.getElementById('empty-state-banner');
-            if (emptyState) {
-              emptyState.style.display = (prodData.total === 0) ? 'block' : 'none';
-              const cta = document.getElementById('empty-state-cta');
-              if (cta) cta.href = 'https://' + shop + '/admin/products/new';
-            }
+      try {
+        const prodRes = await authedFetch('/products?shop=' + shop);
+        const prodData = await prodRes.json();
+        if (prodData.total !== undefined) {
+          document.getElementById('m-total').textContent = prodData.total;
+          document.getElementById('m-total-sub').textContent = 'In your store';
+          const emptyState = document.getElementById('empty-state-banner');
+          if (emptyState) {
+            emptyState.style.display = (prodData.total === 0) ? 'block' : 'none';
+            const cta = document.getElementById('empty-state-cta');
+            if (cta) cta.href = 'https://' + shop + '/admin/products/new';
           }
-        } catch(e) {
+        }
+      } catch(e) {
           document.getElementById('m-total').textContent = '—';
           document.getElementById('m-total-sub').textContent = 'Reconnect to update';
         }
-      }
 
       const byLocale = {};
       statusData.translations.forEach(t => { byLocale[t.locale] = (byLocale[t.locale] || 0) + 1; });
@@ -464,12 +461,10 @@
 
   async function runBulk() {
     const btn = document.getElementById('btn-run');
-    const tok = new URLSearchParams(window.location.search).get('token') || localStorage.getItem('getoify_token');
-    if (!tok) { alert('Please reconnect your store first.'); return; }
     btn.innerHTML = '<i class="ti ti-player-play"></i>Running...'; btn.disabled = true;
     try {
       const res = await authedFetch('/bulk-localize-all', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shop, token: tok, tone: 'professional and elegant', glossary: 'checkout, Shopify' }) });
+        body: JSON.stringify({ shop, tone: 'professional and elegant', glossary: 'checkout, Shopify' }) });
       if (!res.ok) { const err = await res.text(); console.error('Bulk error:', err); alert('Error: ' + err); }
       else {
         const text = await res.text(); console.log('Bulk result:', text);
